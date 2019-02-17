@@ -1,0 +1,16 @@
+{
+  "name": "nodeguard",
+  "version": "1.0.0",
+  "description": "Conceal Node Guard",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "app-root-path": "^2.1.0",
+    "conceal-js": "^0.7.2",
+    "moment": "^2.24.0"
+  }
+}
