@@ -15,7 +15,7 @@ const os = require('os');
 
 const RpcCommunicator = function(configOpts, errorCallback) {
   // create the CCX api interface object
-  var CCXApi = new CCX('http://127.0.0.1', '3333', '16000');
+  var CCXApi = new CCX('http://127.0.0.1', '3333', configOpts.node.port);
   var IsRunning = false;
   var lastHeight = 0;
   var lastTS = moment();
@@ -40,7 +40,7 @@ const RpcCommunicator = function(configOpts, errorCallback) {
         } else {
           var duration = moment.duration(moment().diff(lastTS));
 
-          if (duration.asHours() > 30) {
+          if (duration.asHours() > configOpts.restart.maxBlockTime) {
             errorCallback("No new block has be seen for more then 30 minutes");
             heightIsOK = false;
           }
