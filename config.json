@@ -1,0 +1,11 @@
+{
+	"node": {
+		"args": ["--rpc-bind-ip", "127.0.0.1", "--rpc-bind-port", "16000"]
+	},
+	"notify": {
+		"url": "blabla"
+	},
+	"restart": {
+		
+	}	
+}

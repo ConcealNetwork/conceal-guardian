@@ -13,7 +13,7 @@ const CCX = require('conceal-js');
 const fs = require('fs');
 const os = require('os');
 
-const RpcCommunicator = function(errorCallback) {
+const RpcCommunicator = function(configOpts, errorCallback) {
   // create the CCX api interface object
   var CCXApi = new CCX('http://127.0.0.1', '3333', '16000');
   var IsRunning = false;
@@ -32,6 +32,8 @@ const RpcCommunicator = function(errorCallback) {
   function checkAliveAndWell() {
     if (IsRunning) {
       CCXApi.info().then((data) => { 
+        var heightIsOK = true;
+
         if (lastHeight != data.height) {
           lastHeight = data.height;
           lastTS = moment();
@@ -40,15 +42,18 @@ const RpcCommunicator = function(errorCallback) {
 
           if (duration.asHours() > 30) {
             errorCallback("No new block has be seen for more then 30 minutes");
+            heightIsOK = false;
           }
         }
   
-        if (data.status != "OK") {
-          errorCallback("Status is: " + data.status);
-        } else {
-          setTimeout(() => {
-            checkAliveAndWell();
-          }, 5000);  
+        if (heightIsOK) {
+          if (data.status != "OK") {
+            errorCallback("Status is: " + data.status);
+          } else {
+            setTimeout(() => {
+              checkAliveAndWell();
+            }, 5000);  
+          }  
         }
       }).catch((err) => { 
         errorCallback(err);
@@ -57,10 +62,7 @@ const RpcCommunicator = function(errorCallback) {
   }
 }
 
-const NodeGuard = function (opts) {
-  this.opts = opts || {}
-  var RpcComms = null;
-
+const NodeGuard = function () {
   if (appRoot.path.indexOf('app.asar') > -1) {
     this.rootPath = path.dirname(appRoot.path);
   } else {
@@ -69,7 +71,9 @@ const NodeGuard = function (opts) {
 
   // set the daemon path and start the node process
   const daemonPath = path.join(this.rootPath, 'conceald');
+  var configOpts = JSON.parse(fs.readFileSync(path.join(this.rootPath, 'config.json'), 'utf8'))
   var nodeProcess = null;
+  var RpcComms = null;
 
   this.stop = function() {
     RpcComms.stop();
@@ -78,38 +82,52 @@ const NodeGuard = function (opts) {
   }
 
   function errorCallback(errorData) {
-    nodeProcess.kill('SIGTERM');
-    startDaemonProcess();
+    restartDaemonProcess(errorData, true);
   }
 
-  function restartDaemonProcess() {
+  /***************************************************************
+        restarts the node if an error occurs automatically
+  ***************************************************************/
+  function restartDaemonProcess(errorData, sendNotification) {
     this.stop();
+
+    // write every error to a log file for possible later analization
+    fs.appendFile(path.join(this.rootPath, 'errorlog.txt'), errorData, function (err) {
+    });
+
+    // send notification if specified in the config
+    if ((sendNotification) && (configOpts.notify.url)) {
+
+    }
+
+    // start the daemon again
     startDaemonProcess();
   }
 
   function startDaemonProcess() {
-    nodeProcess = child_process.spawn(daemonPath, ['--rpc-bind-ip', '127.0.0.1', '--rpc-bind-port', '16000']);
+    nodeProcess = child_process.spawn(configOpts.node.path || daemonPath, configOpts.node.args || []);
 
     if (!nodeProcess) {
       app.quit();
     } else {
       nodeProcess.on('error', function(err) {      
-        restartDaemonProcess();
+        restartDaemonProcess("Error on starting the node process", false);
       });
       nodeProcess.stderr.on('data', function(data) {
-        restartDaemonProcess();
+        restartDaemonProcess(data.toString(), true);
       });
       nodeProcess.on('close', function(err) {      
-        restartDaemonProcess();
+        restartDaemonProcess("Node process closed with: " + err, true);
       });
   
       const rl = readline.createInterface({
         input: nodeProcess.stdout
       });
-      
+            
       rl.on('line', (line) => {
+        // core is initialized, we can start the queries
         if (line.indexOf("Core initialized OK") > -1) {
-          RpcComms = new RpcCommunicator(errorCallback);
+          RpcComms = new RpcCommunicator(configOpts, errorCallback);
           RpcComms.start();
         }
       });
@@ -124,4 +142,4 @@ process.on('exit', function() {
   guardInstance.stop();
 });
 
-var guardInstance = new NodeGuard(null);
+var guardInstance = new NodeGuard();
