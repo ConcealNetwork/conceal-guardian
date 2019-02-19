@@ -1,10 +1,12 @@
 {
 	"node": {
 		"args": ["--rpc-bind-ip", "127.0.0.1", "--rpc-bind-port", "16000"],
+		"path": "/path/to/conceald",
 		"port": 16000
+		"name": "TestNode"
 	},
 	"notify": {
-		"url": "blabla"
+		"url": ""
 	},
 	"restart": {
 		"maxBlockTime": 30, 

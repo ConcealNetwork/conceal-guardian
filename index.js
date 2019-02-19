@@ -7,6 +7,7 @@
 const child_process = require('child_process');
 const readline = require('readline');
 const appRoot = require('app-root-path');
+const request = require('request');
 const moment = require('moment');
 const path = require('path');
 const CCX = require('conceal-js');
@@ -106,7 +107,17 @@ const NodeGuard = function () {
 
     // send notification if specified in the config
     if ((sendNotification) && (configOpts.notify.url)) {
-      // need to finishe the Discord notify code!!!
+      var hookOptions = {
+        uri: configOpts.notify.url,
+        method: 'POST',
+        json: {
+          "content": vsprintf('Node **%s** reported an error -> %s', [configOpts.node.name || os.hostname(), errorData + "\n"])
+        }
+      }
+    
+      request(hookOptions, function (error, response, data) {
+        // for now its fire and forget, no matter if error occurs
+      });    
     }
 
     // start the daemon again
