@@ -40,7 +40,7 @@ const RpcCommunicator = function(configOpts, errorCallback) {
         } else {
           var duration = moment.duration(moment().diff(lastTS));
 
-          if (duration.asHours() > configOpts.restart.maxBlockTime) {
+          if (duration.asMinutes() > configOpts.restart.maxBlockTime) {
             errorCallback("No new block has be seen for more then 30 minutes");
             heightIsOK = false;
           }
@@ -63,15 +63,19 @@ const RpcCommunicator = function(configOpts, errorCallback) {
 }
 
 const NodeGuard = function () {
+  var rootPath = null;
+  
   if (appRoot.path.indexOf('app.asar') > -1) {
-    this.rootPath = path.dirname(appRoot.path);
+    rootPath = path.dirname(appRoot.path);
   } else {
-    this.rootPath = appRoot.path;
+    rootPath = appRoot.path;
   }
 
   // set the daemon path and start the node process
-  const daemonPath = path.join(this.rootPath, 'conceald');
-  var configOpts = JSON.parse(fs.readFileSync(path.join(this.rootPath, 'config.json'), 'utf8'))
+  const daemonPath = path.join(rootPath, 'conceald');
+  var configOpts = JSON.parse(fs.readFileSync(path.join(rootPath, 'config.json'), 'utf8'))
+  var starupTime = moment();
+  var initialized = false;
   var nodeProcess = null;
   var RpcComms = null;
 
@@ -89,19 +93,33 @@ const NodeGuard = function () {
         restarts the node if an error occurs automatically
   ***************************************************************/
   function restartDaemonProcess(errorData, sendNotification) {
-    this.stop();
+    guardInstance.stop();
 
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(this.rootPath, 'errorlog.txt'), errorData, function (err) {
+    fs.appendFile(path.join(rootPath, 'errorlog.txt'), errorData, function (err) {
     });
 
     // send notification if specified in the config
     if ((sendNotification) && (configOpts.notify.url)) {
-
+      // need to finishe the Discord notify code!!!
     }
 
     // start the daemon again
     startDaemonProcess();
+  }
+
+  function checkIfInitialized() {
+    if (!initialized) {
+      var duration = moment.duration(moment().diff(starupTime));
+
+      if (duration.asMinutes() > configOpts.restart.maxInitTime) {
+        restartDaemonProcess("Initialization is taking to long, restarting", true);
+      } else {
+        setTimeout(() => {
+          checkIfInitialized();
+        }, 5000);  
+      }
+    }
   }
 
   function startDaemonProcess() {
@@ -113,24 +131,40 @@ const NodeGuard = function () {
       nodeProcess.on('error', function(err) {      
         restartDaemonProcess("Error on starting the node process", false);
       });
-      nodeProcess.stderr.on('data', function(data) {
-        restartDaemonProcess(data.toString(), true);
-      });
       nodeProcess.on('close', function(err) {      
         restartDaemonProcess("Node process closed with: " + err, true);
       });
   
-      const rl = readline.createInterface({
+      const dataStream = readline.createInterface({
         input: nodeProcess.stdout
       });
             
-      rl.on('line', (line) => {
+      const errorStream = readline.createInterface({
+        input: nodeProcess.stderr
+      });
+            
+      dataStream.on('line', (line) => {
         // core is initialized, we can start the queries
         if (line.indexOf("Core initialized OK") > -1) {
+          initialized = true;
+
           RpcComms = new RpcCommunicator(configOpts, errorCallback);
           RpcComms.start();
         }
       });
+
+      errorStream.on('line', (line) => {
+        // core is initialized, we can start the queries
+        if (line.indexOf("Core initialized OK") > -1) {
+          initialized = true;
+
+          RpcComms = new RpcCommunicator(configOpts, errorCallback);
+          RpcComms.start();
+        }
+      });
+
+      // start the initilize checking
+      checkIfInitialized();      
     }
   }
 
