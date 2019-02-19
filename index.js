@@ -93,11 +93,16 @@ const NodeGuard = function () {
         restarts the node if an error occurs automatically
   ***************************************************************/
   function restartDaemonProcess(errorData, sendNotification) {
+    var userDataDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : process.env.HOME + "/.local/share");
+    userDataDir = path.join(userDataDir, "Ether1NodeGuard");
     guardInstance.stop();
 
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir); 
+    }   
+
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(rootPath, 'errorlog.txt'), errorData, function (err) {
-    });
+    fs.appendFile(path.join(userDataDir, 'errorlog.txt'), errorData + "\n", function (err) {});
 
     // send notification if specified in the config
     if ((sendNotification) && (configOpts.notify.url)) {
