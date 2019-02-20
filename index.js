@@ -81,9 +81,14 @@ const NodeGuard = function () {
   var RpcComms = null;
 
   this.stop = function() {
-    RpcComms.stop();
-    RpcComms.destroy();
-    nodeProcess.kill('SIGTERM');
+    if (RpcComms) {
+      RpcComms.stop();
+      RpcComms.destroy();  
+    }
+
+    if (nodeProcess) {
+      nodeProcess.kill('SIGTERM');
+    }
   }
 
   function errorCallback(errorData) {
@@ -95,7 +100,7 @@ const NodeGuard = function () {
   ***************************************************************/
   function restartDaemonProcess(errorData, sendNotification) {
     var userDataDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : process.env.HOME + "/.local/share");
-    userDataDir = path.join(userDataDir, "Ether1NodeGuard");
+    userDataDir = path.join(userDataDir, "ConcealNodeGuard");
     guardInstance.stop();
 
     if (!fs.existsSync(userDataDir)) {
