@@ -84,7 +84,7 @@ const NodeGuard = function () {
   this.stop = function() {
     if (RpcComms) {
       RpcComms.stop();
-      RpcComms.destroy();  
+      RpcComms = null;  
     }
 
     if (nodeProcess) {
