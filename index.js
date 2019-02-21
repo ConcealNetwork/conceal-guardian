@@ -5,6 +5,7 @@
 'use strict'
 
 const child_process = require('child_process');
+const vsprintf = require('sprintf-js').vsprintf;
 const readline = require('readline');
 const appRoot = require('app-root-path');
 const request = require('request');
