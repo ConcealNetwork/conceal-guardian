@@ -42,7 +42,7 @@ const RpcCommunicator = function(configOpts, errorCallback) {
         } else {
           var duration = moment.duration(moment().diff(lastTS));
 
-          if (duration.asMinutes() > configOpts.restart.maxBlockTime) {
+          if (duration.asMinutes() > (configOpts.restart.maxBlockTime || 1800)) {
             errorCallback("No new block has be seen for more then 30 minutes");
             heightIsOK = false;
           }
@@ -76,6 +76,7 @@ const NodeGuard = function () {
   // set the daemon path and start the node process
   const daemonPath = path.join(rootPath, 'conceald');
   var configOpts = JSON.parse(fs.readFileSync(path.join(rootPath, 'config.json'), 'utf8'))
+  var lastErrorTime = moment(0);
   var starupTime = moment();
   var initialized = false;
   var nodeProcess = null;
@@ -126,15 +127,29 @@ const NodeGuard = function () {
       });    
     }
 
-    // start the daemon again
-    startDaemonProcess();
+    // get the duration between this and the last error
+    var retryInterval = (configOpts.restart.startAgainAfter || 300) * 1000;
+    var duration = moment.duration(moment().diff(lastErrorTime));
+
+    // check if at least min time passed between this error and the last one
+    if (duration.asSeconds() > (configOpts.restart.minTimeBetweenErrors || 30)) {
+      lastErrorTime = moment();
+      // start the daemon again
+      startDaemonProcess();
+    } else {
+      fs.appendFile(path.join(userDataDir, 'errorlog.txt'), "Consecutive errors are to close to each other, trying again later\n", function (err) {});
+      setTimeout(() => {
+        // start the daemon again
+        startDaemonProcess();
+      }, retryInterval);  
+    }
   }
 
   function checkIfInitialized() {
     if (!initialized) {
       var duration = moment.duration(moment().diff(starupTime));
 
-      if (duration.asMinutes() > configOpts.restart.maxInitTime) {
+      if (duration.asMinutes() > (configOpts.restart.maxInitTime || 600)) {
         restartDaemonProcess("Initialization is taking to long, restarting", true);
       } else {
         setTimeout(() => {
