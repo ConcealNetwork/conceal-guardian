@@ -30,7 +30,6 @@ Before doing that however its wise to check the **config.json** and set the corr
 	},
 	"notify": {
 		"url": "URL to your Discord WebHook"
-
 	},
 	"restart": {
 		"errorForgetTime": 600,
