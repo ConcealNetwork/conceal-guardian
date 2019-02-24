@@ -21,7 +21,7 @@ const RpcCommunicator = function(configOpts, errorCallback) {
   var CCXApi = new CCX('http://127.0.0.1', '3333', configOpts.node.port);
   var IsRunning = false;
   var lastHeight = 0;
-  var version = 0;
+  var version = '';
   var lastTS = moment();
 
   this.stop = function() {
@@ -32,7 +32,7 @@ const RpcCommunicator = function(configOpts, errorCallback) {
     return version;
   }
 
-  this.lastHeight = function() {
+  this.getLastHeight = function() {
     return lastHeight;
   }
 
@@ -230,8 +230,8 @@ const NodeGuard = function () {
             name: configOpts.node.name || os.hostname(),
             errors: errorCount,
             startTime: starupTime,
-            blockHeight: RpcComms ? RpcComms.lastHeight() : '',
-            nodeVersion: RpcComms ? RpcComms.getVersion() : 0
+            blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
+            nodeVersion: RpcComms ? RpcComms.getVersion() : ''
           }
         }
     
