@@ -11,6 +11,7 @@ const appRoot = require('app-root-path');
 const request = require('request');
 const moment = require('moment');
 const path = require('path');
+const http = require('http');
 const CCX = require('conceal-js');
 const fs = require('fs');
 const os = require('os');
@@ -20,10 +21,15 @@ const RpcCommunicator = function(configOpts, errorCallback) {
   var CCXApi = new CCX('http://127.0.0.1', '3333', configOpts.node.port);
   var IsRunning = false;
   var lastHeight = 0;
+  var version = 'N/A';
   var lastTS = moment();
 
   this.stop = function() {
     IsRunning = false;
+  }
+
+  this.getVersion = function() {
+    return version;
   }
 
   this.start = function() {
@@ -35,6 +41,7 @@ const RpcCommunicator = function(configOpts, errorCallback) {
     if (IsRunning) {
       CCXApi.info().then((data) => { 
         var heightIsOK = true;
+        version = data.version;
 
         if (lastHeight != data.height) {
           lastHeight = data.height;
@@ -148,7 +155,7 @@ const NodeGuard = function () {
     setTimeout(() => {
       errorCount = errorCount - 1;
     }, (configOpts.restart.errorForgetTime || 600) * 1000);  
-}
+  }
 
   function checkIfInitialized() {
     if (!initialized) {
@@ -185,8 +192,8 @@ const NodeGuard = function () {
       const errorStream = readline.createInterface({
         input: nodeProcess.stderr
       });
-            
-      dataStream.on('line', (line) => {
+         
+      function processSingleLine(line) {
         // core is initialized, we can start the queries
         if (line.indexOf("Core initialized OK") > -1) {
           initialized = true;
@@ -194,21 +201,49 @@ const NodeGuard = function () {
           RpcComms = new RpcCommunicator(configOpts, errorCallback);
           RpcComms.start();
         }
+      }
+
+      dataStream.on('line', (line) => {
+        processSingleLine(line);
       });
 
       errorStream.on('line', (line) => {
-        // core is initialized, we can start the queries
-        if (line.indexOf("Core initialized OK") > -1) {
-          initialized = true;
-
-          RpcComms = new RpcCommunicator(configOpts, errorCallback);
-          RpcComms.start();
-        }
+        processSingleLine(line);
       });
 
       // start the initilize checking
       checkIfInitialized();      
     }
+  }
+
+  //create a server object if required
+  if ((configOpts.api) && (configOpts.api.port)) {
+    http.createServer(function (req, res) {
+      if (req.url.toUpperCase() == '/GETINFO')
+      {
+        var statusResponse = {
+          status: {
+            errors: errorCount,
+            startTime: starupTime,
+            nodeVersion: RpcComms ? RpcComms.getVersion() : 'N/A'
+          }
+        }
+    
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'X-Powered-By':'nodejs'
+        });
+    
+        // send the response payload
+        res.write(JSON.stringify(statusResponse));
+      } else {
+        res.writeHead(403);
+      }
+  
+      // finish
+      res.end();  
+    }).listen(configOpts.api.port);  
   }
 
   // start the process

@@ -13,5 +13,8 @@
 		"maxCloseErrors": 3,
 		"maxBlockTime": 1800,
 		"maxInitTime": 600
-	}	
+	},
+	"api": {
+		"port": 8080
+	}
 }

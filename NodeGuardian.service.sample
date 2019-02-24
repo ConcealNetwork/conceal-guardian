@@ -1,0 +1,14 @@
+[Unit]
+Description=NodeGuardian
+
+[Service]
+Type=simple
+# Another Type option: forking
+User=nodeguard
+WorkingDirectory=/usr/bin
+ExecStart=/usr/bin/node /path/to/guardian/index.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
