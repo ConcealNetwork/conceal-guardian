@@ -29,7 +29,8 @@ Before doing that however its wise to check the **config.json** and set the corr
 		"name": "TestNode"
 	},
 	"notify": {
-		"url": "https://discordapp.com/api/webhooks/548045737611755535/DKWtR-TVNttAez9rK5iH-v-bETlBd4GuF2FnRl8rWqz7x0Sw678YLKq5JT5_5uZSpeJj"
+		"url": "URL to your Discord WebHook"
+
 	},
 	"restart": {
 		"errorForgetTime": 600,
