@@ -60,13 +60,12 @@ WantedBy=multi-user.target
 
 ```
 
-Copy **EtherSync.service.sample** to **/etc/systemd/system/EtherSync.service** and edit it approprietly.
+Copy **NodeGuardian.service.sample** to **/etc/systemd/system/NodeGuardian.service** and edit it approprietly.
 
 Now you can start it or stop it with:
 
-- **start**: sudo systemctl start EtherSync
-- **stop**: sudo systemctl stop EtherSync
-- **print log**: journalctl -e -u EtherSync.service
+- **start**: sudo systemctl start NodeGuardian
+- **stop**: sudo systemctl stop NodeGuardian
+- **status**: sudo systemctl status NodeGuardian
+- **print log**: journalctl -e -u NodeGuardian.service
 - **reload conf**: systemctl daemon-reload
-
-Not that if you run your own geth RPC you have to have it running and fully synced
