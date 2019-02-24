@@ -35,8 +35,11 @@ Before doing that however its wise to check the **config.json** and set the corr
 		"errorForgetTime": 600,
 		"maxCloseErrors": 3,
 		"maxBlockTime": 1800,
-		"maxInitTime": 600
-	}	
+		"maxInitTime": 600	
+	},
+	"api": {
+		"port": 8080
+	}
 }
 ```
 
@@ -54,6 +57,8 @@ The explanation of config options:
   * maxCloseErrors: Maximum number of errors. After that the guardian stops as there is a serious issue with the daemon.
   * maxBlockTime: Maximum time in seconds between block number increase. If afrer this time the block is still the same its considered an error.
   * maxInitTime: Maximum time in secords in which the node should be initialized.
+* **api**
+  * port: port of the api on which to listen. If not specified the guardian will not listen for incoming requests
   
 To run as a service use **systemctl**
 
@@ -84,3 +89,25 @@ Now you can start it or stop it with:
 - **status**: sudo systemctl status NodeGuardian
 - **print log**: journalctl -e -u NodeGuardian.service
 - **reload conf**: systemctl daemon-reload
+
+## 3. API
+
+The Guardian can have and api that listens for incoming requests and returns some info about the node. The api only has one handler:
+
+* /getInfo
+
+The result is for example: 
+
+```
+{
+   "status":{
+      "name":"TestNode",
+      "errors":0,
+      "startTime":"2019-02-24T16:34:53.636Z",
+      "blockHeight":188023,
+      "nodeVersion":"5.2.1"
+   }
+}
+```
+
+
