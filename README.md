@@ -92,9 +92,9 @@ Now you can start it or stop it with:
 
 ## 3. API
 
-The Guardian can have and api that listens for incoming requests and returns some info about the node. The api only has one handler:
+The Guardian can have an api that listens for incoming requests and returns some info about the node. The api only has one handler (all other request are considered invalid and return 403):
 
-* /getInfo
+* getInfo
 
 The result is for example: 
 
