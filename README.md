@@ -44,16 +44,16 @@ To run as a service use **systemctl**
 
 ```
 [Unit]
-Description=EtherSync
+Description=NodeGuardian
 
 [Service]
 Type=simple
 # Another Type option: forking
-User=ethersync
+User=nodeguard
 WorkingDirectory=/usr/bin
-ExecStart=/usr/bin/EtherSync
-Restart=on-failure
-# Other Restart options: or always, on-abort, etc
+ExecStart=/usr/bin/node /path/to/guardian/index.js
+Restart=always
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
