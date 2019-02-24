@@ -40,6 +40,21 @@ Before doing that however its wise to check the **config.json** and set the corr
 }
 ```
 
+The explanation of config options:
+
+* **node**
+  * args: The arguments that get appended to the monitored process.
+  * path: The path of the process. If omited it uses the same path where the guardian is located
+  * port: The port on which conceald is running
+  * name: Name of the node. If omited it uses the hostname.
+* **notify**
+  * url: the ulr of the Discord web hook, where the error reports are send.
+* **restart**
+  * errorForgetTime: The time in seconds after which the error is forgoten and error count decreased by 1.
+  * maxCloseErrors: Maximum number of errors. After that the guardian stops as there is a serious issue with the daemon.
+  * maxBlockTime: Maximum time in seconds between block number increase. If afrer this time the block is still the same its considered an error.
+  * maxInitTime: Maximum time in secords in which the node should be initialized.
+  
 To run as a service use **systemctl**
 
 ```
