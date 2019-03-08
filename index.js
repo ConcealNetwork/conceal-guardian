@@ -128,7 +128,7 @@ const NodeGuard = function () {
     logEntry.push(msgText);
 
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join('\t') + "\n", function (err) {});
+    fs.appendFileSync(path.join(userDataDir, "debug.log"), logEntry.join('\t') + "\n", function (err) {});
 
     // send notification if specified in the config
     if (sendNotification && configOpts.notify.url) {
@@ -162,7 +162,9 @@ const NodeGuard = function () {
     // check if we have crossed the maximum error number in short period
     if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
       logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
-      process.exit(0);
+      setTimeout(() => {
+        process.exit(0);
+      }, 3000);
     } else {
       startDaemonProcess();
     }
@@ -192,7 +194,9 @@ const NodeGuard = function () {
 
     if (!nodeProcess) {
       logMessage("Failed to start the process instance. Stopping.", "error", false);
-      process.exit(0);
+      setTimeout(() => {
+        process.exit(0);
+      }, 3000);
     } else {
       nodeProcess.on("error", function (err) {
         restartDaemonProcess("Error on starting the node process", false);
@@ -270,7 +274,6 @@ const NodeGuard = function () {
 };
 
 process.on("exit", function () {
-  logMessage("Stoping the guardian", "info", false);
   guardInstance.stop();
 });
 
