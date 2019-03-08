@@ -2,48 +2,48 @@
 //
 // Please see the included LICENSE file for more information.
 
-'use strict'
+"use strict";
 
-const child_process = require('child_process');
-const vsprintf = require('sprintf-js').vsprintf;
-const readline = require('readline');
-const appRoot = require('app-root-path');
-const request = require('request');
-const moment = require('moment');
-const path = require('path');
-const http = require('http');
-const CCX = require('conceal-js');
-const fs = require('fs');
-const os = require('os');
+const child_process = require("child_process");
+const vsprintf = require("sprintf-js").vsprintf;
+const readline = require("readline");
+const appRoot = require("app-root-path");
+const request = require("request");
+const moment = require("moment");
+const path = require("path");
+const http = require("http");
+const CCX = require("conceal-js");
+const fs = require("fs");
+const os = require("os");
 
-const RpcCommunicator = function(configOpts, errorCallback) {
+const RpcCommunicator = function (configOpts, errorCallback) {
   // create the CCX api interface object
-  var CCXApi = new CCX('http://127.0.0.1', '3333', configOpts.node.port);
+  var CCXApi = new CCX("http://127.0.0.1", "3333", configOpts.node.port);
   var IsRunning = false;
   var lastHeight = 0;
-  var version = '';
+  var version = "";
   var lastTS = moment();
 
-  this.stop = function() {
+  this.stop = function () {
     IsRunning = false;
-  }
+  };
 
-  this.getVersion = function() {
+  this.getVersion = function () {
     return version;
-  }
+  };
 
-  this.getLastHeight = function() {
+  this.getLastHeight = function () {
     return lastHeight;
-  }
+  };
 
-  this.start = function() {
+  this.start = function () {
     IsRunning = true;
     checkAliveAndWell();
-  }
+  };
 
   function checkAliveAndWell() {
     if (IsRunning) {
-      CCXApi.info().then((data) => { 
+      CCXApi.info().then(data => {
         var heightIsOK = true;
         version = data.version;
 
@@ -58,91 +58,102 @@ const RpcCommunicator = function(configOpts, errorCallback) {
             heightIsOK = false;
           }
         }
-  
+
         if (heightIsOK) {
           if (data.status != "OK") {
             errorCallback("Status is: " + data.status);
           } else {
             setTimeout(() => {
               checkAliveAndWell();
-            }, 5000);  
-          }  
+            }, 5000);
+          }
         }
-      }).catch((err) => { 
+      }).catch(err => {
         errorCallback(err);
       });
-    }  
+    }
   }
-}
+};
 
 const NodeGuard = function () {
   var rootPath = null;
-  
-  if (appRoot.path.indexOf('app.asar') > -1) {
+
+  if (appRoot.path.indexOf("app.asar") > -1) {
     rootPath = path.dirname(appRoot.path);
   } else {
     rootPath = appRoot.path;
   }
 
   // set the daemon path and start the node process
-  const daemonPath = path.join(rootPath, 'conceald');
-  var configOpts = JSON.parse(fs.readFileSync(path.join(rootPath, 'config.json'), 'utf8'))
+  const daemonPath = path.join(rootPath, "conceald");
+  var configOpts = JSON.parse(fs.readFileSync(path.join(rootPath, "config.json"), "utf8"));
   var starupTime = moment();
   var errorCount = 0;
   var initialized = false;
   var nodeProcess = null;
   var RpcComms = null;
 
-  this.stop = function() {
+  this.stop = function () {
     if (RpcComms) {
       RpcComms.stop();
-      RpcComms = null;  
+      RpcComms = null;
     }
 
     if (nodeProcess) {
-      nodeProcess.kill('SIGTERM');
+      nodeProcess.kill("SIGTERM");
     }
-  }
+  };
 
   function errorCallback(errorData) {
     restartDaemonProcess(errorData, true);
   }
 
   /***************************************************************
-        log the error to text file and send it to Discord
-  ***************************************************************/
-  function logError(errorMsg, sendNotification) {
-    var userDataDir = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preferences' : process.env.HOME + "/.local/share");
+          log the error to text file and send it to Discord
+    ***************************************************************/
+  function logMessage(msgText, msgType, sendNotification) {
+    var userDataDir = process.env.APPDATA || (
+      process.platform == "darwin"
+      ? process.env.HOME + "Library/Preferences"
+      : process.env.HOME + "/.local/share");
     userDataDir = path.join(userDataDir, "ConcealNodeGuard");
+    var logEntry = [];
 
     if (!fs.existsSync(userDataDir)) {
-      fs.mkdirSync(userDataDir); 
-    }   
+      fs.mkdirSync(userDataDir);
+    }
+
+    logEntry.push(moment().format('YYYY-MM-DD hh:mm:ss'));
+    logEntry.push(msgType);
+    logEntry.push(msgText);
 
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(userDataDir, 'errorlog.txt'), errorMsg + "\n", function (err) {});
+    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join('\t') + "\n", function (err) {});
 
     // send notification if specified in the config
-    if ((sendNotification) && (configOpts.notify.url)) {
+    if (sendNotification && configOpts.notify.url) {
       var hookOptions = {
         uri: configOpts.notify.url,
-        method: 'POST',
+        method: "POST",
         json: {
-          "content": vsprintf('Node **%s** reported an error -> %s', [configOpts.node.name || os.hostname(), errorMsg + "\n"])
+          content: vsprintf("Node **%s** reported an error -> %s", [
+            configOpts.node.name || os.hostname(),
+            msgText + "\n"
+          ])
         }
-      }
-    
+      };
+
       request(hookOptions, function (error, response, data) {
         // for now its fire and forget, no matter if error occurs
-      });    
+      });
     }
   }
 
   /***************************************************************
-        restarts the node if an error occurs automatically
-  ***************************************************************/
+          restarts the node if an error occurs automatically
+    ***************************************************************/
   function restartDaemonProcess(errorData, sendNotification) {
-    logError(errorData, sendNotification);
+    logMessage(errorData, "error", sendNotification);
 
     // increase error count and stop instance
     errorCount = errorCount + 1;
@@ -150,7 +161,7 @@ const NodeGuard = function () {
 
     // check if we have crossed the maximum error number in short period
     if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
-      logError("To many errors in a short ammount of time. Stopping.\n", true);
+      logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
       process.exit(0);
     } else {
       startDaemonProcess();
@@ -158,7 +169,7 @@ const NodeGuard = function () {
 
     setTimeout(() => {
       errorCount = errorCount - 1;
-    }, (configOpts.restart.errorForgetTime || 600) * 1000);  
+    }, (configOpts.restart.errorForgetTime || 600) * 1000);
   }
 
   function checkIfInitialized() {
@@ -170,36 +181,34 @@ const NodeGuard = function () {
       } else {
         setTimeout(() => {
           checkIfInitialized();
-        }, 5000);  
+        }, 5000);
       }
     }
   }
 
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(configOpts.node.path || daemonPath, configOpts.node.args || []);
+    logMessage("Started the daemon process", "info", false);
 
     if (!nodeProcess) {
-      logError("Failed to start the process instance. Stopping.\n", false);
+      logMessage("Failed to start the process instance. Stopping.", "error", false);
       process.exit(0);
     } else {
-      nodeProcess.on('error', function(err) {      
+      nodeProcess.on("error", function (err) {
         restartDaemonProcess("Error on starting the node process", false);
       });
-      nodeProcess.on('close', function(err) {      
+      nodeProcess.on("close", function (err) {
         restartDaemonProcess("Node process closed with: " + err, true);
       });
-  
-      const dataStream = readline.createInterface({
-        input: nodeProcess.stdout
-      });
-            
-      const errorStream = readline.createInterface({
-        input: nodeProcess.stderr
-      });
-         
+
+      const dataStream = readline.createInterface({input: nodeProcess.stdout});
+
+      const errorStream = readline.createInterface({input: nodeProcess.stderr});
+
       function processSingleLine(line) {
         // core is initialized, we can start the queries
         if (line.indexOf("Core initialized OK") > -1) {
+          logMessage("Core is initialized, starting the periodic checking...", "info", false);
           initialized = true;
 
           RpcComms = new RpcCommunicator(configOpts, errorCallback);
@@ -207,56 +216,61 @@ const NodeGuard = function () {
         }
       }
 
-      dataStream.on('line', (line) => {
+      dataStream.on("line", line => {
         processSingleLine(line);
       });
 
-      errorStream.on('line', (line) => {
+      errorStream.on("line", line => {
         processSingleLine(line);
       });
 
       // start the initilize checking
-      checkIfInitialized();      
+      checkIfInitialized();
     }
   }
 
   //create a server object if required
-  if ((configOpts.api) && (configOpts.api.port)) {
+  if (configOpts.api && configOpts.api.port) {
     http.createServer(function (req, res) {
-      if (req.url.toUpperCase() == '/GETINFO')
-      {
+      if (req.url.toUpperCase() == "/GETINFO") {
         var statusResponse = {
           status: {
             name: configOpts.node.name || os.hostname(),
             errors: errorCount,
             startTime: starupTime,
-            blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
-            nodeVersion: RpcComms ? RpcComms.getVersion() : ''
+            blockHeight: RpcComms
+              ? RpcComms.getLastHeight()
+              : 0,
+            nodeVersion: RpcComms
+              ? RpcComms.getVersion()
+              : ""
           }
-        }
-    
+        };
+
         res.writeHead(200, {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'X-Powered-By':'nodejs'
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "X-Powered-By": "nodejs"
         });
-    
+
         // send the response payload
         res.write(JSON.stringify(statusResponse));
       } else {
         res.writeHead(403);
       }
-  
+
       // finish
-      res.end();  
-    }).listen(configOpts.api.port);  
+      res.end();
+    }).listen(configOpts.api.port);
   }
 
   // start the process
+  logMessage("Starting the guardian", "info", false);
   startDaemonProcess();
-}
+};
 
-process.on('exit', function() {
+process.on("exit", function () {
+  logMessage("Stoping the guardian", "info", false);
   guardInstance.stop();
 });
 
