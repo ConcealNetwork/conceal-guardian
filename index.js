@@ -128,7 +128,7 @@ const NodeGuard = function () {
     logEntry.push(msgText);
 
     // write every error to a log file for possible later analization
-    fs.appendFileSync(path.join(userDataDir, "debug.log"), logEntry.join('\t') + "\n", function (err) {});
+    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join('\t') + "\n", function (err) {});
 
     // send notification if specified in the config
     if (sendNotification && configOpts.notify.url) {
