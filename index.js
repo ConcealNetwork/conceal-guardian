@@ -216,10 +216,11 @@ const NodeGuard = function () {
   }
 
   function setNotifyPoolInterval() {
+    if ((configOpts.notify) && (configOpts.notify.url)) {
       // send the info about node to the pool
       var PoolInterval = setInterval(function() {
         var packetData = {
-          uri: 'http://localhost:3000/pool/update',
+          uri: configOpts.notify.url,
           method: "POST",
           json: {
             id: nodeUniqueId,
@@ -241,7 +242,8 @@ const NodeGuard = function () {
           // for now its fire and forget, no matter if error occurs
         });
           
-      }, 30000);    
+      }, (configOpts.notify.url || 30) * 1000);    
+    }
   }
 
   function startDaemonProcess() {

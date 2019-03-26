@@ -16,5 +16,9 @@
 	},
 	"api": {
 		"port": 8080
+	},
+	"notify": {
+		"url": "http://localhost:3000/pool/update",
+		"interval": 30
 	}
 }
