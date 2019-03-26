@@ -314,7 +314,7 @@ const NodeGuard = function () {
         res.writeHead(200, {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
-          "X-Powered-By": "nodejs"
+          "X-Powered-By": "ConcealNodeGuard"
         });
 
         // send the response payload
