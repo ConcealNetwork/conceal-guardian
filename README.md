@@ -1,4 +1,4 @@
-# ConcealNodeGuard
+# Conceal Node Guardian
 
 ## 1. About
 
