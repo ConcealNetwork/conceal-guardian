@@ -10,6 +10,7 @@ const readline = require("readline");
 const appRoot = require("app-root-path");
 const request = require("request");
 const moment = require("moment");
+const UUID = require("pure-uuid");
 const path = require("path");
 const http = require("http");
 const CCX = require("conceal-js");
@@ -84,11 +85,40 @@ const NodeGuard = function () {
     rootPath = appRoot.path;
   }
 
+  function ensureUserDataDir() {
+    var userDataDir = process.env.APPDATA || (
+      process.platform == "darwin"
+      ? process.env.HOME + "Library/Preferences"
+      : process.env.HOME + "/.local/share");
+    userDataDir = path.join(userDataDir, "ConcealNodeGuard");
+
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir);
+    }
+
+    return userDataDir;
+  }
+
+  function ensureNodeUniqueId() {
+    var nodeDataFile = path.join(ensureUserDataDir(), "nodedata.json");
+
+    if (fs.existsSync(nodeDataFile)) {
+      var nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
+      return nodeData.id;
+    } else {
+      var nodeData = { id: new UUID(4).format() }
+      fs.writeFileSync( nodeDataFile, JSON.stringify(nodeData), "utf8");
+      return nodeData.id;
+    }
+  }
+
   // set the daemon path and start the node process
   const daemonPath = path.join(rootPath, "conceald");
   var configOpts = JSON.parse(fs.readFileSync(path.join(rootPath, "config.json"), "utf8"));
+  var nodeUniqueId = ensureNodeUniqueId();
   var starupTime = moment();
   var errorCount = 0;
+  var PoolInterval = null;
   var initialized = false;
   var nodeProcess = null;
   var RpcComms = null;
@@ -97,6 +127,11 @@ const NodeGuard = function () {
     if (RpcComms) {
       RpcComms.stop();
       RpcComms = null;
+
+      if (PoolInterval) {
+        clearInterval(PoolInterval);
+        PoolInterval = null;  
+      }
     }
 
     if (nodeProcess) {
@@ -110,18 +145,10 @@ const NodeGuard = function () {
 
   /***************************************************************
           log the error to text file and send it to Discord
-    ***************************************************************/
+  ***************************************************************/
   function logMessage(msgText, msgType, sendNotification) {
-    var userDataDir = process.env.APPDATA || (
-      process.platform == "darwin"
-      ? process.env.HOME + "Library/Preferences"
-      : process.env.HOME + "/.local/share");
-    userDataDir = path.join(userDataDir, "ConcealNodeGuard");
+    var userDataDir = ensureUserDataDir();
     var logEntry = [];
-
-    if (!fs.existsSync(userDataDir)) {
-      fs.mkdirSync(userDataDir);
-    }
 
     logEntry.push(moment().format('YYYY-MM-DD hh:mm:ss'));
     logEntry.push(msgType);
@@ -188,6 +215,35 @@ const NodeGuard = function () {
     }
   }
 
+  function setNotifyPoolInterval() {
+      // send the info about node to the pool
+      var PoolInterval = setInterval(function() {
+        var packetData = {
+          uri: 'http://localhost:3000/pool/update',
+          method: "POST",
+          json: {
+            id: nodeUniqueId,
+            status: {
+              name: configOpts.node.name || os.hostname(),
+              errors: errorCount,
+              startTime: starupTime,
+              blockHeight: RpcComms
+                ? RpcComms.getLastHeight()
+                : 0,
+              nodeVersion: RpcComms
+                ? RpcComms.getVersion()
+                : ""
+            }
+          }
+        };
+  
+        request(packetData, function (error, response, data) {
+          // for now its fire and forget, no matter if error occurs
+        });
+          
+      }, 30000);    
+  }
+
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(configOpts.node.path || daemonPath, configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
@@ -228,6 +284,8 @@ const NodeGuard = function () {
         processSingleLine(line);
       });
 
+      // start notifying the pool
+      setNotifyPoolInterval();
       // start the initilize checking
       checkIfInitialized();
     }
@@ -266,7 +324,7 @@ const NodeGuard = function () {
       // finish
       res.end();
     }).listen(configOpts.api.port);
-  }
+  }  
 
   // start the process
   logMessage("Starting the guardian", "info", false);
