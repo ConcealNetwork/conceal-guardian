@@ -242,7 +242,7 @@ const NodeGuard = function () {
           // for now its fire and forget, no matter if error occurs
         });
           
-      }, (configOpts.notify.url || 30) * 1000);    
+      }, (configOpts.notify.interval || 30) * 1000);    
     }
   }
 
