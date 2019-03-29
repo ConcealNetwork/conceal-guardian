@@ -77,13 +77,7 @@ const RpcCommunicator = function (configOpts, errorCallback) {
 };
 
 const NodeGuard = function () {
-  var rootPath = null;
-
-  if (appRoot.path.indexOf("app.asar") > -1) {
-    rootPath = path.dirname(appRoot.path);
-  } else {
-    rootPath = appRoot.path;
-  }
+  var rootPath = process.cwd();
 
   function ensureUserDataDir() {
     var userDataDir = process.env.APPDATA || (
