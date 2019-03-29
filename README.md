@@ -59,6 +59,9 @@ The explanation of config options:
   * maxInitTime: Maximum time in secords in which the node should be initialized.
 * **api**
   * port: port of the api on which to listen. If not specified the guardian will not listen for incoming requests
+* **notify**
+  * url: the url of the Conceal Guardian Pool. The Guardian is sending its data to pool for public listing
+  * interval: the interval in seconds in which the data is being sent
   
 To run as a service use **systemctl**
 
