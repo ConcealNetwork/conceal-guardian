@@ -7,74 +7,14 @@
 const child_process = require("child_process");
 const vsprintf = require("sprintf-js").vsprintf;
 const readline = require("readline");
-const appRoot = require("app-root-path");
 const request = require("request");
 const moment = require("moment");
+const comms = require("./comms.js")
 const UUID = require("pure-uuid");
 const path = require("path");
 const http = require("http");
-const CCX = require("conceal-js");
 const fs = require("fs");
 const os = require("os");
-
-const RpcCommunicator = function (configOpts, errorCallback) {
-  // create the CCX api interface object
-  var CCXApi = new CCX("http://127.0.0.1", "3333", configOpts.node.port);
-  var IsRunning = false;
-  var lastHeight = 0;
-  var version = "";
-  var lastTS = moment();
-
-  this.stop = function () {
-    IsRunning = false;
-  };
-
-  this.getVersion = function () {
-    return version;
-  };
-
-  this.getLastHeight = function () {
-    return lastHeight;
-  };
-
-  this.start = function () {
-    IsRunning = true;
-    checkAliveAndWell();
-  };
-
-  function checkAliveAndWell() {
-    if (IsRunning) {
-      CCXApi.info().then(data => {
-        var heightIsOK = true;
-        version = data.version;
-
-        if (lastHeight != data.height) {
-          lastHeight = data.height;
-          lastTS = moment();
-        } else {
-          var duration = moment.duration(moment().diff(lastTS));
-
-          if (duration.asSeconds() > (configOpts.restart.maxBlockTime || 1800)) {
-            errorCallback("No new block has be seen for more then 30 minutes");
-            heightIsOK = false;
-          }
-        }
-
-        if (heightIsOK) {
-          if (data.status != "OK") {
-            errorCallback("Status is: " + data.status);
-          } else {
-            setTimeout(() => {
-              checkAliveAndWell();
-            }, 5000);
-          }
-        }
-      }).catch(err => {
-        errorCallback(err);
-      });
-    }
-  }
-};
 
 const NodeGuard = function () {
   var rootPath = process.cwd();
@@ -269,7 +209,7 @@ const NodeGuard = function () {
           logMessage("Core is initialized, starting the periodic checking...", "info", false);
           initialized = true;
 
-          RpcComms = new RpcCommunicator(configOpts, errorCallback);
+          RpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
           RpcComms.start();
         }
       }
