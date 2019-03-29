@@ -4,3 +4,6 @@
 /conceald.log
 /package-lock.json
 /config.json
+/bin/linux/guardian
+/bin/macos/guardian
+/bin/win/guardian.exe
