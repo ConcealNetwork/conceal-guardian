@@ -1,3 +1,7 @@
+// Copyright (c) 2019, Taegus Cromis, The Conceal Developers
+//
+// Please see the included LICENSE file for more information.
+
 "use strict";
 
 const moment = require("moment");

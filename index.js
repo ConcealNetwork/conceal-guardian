@@ -5,11 +5,13 @@
 "use strict";
 
 const child_process = require("child_process");
+const apiServer = require("./apiServer.js");
 const vsprintf = require("sprintf-js").vsprintf;
 const readline = require("readline");
 const request = require("request");
 const moment = require("moment");
 const comms = require("./comms.js")
+const utils = require("./utils.js")
 const UUID = require("pure-uuid");
 const path = require("path");
 const http = require("http");
@@ -19,37 +21,10 @@ const os = require("os");
 const NodeGuard = function () {
   var rootPath = process.cwd();
 
-  function ensureUserDataDir() {
-    var userDataDir = process.env.APPDATA || (
-      process.platform == "darwin"
-      ? process.env.HOME + "Library/Preferences"
-      : process.env.HOME + "/.local/share");
-    userDataDir = path.join(userDataDir, "ConcealNodeGuard");
-
-    if (!fs.existsSync(userDataDir)) {
-      fs.mkdirSync(userDataDir);
-    }
-
-    return userDataDir;
-  }
-
-  function ensureNodeUniqueId() {
-    var nodeDataFile = path.join(ensureUserDataDir(), "nodedata.json");
-
-    if (fs.existsSync(nodeDataFile)) {
-      var nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
-      return nodeData.id;
-    } else {
-      var nodeData = { id: new UUID(4).format() }
-      fs.writeFileSync( nodeDataFile, JSON.stringify(nodeData), "utf8");
-      return nodeData.id;
-    }
-  }
-
   // set the daemon path and start the node process
   const daemonPath = path.join(rootPath, "conceald");
   var configOpts = JSON.parse(fs.readFileSync(path.join(rootPath, "config.json"), "utf8"));
-  var nodeUniqueId = ensureNodeUniqueId();
+  var nodeUniqueId = utils.ensureNodeUniqueId();
   var starupTime = moment();
   var errorCount = 0;
   var PoolInterval = null;
@@ -81,7 +56,7 @@ const NodeGuard = function () {
           log the error to text file and send it to Discord
   ***************************************************************/
   function logMessage(msgText, msgType, sendNotification) {
-    var userDataDir = ensureUserDataDir();
+    var userDataDir = utils.ensureUserDataDir();
     var logEntry = [];
 
     logEntry.push(moment().format('YYYY-MM-DD hh:mm:ss'));
@@ -231,37 +206,17 @@ const NodeGuard = function () {
 
   //create a server object if required
   if (configOpts.api && configOpts.api.port) {
-    http.createServer(function (req, res) {
-      if (req.url.toUpperCase() == "/GETINFO") {
-        var statusResponse = {
-          status: {
-            name: configOpts.node.name || os.hostname(),
-            errors: errorCount,
-            startTime: starupTime,
-            blockHeight: RpcComms
-              ? RpcComms.getLastHeight()
-              : 0,
-            nodeVersion: RpcComms
-              ? RpcComms.getVersion()
-              : ""
-          }
-        };
-
-        res.writeHead(200, {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "X-Powered-By": "ConcealNodeGuard"
-        });
-
-        // send the response payload
-        res.write(JSON.stringify(statusResponse));
-      } else {
-        res.writeHead(403);
-      }
-
-      // finish
-      res.end();
-    }).listen(configOpts.api.port);
+    apiServer.createServer(configOpts, function() {
+      return {
+        status: {
+          name: configOpts.node.name || os.hostname(),
+          errors: errorCount,
+          startTime: starupTime,
+          blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
+          nodeVersion: RpcComms ? RpcComms.getVersion() : ""
+        }
+      };
+    });
   }  
 
   // start the process
