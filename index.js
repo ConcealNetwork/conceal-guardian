@@ -77,9 +77,9 @@ const NodeGuard = function () {
     restartDaemonProcess(errorData, true);
   }
 
-  /***************************************************************
-                                log the error to text file and send it to Discord
-                        ***************************************************************/
+  //*************************************************************//
+  //       log the error to text file and send it to Discord
+  //*************************************************************//
   function logMessage(msgText, msgType, sendNotification) {
     var userDataDir = utils.ensureUserDataDir();
     var logEntry = [];
@@ -158,6 +158,7 @@ const NodeGuard = function () {
       setInterval(function () {
         var packetData = {
           uri: configOpts.notify.url,
+          strictSSL: false,
           method: "POST",
           json: {
             id: nodeUniqueId,
@@ -180,8 +181,9 @@ const NodeGuard = function () {
           }
         };
 
-        request(packetData, function () {
+        request(packetData, function (err) {
           // for now its fire and forget, no matter if error occurs
+          console.log(err);
         });
       }, (configOpts.notify.interval || 30) * 1000);
     }
