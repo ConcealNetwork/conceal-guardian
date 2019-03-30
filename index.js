@@ -181,9 +181,8 @@ const NodeGuard = function () {
           }
         };
 
-        request(packetData, function (err) {
+        request(packetData, function () {
           // for now its fire and forget, no matter if error occurs
-          console.log(err);
         });
       }, (configOpts.notify.interval || 30) * 1000);
     }
