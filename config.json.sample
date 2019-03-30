@@ -5,7 +5,7 @@
 		"port": 16000,
 		"name": "TestNode"
 	},
-	"notify": {
+	"error": {
 		"url": "put the web hook url in here"
 	},
 	"restart": {
