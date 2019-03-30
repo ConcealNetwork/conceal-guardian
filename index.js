@@ -21,7 +21,8 @@ const fs = require("fs");
 const os = require("os");
 
 const NodeGuard = function () {
-  var rootPath = process.cwd();
+  //var rootPath = process.cwd();
+  var rootPath =  path.dirname(require.main.filename);
 
   // set the daemon path and start the node process
   const daemonPath = path.join(rootPath, "conceald");
