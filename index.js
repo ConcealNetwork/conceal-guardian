@@ -29,9 +29,6 @@ const NodeGuard = function () {
     { name: 'node', alias: 'n', type: String }
   ]);
 
-  // allow self signed certificates for sending
-  process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
-
   const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
   const daemonPath = cmdOptions.node || path.join(rootPath, "conceald");
   const nodeUniqueId = utils.ensureNodeUniqueId();
