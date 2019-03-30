@@ -155,6 +155,7 @@ const NodeGuard = function () {
           method: "POST",
           json: {
             id: nodeUniqueId,
+            os: process.platform,
             status: {
               name: configOpts.node.name || os.hostname(),
               errors: errorCount,
@@ -228,6 +229,8 @@ const NodeGuard = function () {
   if (configOpts.api && configOpts.api.port) {
     apiServer.createServer(configOpts, function() {
       return {
+        id: nodeUniqueId,
+        os: process.platform,
         status: {
           name: configOpts.node.name || os.hostname(),
           errors: errorCount,
