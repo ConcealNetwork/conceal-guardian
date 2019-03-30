@@ -13,7 +13,7 @@ module.exports = {
   ensureUserDataDir: function() {
     var userDataDir = process.env.APPDATA || (
       process.platform === "darwin"
-      ? process.env.HOME + "/Library/Preferences"
+      ? process.env.HOME + "/Library/Application\ Support"
       : process.env.HOME + "/.local/share");
     userDataDir = path.join(userDataDir, "ConcealNodeGuard");
 
