@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "command-line-args": "^5.1.0",
     "conceal-js": "^0.7.2",
     "iplocation": "^6.1.0",
     "moment": "^2.24.0",

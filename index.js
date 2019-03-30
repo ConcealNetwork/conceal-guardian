@@ -4,6 +4,7 @@
 
 "use strict";
 
+const commandLineArgs = require('command-line-args');
 const child_process = require("child_process");
 const iplocation = require("iplocation").default;
 const apiServer = require("./apiServer.js");
@@ -21,13 +22,16 @@ const fs = require("fs");
 const os = require("os");
 
 const NodeGuard = function () {
-  //var rootPath = process.cwd();
-  var rootPath =  path.dirname(require.main.filename);
+  var rootPath = process.cwd();
 
-  // set the daemon path and start the node process
-  const daemonPath = path.join(rootPath, "conceald");
-  var configOpts = JSON.parse(fs.readFileSync(path.join(rootPath, "config.json"), "utf8"));
-  var nodeUniqueId = utils.ensureNodeUniqueId();
+  const cmdOptions = commandLineArgs([
+    { name: 'config', alias: 'c', type: String },
+    { name: 'node', alias: 'n', type: String }
+  ]);
+
+  const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
+  const daemonPath = cmdOptions.node || path.join(rootPath, "conceald");
+  const nodeUniqueId = utils.ensureNodeUniqueId();
   var starupTime = moment();
   var errorCount = 0;
   var PoolInterval = null;
