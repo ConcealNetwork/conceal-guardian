@@ -4,6 +4,7 @@
 
 "use strict";
 
+const UUID = require("pure-uuid");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
