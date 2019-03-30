@@ -39,7 +39,7 @@ module.exports = {
                 var heightIsOK = true;
                 version = data.version;
 
-                if (lastHeight != data.height) {
+                if (lastHeight !== data.height) {
                 lastHeight = data.height;
                 lastTS = moment();
                 } else {
@@ -52,7 +52,7 @@ module.exports = {
                 }
 
                 if (heightIsOK) {
-                if (data.status != "OK") {
+                if (data.status !== "OK") {
                     errorCallback("Status is: " + data.status);
                 } else {
                     setTimeout(() => {
