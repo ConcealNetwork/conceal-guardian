@@ -15,9 +15,7 @@ const request = require("request");
 const moment = require("moment");
 const comms = require("./comms.js")
 const utils = require("./utils.js")
-const UUID = require("pure-uuid");
 const path = require("path");
-const http = require("http");
 const fs = require("fs");
 const os = require("os");
 
@@ -85,7 +83,7 @@ const NodeGuard = function () {
 
 
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join('\t') + "\n", function (err) {});
+    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join('\t') + "\n", function () {});
     console.log(logEntry.join('\t'));
 
     // send notification if specified in the config
@@ -102,7 +100,7 @@ const NodeGuard = function () {
           }
         };
 
-        request(hookOptions, function (error, response, data) {
+        request(hookOptions, function () {
           // for now its fire and forget, no matter if error occurs
         });
       } 
@@ -111,7 +109,7 @@ const NodeGuard = function () {
 
   /***************************************************************
           restarts the node if an error occurs automatically
-    ***************************************************************/
+  ***************************************************************/
   function restartDaemonProcess(errorData, sendNotification) {
     logMessage(errorData, "error", sendNotification);
 
@@ -151,7 +149,7 @@ const NodeGuard = function () {
   function setNotifyPoolInterval() {
     if ((configOpts.notify) && (configOpts.notify.url)) {
       // send the info about node to the pool
-      var PoolInterval = setInterval(function() {
+      setInterval(function() {
         var packetData = {
           uri: configOpts.notify.url,
           method: "POST",
@@ -172,7 +170,7 @@ const NodeGuard = function () {
           }
         };
   
-        request(packetData, function (error, response, data) {
+        request(packetData, function () {
           // for now its fire and forget, no matter if error occurs
         });
           
@@ -180,6 +178,21 @@ const NodeGuard = function () {
     }
   }
 
+
+  /***************************************************************
+         processes a single line from data or error stream
+  ***************************************************************/
+  function processSingleLine(line) {
+    // core is initialized, we can start the queries
+    if (line.indexOf("Core initialized OK") > -1) {
+      logMessage("Core is initialized, starting the periodic checking...", "info", false);
+      initialized = true;
+
+      RpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
+      RpcComms.start();
+    }
+  }
+  
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(configOpts.node.path || daemonPath, configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
@@ -191,7 +204,7 @@ const NodeGuard = function () {
       }, 3000);
     } else {
       nodeProcess.on("error", function (err) {
-        restartDaemonProcess("Error on starting the node process", false);
+        restartDaemonProcess("Error on starting the node process: " + err, false);
       });
       nodeProcess.on("close", function (err) {
         restartDaemonProcess("Node process closed with: " + err, true);
@@ -200,17 +213,6 @@ const NodeGuard = function () {
       const dataStream = readline.createInterface({input: nodeProcess.stdout});
 
       const errorStream = readline.createInterface({input: nodeProcess.stderr});
-
-      function processSingleLine(line) {
-        // core is initialized, we can start the queries
-        if (line.indexOf("Core initialized OK") > -1) {
-          logMessage("Core is initialized, starting the periodic checking...", "info", false);
-          initialized = true;
-
-          RpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
-          RpcComms.start();
-        }
-      }
 
       dataStream.on("line", line => {
         processSingleLine(line);

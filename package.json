@@ -17,5 +17,8 @@
     "pure-uuid": "^1.5.7",
     "request": "^2.88.0",
     "sprintf-js": "^1.1.2"
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0"
   }
 }

@@ -7,13 +7,12 @@
 const UUID = require("pure-uuid");
 const path = require("path");
 const fs = require("fs");
-const os = require("os");
 
 module.exports = {
   ensureUserDataDir: function() {
     var userDataDir = process.env.APPDATA || (
       process.platform === "darwin"
-      ? process.env.HOME + "/Library/Application\ Support"
+      ? process.env.HOME + "/Library/Application Support"
       : process.env.HOME + "/.local/share");
     userDataDir = path.join(userDataDir, "ConcealNodeGuard");
 
@@ -25,12 +24,13 @@ module.exports = {
   },
   ensureNodeUniqueId: function() {
     var nodeDataFile = path.join(this.ensureUserDataDir(), "nodedata.json");
+    var nodeData = null;
 
     if (fs.existsSync(nodeDataFile)) {
-      var nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
+      nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
       return nodeData.id;
     } else {
-      var nodeData = { id: new UUID(4).format() }
+      nodeData = { id: new UUID(4).format() }
       fs.writeFileSync( nodeDataFile, JSON.stringify(nodeData), "utf8");
       return nodeData.id;
     }
