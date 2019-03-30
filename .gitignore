@@ -1,9 +1,11 @@
 /node_modules
-/.gitignore
 /conceald.exe
 /conceald.log
+/conceald
 /package-lock.json
 /config.json
 /bin/linux/guardian
 /bin/macos/guardian
 /bin/win/guardian.exe
+
+.idea
