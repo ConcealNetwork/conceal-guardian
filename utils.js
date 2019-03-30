@@ -9,7 +9,7 @@ const path = require("path");
 const fs = require("fs");
 
 module.exports = {
-  ensureUserDataDir: function() {
+  ensureUserDataDir: function () {
     var userDataDir = process.env.APPDATA || (
       process.platform === "darwin"
       ? process.env.HOME + "/Library/Application Support"
@@ -22,7 +22,7 @@ module.exports = {
 
     return userDataDir;
   },
-  ensureNodeUniqueId: function() {
+  ensureNodeUniqueId: function () {
     var nodeDataFile = path.join(this.ensureUserDataDir(), "nodedata.json");
     var nodeData = null;
 
@@ -30,8 +30,10 @@ module.exports = {
       nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
       return nodeData.id;
     } else {
-      nodeData = { id: new UUID(4).format() }
-      fs.writeFileSync( nodeDataFile, JSON.stringify(nodeData), "utf8");
+      nodeData = {
+        id: new UUID(4).format()
+      };
+      fs.writeFileSync(nodeDataFile, JSON.stringify(nodeData), "utf8");
       return nodeData.id;
     }
   }

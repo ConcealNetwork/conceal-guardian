@@ -4,17 +4,17 @@
 
 "use strict";
 
-const commandLineArgs = require('command-line-args');
+const commandLineArgs = require("command-line-args");
 const child_process = require("child_process");
 const iplocation = require("iplocation").default;
 const apiServer = require("./apiServer.js");
-const publicIp = require('public-ip');
+const publicIp = require("public-ip");
 const vsprintf = require("sprintf-js").vsprintf;
 const readline = require("readline");
 const request = require("request");
 const moment = require("moment");
-const comms = require("./comms.js")
-const utils = require("./utils.js")
+const comms = require("./comms.js");
+const utils = require("./utils.js");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -23,8 +23,15 @@ const NodeGuard = function () {
   var rootPath = process.cwd();
 
   const cmdOptions = commandLineArgs([
-    { name: 'config', alias: 'c', type: String },
-    { name: 'node', alias: 'n', type: String }
+    {
+      name: "config",
+      alias: "c",
+      type: String
+    }, {
+      name: "node",
+      alias: "n",
+      type: String
+    }
   ]);
 
   const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
@@ -42,7 +49,7 @@ const NodeGuard = function () {
   // get GEO data
   (async () => {
     externalIP = await publicIp.v4();
-    
+
     iplocation(externalIP, [], (error, res) => {
       if (!error) {
         locationData = res;
@@ -57,7 +64,7 @@ const NodeGuard = function () {
 
       if (PoolInterval) {
         clearInterval(PoolInterval);
-        PoolInterval = null;  
+        PoolInterval = null;
       }
     }
 
@@ -71,20 +78,19 @@ const NodeGuard = function () {
   }
 
   /***************************************************************
-          log the error to text file and send it to Discord
-  ***************************************************************/
+                                log the error to text file and send it to Discord
+                        ***************************************************************/
   function logMessage(msgText, msgType, sendNotification) {
     var userDataDir = utils.ensureUserDataDir();
     var logEntry = [];
 
-    logEntry.push(moment().format('YYYY-MM-DD hh:mm:ss'));
+    logEntry.push(moment().format("YYYY-MM-DD hh:mm:ss"));
     logEntry.push(msgType);
     logEntry.push(msgText);
 
-
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join('\t') + "\n", function () {});
-    console.log(logEntry.join('\t'));
+    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join("\t") + "\n", function () {});
+    console.log(logEntry.join("\t"));
 
     // send notification if specified in the config
     if (sendNotification && configOpts.error) {
@@ -103,13 +109,13 @@ const NodeGuard = function () {
         request(hookOptions, function () {
           // for now its fire and forget, no matter if error occurs
         });
-      } 
+      }
     }
   }
 
-  /***************************************************************
-          restarts the node if an error occurs automatically
-  ***************************************************************/
+  //*************************************************************//
+  //     restarts the node if an error occurs automatically
+  //*************************************************************//
   function restartDaemonProcess(errorData, sendNotification) {
     logMessage(errorData, "error", sendNotification);
 
@@ -147,9 +153,9 @@ const NodeGuard = function () {
   }
 
   function setNotifyPoolInterval() {
-    if ((configOpts.notify) && (configOpts.notify.url)) {
+    if (configOpts.notify && configOpts.notify.url) {
       // send the info about node to the pool
-      setInterval(function() {
+      setInterval(function () {
         var packetData = {
           uri: configOpts.notify.url,
           method: "POST",
@@ -160,8 +166,12 @@ const NodeGuard = function () {
               name: configOpts.node.name || os.hostname(),
               errors: errorCount,
               startTime: starupTime,
-              blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
-              nodeVersion: RpcComms ? RpcComms.getVersion() : ""
+              blockHeight: RpcComms
+                ? RpcComms.getLastHeight()
+                : 0,
+              nodeVersion: RpcComms
+                ? RpcComms.getVersion()
+                : ""
             },
             location: {
               ip: externalIP,
@@ -169,19 +179,17 @@ const NodeGuard = function () {
             }
           }
         };
-  
+
         request(packetData, function () {
           // for now its fire and forget, no matter if error occurs
         });
-          
-      }, (configOpts.notify.interval || 30) * 1000);    
+      }, (configOpts.notify.interval || 30) * 1000);
     }
   }
 
-
-  /***************************************************************
-         processes a single line from data or error stream
-  ***************************************************************/
+  //*************************************************************//
+  //         processes a single line from data or error stream
+  //*************************************************************//
   function processSingleLine(line) {
     // core is initialized, we can start the queries
     if (line.indexOf("Core initialized OK") > -1) {
@@ -192,7 +200,7 @@ const NodeGuard = function () {
       RpcComms.start();
     }
   }
-  
+
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(configOpts.node.path || daemonPath, configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
@@ -231,7 +239,7 @@ const NodeGuard = function () {
 
   //create a server object if required
   if (configOpts.api && configOpts.api.port) {
-    apiServer.createServer(configOpts, function() {
+    apiServer.createServer(configOpts, function () {
       return {
         id: nodeUniqueId,
         os: process.platform,
@@ -239,8 +247,12 @@ const NodeGuard = function () {
           name: configOpts.node.name || os.hostname(),
           errors: errorCount,
           startTime: starupTime,
-          blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
-          nodeVersion: RpcComms ? RpcComms.getVersion() : ""
+          blockHeight: RpcComms
+            ? RpcComms.getLastHeight()
+            : 0,
+          nodeVersion: RpcComms
+            ? RpcComms.getVersion()
+            : ""
         },
         location: {
           ip: externalIP,
@@ -248,7 +260,7 @@ const NodeGuard = function () {
         }
       };
     });
-  }  
+  }
 
   // start the process
   logMessage("Starting the guardian", "info", false);

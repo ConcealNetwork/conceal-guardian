@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@unibeautify/beautifier-js-beautify": "^0.4.0",
     "command-line-args": "^5.1.0",
     "conceal-js": "^0.7.2",
     "iplocation": "^6.1.0",
@@ -19,6 +20,7 @@
     "sprintf-js": "^1.1.2"
   },
   "devDependencies": {
+    "js-beautify": "^1.9.1",
     "eslint": "^5.16.0"
   }
 }
