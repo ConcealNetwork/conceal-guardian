@@ -28,7 +28,7 @@ Before doing that however its wise to check the **config.json** and set the corr
 		"port": 16000,
 		"name": "TestNode"
 	},
-	"notify": {
+	"error": {
 		"url": "URL to your Discord WebHook"
 	},
 	"restart": {
@@ -39,7 +39,12 @@ Before doing that however its wise to check the **config.json** and set the corr
 	},
 	"api": {
 		"port": 8080
+	},
+	"notify": {
+		"url": "URL to the guardian pool service if you want to register there",
+		"interval": 30
 	}
+	
 }
 ```
 
@@ -50,7 +55,7 @@ The explanation of config options:
   * path: The path of the process. If omited it uses the same path where the guardian is located
   * port: The port on which conceald is running
   * name: Name of the node. If omited it uses the hostname.
-* **notify**
+* **error**
   * url: the ulr of the Discord web hook, where the error reports are send.
 * **restart**
   * errorForgetTime: The time in seconds after which the error is forgoten and error count decreased by 1.
