@@ -5,7 +5,9 @@
 "use strict";
 
 const child_process = require("child_process");
+const iplocation = require("iplocation").default;
 const apiServer = require("./apiServer.js");
+const publicIp = require('public-ip');
 const vsprintf = require("sprintf-js").vsprintf;
 const readline = require("readline");
 const request = require("request");
@@ -28,9 +30,22 @@ const NodeGuard = function () {
   var starupTime = moment();
   var errorCount = 0;
   var PoolInterval = null;
+  var locationData = null;
   var initialized = false;
   var nodeProcess = null;
+  var externalIP = null;
   var RpcComms = null;
+
+  // get GEO data
+  (async () => {
+    externalIP = await publicIp.v4();
+    
+    iplocation(externalIP, [], (error, res) => {
+      if (!error) {
+        locationData = res;
+      }
+    });
+  })();
 
   this.stop = function () {
     if (RpcComms) {
@@ -139,12 +154,12 @@ const NodeGuard = function () {
               name: configOpts.node.name || os.hostname(),
               errors: errorCount,
               startTime: starupTime,
-              blockHeight: RpcComms
-                ? RpcComms.getLastHeight()
-                : 0,
-              nodeVersion: RpcComms
-                ? RpcComms.getVersion()
-                : ""
+              blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
+              nodeVersion: RpcComms ? RpcComms.getVersion() : ""
+            },
+            location: {
+              ip: externalIP,
+              data: locationData
             }
           }
         };
@@ -214,6 +229,10 @@ const NodeGuard = function () {
           startTime: starupTime,
           blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
           nodeVersion: RpcComms ? RpcComms.getVersion() : ""
+        },
+        location: {
+          ip: externalIP,
+          data: locationData
         }
       };
     });
