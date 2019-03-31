@@ -18,9 +18,6 @@
     "request": "^2.88.0",
     "sprintf-js": "^1.1.2"
   },
-  "devDependencies": {
-    "jshint": "^2.10.2"
-  },
   "jshintConfig": {
     "expr": true,
     "esversion": 8
