@@ -2,8 +2,6 @@
 //
 // Please see the included LICENSE file for more information.
 
-"use strict";
-
 const UUID = require("pure-uuid");
 const path = require("path");
 const fs = require("fs");
@@ -11,9 +9,7 @@ const fs = require("fs");
 module.exports = {
   ensureUserDataDir: function () {
     var userDataDir = process.env.APPDATA || (
-      process.platform === "darwin"
-      ? process.env.HOME + "/Library/Application Support"
-      : process.env.HOME + "/.local/share");
+      process.platform === "darwin" ? process.env.HOME + "/Library/Application Support" : process.env.HOME + "/.local/share");
     userDataDir = path.join(userDataDir, "ConcealNodeGuard");
 
     if (!fs.existsSync(userDataDir)) {

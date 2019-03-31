@@ -2,8 +2,6 @@
 //
 // Please see the included LICENSE file for more information.
 
-"use strict";
-
 const moment = require("moment");
 const CCX = require("conceal-js");
 

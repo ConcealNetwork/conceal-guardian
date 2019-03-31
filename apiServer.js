@@ -2,8 +2,6 @@
 //
 // Please see the included LICENSE file for more information.
 
-"use strict";
-
 const http = require("http");
 
 module.exports = {

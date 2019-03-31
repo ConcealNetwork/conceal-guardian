@@ -2,8 +2,6 @@
 //
 // Please see the included LICENSE file for more information.
 
-"use strict";
-
 const commandLineArgs = require("command-line-args");
 const child_process = require("child_process");
 const iplocation = require("iplocation").default;
@@ -22,17 +20,15 @@ const os = require("os");
 const NodeGuard = function () {
   var rootPath = process.cwd();
 
-  const cmdOptions = commandLineArgs([
-    {
-      name: "config",
-      alias: "c",
-      type: String
-    }, {
-      name: "node",
-      alias: "n",
-      type: String
-    }
-  ]);
+  const cmdOptions = commandLineArgs([{
+    name: "config",
+    alias: "c",
+    type: String
+  }, {
+    name: "node",
+    alias: "n",
+    type: String
+  }]);
 
   const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
   const daemonPath = cmdOptions.node || path.join(rootPath, "conceald");
@@ -167,12 +163,8 @@ const NodeGuard = function () {
               name: configOpts.node.name || os.hostname(),
               errors: errorCount,
               startTime: starupTime,
-              blockHeight: RpcComms
-                ? RpcComms.getLastHeight()
-                : 0,
-              nodeVersion: RpcComms
-                ? RpcComms.getVersion()
-                : ""
+              blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
+              nodeVersion: RpcComms ? RpcComms.getVersion() : ""
             },
             location: {
               ip: externalIP,
@@ -219,9 +211,13 @@ const NodeGuard = function () {
         restartDaemonProcess("Node process closed with: " + err, true);
       });
 
-      const dataStream = readline.createInterface({input: nodeProcess.stdout});
+      const dataStream = readline.createInterface({
+        input: nodeProcess.stdout
+      });
 
-      const errorStream = readline.createInterface({input: nodeProcess.stderr});
+      const errorStream = readline.createInterface({
+        input: nodeProcess.stderr
+      });
 
       dataStream.on("line", line => {
         processSingleLine(line);
@@ -248,12 +244,10 @@ const NodeGuard = function () {
           name: configOpts.node.name || os.hostname(),
           errors: errorCount,
           startTime: starupTime,
-          blockHeight: RpcComms
-            ? RpcComms.getLastHeight()
-            : 0,
-          nodeVersion: RpcComms
-            ? RpcComms.getVersion()
-            : ""
+          blockHeight: RpcComms ?
+            RpcComms.getLastHeight() : 0,
+          nodeVersion: RpcComms ?
+            RpcComms.getVersion() : ""
         },
         location: {
           ip: externalIP,
