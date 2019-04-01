@@ -6,7 +6,7 @@ Type=simple
 # Another Type option: forking
 User=nodeguard
 WorkingDirectory=/usr/bin
-ExecStart=/usr/bin/node /path/to/guardian/index.js
+ExecStart=/usr/bin/node /path/to/guardian/index.js --config /path/to/config.json
 Restart=always
 RestartSec=3
 
