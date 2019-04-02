@@ -85,7 +85,7 @@ const NodeGuard = function () {
     logEntry.push(msgText);
 
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join("\t") + "\n", function () {});
+    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join("\t") + "\n", function () { });
     console.log(logEntry.join("\t"));
 
     // send notification if specified in the config
@@ -148,6 +148,23 @@ const NodeGuard = function () {
     }
   }
 
+  function getNodeInfoData() {
+    return {
+      id: nodeUniqueId,
+      os: process.platform,
+      name: configOpts.node.name || os.hostname(),
+      status: {
+        errors: errorCount,
+        startTime: starupTime
+      },
+      blockchain: RpcComms ? RpcComms.getData() : null,
+      location: {
+        ip: externalIP,
+        data: locationData
+      }
+    };
+  }
+
   function setNotifyPoolInterval() {
     if (configOpts.notify && configOpts.notify.url) {
       // send the info about node to the pool
@@ -156,21 +173,7 @@ const NodeGuard = function () {
           uri: configOpts.notify.url,
           strictSSL: false,
           method: "POST",
-          json: {
-            id: nodeUniqueId,
-            os: process.platform,
-            status: {
-              name: configOpts.node.name || os.hostname(),
-              errors: errorCount,
-              startTime: starupTime,
-              blockHeight: RpcComms ? RpcComms.getLastHeight() : 0,
-              nodeVersion: RpcComms ? RpcComms.getVersion() : ""
-            },
-            location: {
-              ip: externalIP,
-              data: locationData
-            }
-          }
+          json: getNodeInfoData()
         };
 
         request(packetData, function () {
@@ -237,23 +240,7 @@ const NodeGuard = function () {
   //create a server object if required
   if (configOpts.api && configOpts.api.port) {
     apiServer.createServer(configOpts, function () {
-      return {
-        id: nodeUniqueId,
-        os: process.platform,
-        status: {
-          name: configOpts.node.name || os.hostname(),
-          errors: errorCount,
-          startTime: starupTime,
-          blockHeight: RpcComms ?
-            RpcComms.getLastHeight() : 0,
-          nodeVersion: RpcComms ?
-            RpcComms.getVersion() : ""
-        },
-        location: {
-          ip: externalIP,
-          data: locationData
-        }
-      };
+      return getNodeInfoData();
     });
   }
 

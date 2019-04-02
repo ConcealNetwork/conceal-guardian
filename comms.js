@@ -11,19 +11,15 @@ module.exports = {
     var CCXApi = new CCX("http://127.0.0.1", "3333", configOpts.node.port);
     var IsRunning = false;
     var lastHeight = 0;
-    var version = "";
+    var infoData = null;
     var lastTS = moment();
 
     this.stop = function () {
       IsRunning = false;
     };
 
-    this.getVersion = function () {
-      return version;
-    };
-
-    this.getLastHeight = function () {
-      return lastHeight;
+    this.getData = function () {
+      return infoData;
     };
 
     this.start = function () {
@@ -35,7 +31,7 @@ module.exports = {
       if (IsRunning) {
         CCXApi.info().then(data => {
           var heightIsOK = true;
-          version = data.version;
+          infoData = data;
 
           if (lastHeight !== data.height) {
             lastHeight = data.height;

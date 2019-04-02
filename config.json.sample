@@ -5,9 +5,13 @@
 		"port": 16000,
 		"name": "TestNode"
 	},
-	"error": {
-		"url": "put the web hook url in here"
-	},
+  "error": {
+    "Notify": {
+      "Discord": {
+        "url": "put the discord web hook url in here"
+      }
+    }
+  },
 	"restart": {
 		"errorForgetTime": 600,
 		"maxCloseErrors": 3,
@@ -17,8 +21,10 @@
 	"api": {
 		"port": 8080
 	},
-	"notify": {
-		"url": "http://localhost:3000/pool/update",
-		"interval": 30
-	}
+  "pool": {
+    "notify": {
+      "url": "https://node.conceal.network/pool/update",
+      "interval": 30
+    }
+  }
 }
