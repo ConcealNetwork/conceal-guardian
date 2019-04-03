@@ -6,8 +6,8 @@
 		"name": "TestNode"
 	},
   "error": {
-    "Notify": {
-      "Discord": {
+    "notify": {
+      "discord": {
         "url": "put the discord web hook url in here"
       }
     }

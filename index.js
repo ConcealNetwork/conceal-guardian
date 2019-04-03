@@ -89,22 +89,24 @@ const NodeGuard = function () {
     console.log(logEntry.join("\t"));
 
     // send notification if specified in the config
-    if (sendNotification && configOpts.error) {
-      if (configOpts.error.url) {
-        var hookOptions = {
-          uri: configOpts.error.url,
-          method: "POST",
-          json: {
-            content: vsprintf("Node **%s** reported an error -> %s", [
-              configOpts.node.name || os.hostname(),
-              msgText + "\n"
-            ])
-          }
-        };
+    if (sendNotification && configOpts.error && configOpts.error.notify) {
+      if (configOpts.error.notify.discord) {
+        if (configOpts.error.notify.discord.url) {
+          var hookOptions = {
+            uri: configOpts.error.notify.discord.url,
+            method: "POST",
+            json: {
+              content: vsprintf("Node **%s** reported an error -> %s", [
+                configOpts.node.name || os.hostname(),
+                msgText + "\n"
+              ])
+            }
+          };
 
-        request(hookOptions, function () {
-          // for now its fire and forget, no matter if error occurs
-        });
+          request(hookOptions, function () {
+            // for now its fire and forget, no matter if error occurs
+          });
+        }
       }
     }
   }
