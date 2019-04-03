@@ -22,29 +22,39 @@ Before doing that however its wise to check the **config.json** and set the corr
 
 ```
 {
-	"node": {
-		"args": ["--rpc-bind-ip", "127.0.0.1", "--rpc-bind-port", "16000"],
-		"path": "C:\\Wallets\\Conceal-CLI\\conceald.exe",
-		"port": 16000,
-		"name": "TestNode"
-	},
-	"error": {
-		"url": "URL to your Discord WebHook"
-	},
-	"restart": {
-		"errorForgetTime": 600,
-		"maxCloseErrors": 3,
-		"maxBlockTime": 1800,
-		"maxInitTime": 600	
-	},
-	"api": {
-		"port": 8080
-	},
-	"notify": {
-		"url": "URL to the guardian pool service if you want to register there",
-		"interval": 30
-	}
-	
+   "node":{
+      "args":[
+         "--rpc-bind-ip",
+         "127.0.0.1",
+         "--rpc-bind-port",
+         "16000"
+      ],
+      "path":"C:\\Wallets\\Conceal-CLI\\conceald.exe",
+      "port":16000,
+      "name":"TestNode"
+   },
+   "error":{
+      "Notify":{
+         "Discord":{
+            "url":"put the discord web hook url in here"
+         }
+      }
+   },
+   "restart":{
+      "errorForgetTime":600,
+      "maxCloseErrors":3,
+      "maxBlockTime":1800,
+      "maxInitTime":600
+   },
+   "api":{
+      "port":8080
+   },
+   "pool":{
+      "notify":{
+         "url":"URL to the guardian pool service if you want to register there",
+         "interval":30
+      }
+   }
 }
 ```
 
@@ -56,7 +66,9 @@ The explanation of config options:
   * port: The port on which conceald is running
   * name: Name of the node. If omited it uses the hostname.
 * **error**
-  * url: the ulr of the Discord web hook, where the error reports are send.
+  * **Notify**
+    * **Discord**
+      * url: the ulr of the Discord web hook, where the error reports are send.
 * **restart**
   * errorForgetTime: The time in seconds after which the error is forgoten and error count decreased by 1.
   * maxCloseErrors: Maximum number of errors. After that the guardian stops as there is a serious issue with the daemon.
@@ -64,9 +76,10 @@ The explanation of config options:
   * maxInitTime: Maximum time in secords in which the node should be initialized.
 * **api**
   * port: port of the api on which to listen. If not specified the guardian will not listen for incoming requests
-* **notify**
-  * url: the url of the Conceal Guardian Pool. The Guardian is sending its data to pool for public listing
-  * interval: the interval in seconds in which the data is being sent
+* **pool**
+  * **notify**
+    * url: the url of the Conceal Guardian Pool. The Guardian is sending its data to pool for public listing
+    * interval: the interval in seconds in which the data is being sent
   
 To run as a service use **systemctl**
 
