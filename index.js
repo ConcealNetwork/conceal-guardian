@@ -166,11 +166,11 @@ const NodeGuard = function () {
   }
 
   function setNotifyPoolInterval() {
-    if (configOpts.notify && configOpts.notify.url) {
+    if (configOpts.pool && configOpts.pool.notify && configOpts.pool.notify.url) {
       // send the info about node to the pool
       setInterval(function () {
         var packetData = {
-          uri: configOpts.notify.url,
+          uri: configOpts.pool.notify.url,
           strictSSL: false,
           method: "POST",
           json: getNodeInfoData()
@@ -179,7 +179,7 @@ const NodeGuard = function () {
         request(packetData, function () {
           // for now its fire and forget, no matter if error occurs
         });
-      }, (configOpts.notify.interval || 30) * 1000);
+      }, (configOpts.pool.notify.interval || 30) * 1000);
     }
   }
 
