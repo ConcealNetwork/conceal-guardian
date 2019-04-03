@@ -22,35 +22,39 @@ Before doing that however its wise to check the **config.json** and set the corr
 
 ```
 {
-	"node": {
-		"args": ["--rpc-bind-ip", "127.0.0.1", "--rpc-bind-port", "16000"],
-		"path": "C:\\Wallets\\Conceal-CLI\\conceald.exe",
-		"port": 16000,
-		"name": "TestNode"
-	},
-	"error": {
-		"Notify": {
-      			"Discord": {
-        			"url": "put the discord web hook url in here"
-      			}
-    		}
-	},
-	"restart": {
-		"errorForgetTime": 600,
-		"maxCloseErrors": 3,
-		"maxBlockTime": 1800,
-		"maxInitTime": 600	
-	},
-	"api": {
-		"port": 8080
-	},
-	"pool": {
-    		"notify": {
-            		"url": "URL to the guardian pool service if you want to register there",
-      			"interval": 30
-    		}
-  	}	
-	
+   "node":{
+      "args":[
+         "--rpc-bind-ip",
+         "127.0.0.1",
+         "--rpc-bind-port",
+         "16000"
+      ],
+      "path":"C:\\Wallets\\Conceal-CLI\\conceald.exe",
+      "port":16000,
+      "name":"TestNode"
+   },
+   "error":{
+      "Notify":{
+         "Discord":{
+            "url":"put the discord web hook url in here"
+         }
+      }
+   },
+   "restart":{
+      "errorForgetTime":600,
+      "maxCloseErrors":3,
+      "maxBlockTime":1800,
+      "maxInitTime":600
+   },
+   "api":{
+      "port":8080
+   },
+   "pool":{
+      "notify":{
+         "url":"URL to the guardian pool service if you want to register there",
+         "interval":30
+      }
+   }
 }
 ```
 
@@ -62,8 +66,9 @@ The explanation of config options:
   * port: The port on which conceald is running
   * name: Name of the node. If omited it uses the hostname.
 * **error**
-  * **Discord**
-  	* url: the ulr of the Discord web hook, where the error reports are send.
+  * **Notify**
+    * **Discord**
+      * url: the ulr of the Discord web hook, where the error reports are send.
 * **restart**
   * errorForgetTime: The time in seconds after which the error is forgoten and error count decreased by 1.
   * maxCloseErrors: Maximum number of errors. After that the guardian stops as there is a serious issue with the daemon.
