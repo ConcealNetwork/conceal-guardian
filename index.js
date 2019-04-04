@@ -6,6 +6,7 @@ const commandLineArgs = require("command-line-args");
 const child_process = require("child_process");
 const iplocation = require("iplocation").default;
 const apiServer = require("./apiServer.js");
+const notifiers = require("./notifiers.js");
 const publicIp = require("public-ip");
 const vsprintf = require("sprintf-js").vsprintf;
 const readline = require("readline");
@@ -74,6 +75,26 @@ const NodeGuard = function () {
   }
 
   //*************************************************************//
+  //        get the info about the node in full details
+  //*************************************************************//
+  function getNodeInfoData() {
+    return {
+      id: nodeUniqueId,
+      os: process.platform,
+      name: configOpts.node.name || os.hostname(),
+      status: {
+        errors: errorCount,
+        startTime: starupTime
+      },
+      blockchain: RpcComms ? RpcComms.getData() : null,
+      location: {
+        ip: externalIP,
+        data: locationData
+      }
+    };
+  }
+
+  //*************************************************************//
   //       log the error to text file and send it to Discord
   //*************************************************************//
   function logMessage(msgText, msgType, sendNotification) {
@@ -90,24 +111,7 @@ const NodeGuard = function () {
 
     // send notification if specified in the config
     if (sendNotification && configOpts.error && configOpts.error.notify) {
-      if (configOpts.error.notify.discord) {
-        if (configOpts.error.notify.discord.url) {
-          var hookOptions = {
-            uri: configOpts.error.notify.discord.url,
-            method: "POST",
-            json: {
-              content: vsprintf("Node **%s** reported an error -> %s", [
-                configOpts.node.name || os.hostname(),
-                msgText + "\n"
-              ])
-            }
-          };
-
-          request(hookOptions, function () {
-            // for now its fire and forget, no matter if error occurs
-          });
-        }
-      }
+      notifiers.notifyOnError(configOpts, msgText, msgType, getNodeInfoData());
     }
   }
 
@@ -148,23 +152,6 @@ const NodeGuard = function () {
         }, 5000);
       }
     }
-  }
-
-  function getNodeInfoData() {
-    return {
-      id: nodeUniqueId,
-      os: process.platform,
-      name: configOpts.node.name || os.hostname(),
-      status: {
-        errors: errorCount,
-        startTime: starupTime
-      },
-      blockchain: RpcComms ? RpcComms.getData() : null,
-      location: {
-        ip: externalIP,
-        data: locationData
-      }
-    };
   }
 
   function setNotifyPoolInterval() {

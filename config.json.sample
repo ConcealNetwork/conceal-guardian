@@ -10,6 +10,22 @@
       "discord": {
         "url": "put the discord web hook url in here"
       }
+      "email": {
+        "smtp": {
+          "host": "smtp hostname",
+          "port": 25,
+          "secure": false
+        },
+        "auth": {
+          "username": "your username",
+          "password": "your password"
+        },
+        "message": {
+          "from": "from field",
+          "to": "list of recipients",
+          "subject": "optionally the subject"
+        }
+      }
     }
   },
 	"restart": {
