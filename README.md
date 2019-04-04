@@ -34,8 +34,8 @@ Before doing that however its wise to check the **config.json** and set the corr
       "name":"TestNode"
    },
    "error":{
-      "Notify":{
-         "Discord":{
+      "notify":{
+         "discord":{
             "url":"put the discord web hook url in here"
          }
       }
@@ -66,8 +66,8 @@ The explanation of config options:
   * port: The port on which conceald is running
   * name: Name of the node. If omited it uses the hostname.
 * **error**
-  * **Notify**
-    * **Discord**
+  * **notify**
+    * **discord**
       * url: the ulr of the Discord web hook, where the error reports are send.
 * **restart**
   * errorForgetTime: The time in seconds after which the error is forgoten and error count decreased by 1.
