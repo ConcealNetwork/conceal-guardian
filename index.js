@@ -2,6 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
+const commandLineUsage = require('command-line-usage');
 const commandLineArgs = require("command-line-args");
 const mainEngine = require("./engine.js");
 const vsprintf = require("sprintf-js").vsprintf;
@@ -21,26 +22,64 @@ const cmdOptions = commandLineArgs([{
   name: "setup",
   alias: "s",
   type: Boolean
+}, {
+  name: "help",
+  alias: "h",
+  type: Boolean
 }]);
 
-const rootPath = process.cwd();
-const configFileName = cmdOptions.config || path.join(rootPath, "config.json");
-
-if (!fs.existsSync(configFileName)) {
-  console.log(vsprintf('\n"%s" does not exist! Specify the correct path to the config file or create config.json in the same directory as the application. You can use the config.json.sample as an example', [
-    configFileName,
-  ]));
+if (cmdOptions.help) {
+  const sections = [
+    {
+      header: 'Conceal Node Guardian',
+      content: 'This is a guardian app for the conceal node daemon. Handles restarts, sends notifications, registers to pool...'
+    },
+    {
+      header: 'Options',
+      optionList: [
+        {
+          name: 'config',
+          typeLabel: '{underline file}',
+          description: 'The path to configuration file. If empty is uses the config.js in the same directory as the app.'
+        },
+        {
+          name: 'node',
+          typeLabel: '{underline file}',
+          description: 'The path to node daemon executable. If empty is uses the same directory as the app.'
+        },
+        {
+          name: 'setup',
+          description: 'Initiates the interactive config setup for the guardian'
+        },
+        {
+          name: 'help',
+          description: 'Shows this help instructions'
+        }
+      ]
+    }
+  ]
+  const usage = commandLineUsage(sections);
+  console.log(usage);
 } else {
-  // read config option to use them either in engine or setup module
-  const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
+  const rootPath = process.cwd();
+  const configFileName = cmdOptions.config || path.join(rootPath, "config.json");
 
-  if (cmdOptions.setup) {
-    setup.Initialize(configOpts, configFileName);
+  if (!fs.existsSync(configFileName)) {
+    console.log(vsprintf('\n"%s" does not exist! Specify the correct path to the config file or create config.json in the same directory as the application. You can use the config.json.sample as an example', [
+      configFileName,
+    ]));
   } else {
-    var guardInstance = new mainEngine.NodeGuard(cmdOptions, configOpts, rootPath);
+    // read config option to use them either in engine or setup module
+    const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
 
-    process.on("exit", function () {
-      guardInstance.stop();
-    });
+    if (cmdOptions.setup) {
+      setup.Initialize(configOpts, configFileName);
+    } else {
+      var guardInstance = new mainEngine.NodeGuard(cmdOptions, configOpts, rootPath);
+
+      process.on("exit", function () {
+        guardInstance.stop();
+      });
+    }
   }
 }
