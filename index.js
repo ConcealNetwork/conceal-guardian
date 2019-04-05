@@ -40,12 +40,12 @@ if (cmdOptions.help) {
         {
           name: 'config',
           typeLabel: '{underline file}',
-          description: 'The path to configuration file. If empty is uses the config.js in the same directory as the app.'
+          description: 'The path to configuration file. If empty it uses the config.js in the same directory as the app.'
         },
         {
           name: 'node',
           typeLabel: '{underline file}',
-          description: 'The path to node daemon executable. If empty is uses the same directory as the app.'
+          description: 'The path to node daemon executable. If empty it uses the same directory as the app.'
         },
         {
           name: 'setup',
