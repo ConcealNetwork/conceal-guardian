@@ -62,7 +62,7 @@ function notifyViaEmail(config, msgText, msgType, nodeData) {
 
   // send mail with defined transport object
   transporter.sendMail(mailOptions, (error, info) => {
-    // eath the error or success, noone to report to
+    // for now its fire and forget, no matter if error occurs
   });
 }
 

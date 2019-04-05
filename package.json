@@ -10,7 +10,9 @@
   "license": "ISC",
   "dependencies": {
     "command-line-args": "^5.1.0",
+    "command-line-usage": "^5.0.5",
     "conceal-js": "^0.7.2",
+    "inquirer": "^6.2.2",
     "iplocation": "^6.1.0",
     "moment": "^2.24.0",
     "nodemailer": "^6.0.0",
