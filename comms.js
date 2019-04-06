@@ -2,6 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
+const vsprintf = require("sprintf-js").vsprintf;
 const moment = require("moment");
 const CCX = require("conceal-js");
 
@@ -34,13 +35,14 @@ module.exports = {
           infoData = data;
 
           if (lastHeight !== data.height) {
+            console.log(vsprintf("Current block height is %d", [data.height]));
             lastHeight = data.height;
             lastTS = moment();
           } else {
             var duration = moment.duration(moment().diff(lastTS));
 
             if (duration.asSeconds() > (configOpts.restart.maxBlockTime || 1800)) {
-              errorCallback("No new block has be seen for more then 30 minutes");
+              errorCallback(vsprintf("No new block has be seen for more then %d minutes", [(configOpts.restart.maxBlockTime || 1800) / 60]));
               heightIsOK = false;
             }
           }
