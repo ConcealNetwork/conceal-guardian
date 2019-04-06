@@ -4,6 +4,7 @@
 		"path": "C:\\Wallets\\Conceal-CLI\\conceald.exe",
 		"port": 16000,
 		"name": "TestNode"
+		"feeaddr": ""
 	},
   "error": {
     "notify": {
