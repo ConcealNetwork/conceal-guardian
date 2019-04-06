@@ -27,7 +27,7 @@ const os = new os_func();
 module.exports = {
   install: function (configOpts, configFileName) {
     if (process.platform == "win32") {
-      var xmlFile = xmlbuilder.create('configuration')
+      var xmlFile = xmlbuilder.create('configuration');
       xmlFile.ele('id', 'ConcealGuardian');
       xmlFile.ele('name', 'Conceal Guardian');
       xmlFile.ele('description', 'Conceal Guardian for monitoring the Conceal Daemon');
@@ -39,7 +39,7 @@ module.exports = {
           console.log('\nError trying to save the XML: ' + err);
         } else {
           os.execCommand('cgservice.exe install', function (returnvalue) {
-            console.log(returnvalue);
+            console.log("\n" + returnvalue);
           });
         }
       });
@@ -51,7 +51,7 @@ module.exports = {
   remove: function (configOpts, configFileName) {
     if (process.platform == "win32") {
       os.execCommand('cgservice.exe uninstall', function (returnvalue) {
-        console.log(returnvalue);
+        console.log("\n" + returnvalue);
       });
     } else {
       console.log("\nPlatform is not supported!");
@@ -60,7 +60,7 @@ module.exports = {
   start: function (configOpts, configFileName) {
     if (process.platform == "win32") {
       os.execCommand('cgservice.exe start', function (returnvalue) {
-        console.log(returnvalue);
+        console.log("\n" + returnvalue);
       });
     } else {
       console.log("\nPlatform is not supported!");
@@ -69,7 +69,7 @@ module.exports = {
   stop: function (configOpts, configFileName) {
     if (process.platform == "win32") {
       os.execCommand('cgservice.exe stop', function (returnvalue) {
-        console.log(returnvalue);
+        console.log("\n" + returnvalue);
       });
     } else {
       console.log("\nPlatform is not supported!");
