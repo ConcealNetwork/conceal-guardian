@@ -66,7 +66,7 @@ module.exports = {
       configOpts.error.notify.discord.url = answers.discordHookURL;
 
       fs.writeFileSync(configFileName, JSON.stringify(configOpts, null, 2));
-      console.log('Your changes have been saved!');
+      console.log('\nYour changes have been saved!');
     });
   }
 };

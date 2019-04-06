@@ -6,27 +6,34 @@ const commandLineUsage = require('command-line-usage');
 const commandLineArgs = require("command-line-args");
 const mainEngine = require("./engine.js");
 const vsprintf = require("sprintf-js").vsprintf;
+const service = require("./service.js");
 const setup = require("./setup.js");
 const path = require("path");
 const fs = require("fs");
 
-const cmdOptions = commandLineArgs([{
-  name: "config",
-  alias: "c",
-  type: String
-}, {
-  name: "node",
-  alias: "n",
-  type: String
-}, {
-  name: "setup",
-  alias: "s",
-  type: Boolean
-}, {
-  name: "help",
-  alias: "h",
-  type: Boolean
-}]);
+try {
+  const cmdOptions = commandLineArgs([{
+    name: "config",
+    type: String
+  }, {
+    name: "node",
+    type: String
+  }, {
+    name: "service",
+    type: String
+  }, {
+    name: "setup",
+    type: Boolean
+  }, {
+    name: "help",
+    alias: "h",
+    type: Boolean
+  }]);
+
+} catch (err) {
+  console.error("\nUknown command line parameter. Use --help for instructions.");
+  process.exit();
+}
 
 if (cmdOptions.help) {
   const sections = [
@@ -40,7 +47,7 @@ if (cmdOptions.help) {
         {
           name: 'config',
           typeLabel: '{underline file}',
-          description: 'The path to configuration file. If empty it uses the config.js in the same directory as the app.'
+          description: 'The path to configuration file. If empty it uses the config.json in the same directory as the app.'
         },
         {
           name: 'node',
@@ -52,12 +59,38 @@ if (cmdOptions.help) {
           description: 'Initiates the interactive config setup for the guardian'
         },
         {
+          name: 'service',
+          description: 'Controls the service behaviour. Possible values are: "install", "remove", "start", "stop"'
+        },
+        {
           name: 'help',
           description: 'Shows this help instructions'
         }
       ]
+    },
+    {
+      header: 'Service option values',
+      optionList: [
+        {
+          name: 'install',
+          description: 'Install the guardian as a service in the OS.'
+        },
+        {
+          name: 'remove',
+          description: 'Removes the guardian as a service from the OS.'
+        },
+        {
+          name: 'start',
+          description: 'Starts the guardian as OS service.'
+        },
+        {
+          name: 'stop',
+          description: 'Stops the guardian as OS service.'
+        }
+      ]
     }
-  ]
+
+  ];
   const usage = commandLineUsage(sections);
   console.log(usage);
 } else {
@@ -74,6 +107,22 @@ if (cmdOptions.help) {
 
     if (cmdOptions.setup) {
       setup.Initialize(configOpts, configFileName);
+    } else if (cmdOptions.service) {
+      switch (cmdOptions.service) {
+        case "install":
+          service.install();
+          break;
+        case "remove":
+          service.remove();
+          break;
+        case "start":
+          service.start();
+          break;
+        case "stop":
+          service.stop();
+          break;
+        default: console.log('wrong parameter for service command. Valid values: "install", "remove", "start", "stop"');
+      }
     } else {
       var guardInstance = new mainEngine.NodeGuard(cmdOptions, configOpts, rootPath);
 
