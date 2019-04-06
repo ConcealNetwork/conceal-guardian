@@ -1,0 +1,14 @@
+[Unit]
+Description=Conceal Guardian
+
+[Service]
+Type=simple
+# Another Type option: forking
+User={user}
+WorkingDirectory={workDir}
+ExecStart={execPath} --config {configPath}
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -121,6 +121,9 @@ if (cmdOptions.help) {
         case "stop":
           service.stop(configOpts, configFileName);
           break;
+        case "status":
+          service.status(configOpts, configFileName);
+          break;
         default: console.log('wrong parameter for service command. Valid values: "install", "remove", "start", "stop"');
       }
     } else {

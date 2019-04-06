@@ -1,16 +1,11 @@
 {
 	"node": {
 		"args": ["--rpc-bind-ip", "127.0.0.1", "--rpc-bind-port", "16000"],
-		"path": "C:\\Wallets\\Conceal-CLI\\conceald.exe",
-		"port": 16000,
-		"name": "TestNode"
-		"feeaddr": ""
+		"port": 16000
 	},
   "error": {
     "notify": {
-      "discord": {
-        "url": "put the discord web hook url in here"
-      }
+      "discord": {},
       "email": {
         "smtp": {
           "host": "smtp hostname",

@@ -28,6 +28,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
   var nodeProcess = null;
   var externalIP = null;
   var RpcComms = null;
+  var self = this;
 
   // get GEO data
   (async () => {
@@ -40,7 +41,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
     });
   })();
 
-  if (configOpts.node.feeAddr) {
+  if (configOpts.node && configOpts.node.feeAddr) {
     // add fee address to arguments
     configOpts.node.args.push("--fee-address");
     configOpts.node.args.push(configOpts.node.feeAddr);
@@ -115,7 +116,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
 
     // increase error count and stop instance
     errorCount = errorCount + 1;
-    guardInstance.stop();
+    self.stop();
 
     // check if we have crossed the maximum error number in short period
     if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
