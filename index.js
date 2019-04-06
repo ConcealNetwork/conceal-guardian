@@ -12,7 +12,7 @@ const path = require("path");
 const fs = require("fs");
 
 try {
-  const cmdOptions = commandLineArgs([{
+  var cmdOptions = commandLineArgs([{
     name: "config",
     type: String
   }, {
@@ -110,16 +110,16 @@ if (cmdOptions.help) {
     } else if (cmdOptions.service) {
       switch (cmdOptions.service) {
         case "install":
-          service.install();
+          service.install(configOpts, configFileName);
           break;
         case "remove":
-          service.remove();
+          service.remove(configOpts, configFileName);
           break;
         case "start":
-          service.start();
+          service.start(configOpts, configFileName);
           break;
         case "stop":
-          service.stop();
+          service.stop(configOpts, configFileName);
           break;
         default: console.log('wrong parameter for service command. Valid values: "install", "remove", "start", "stop"');
       }

@@ -19,7 +19,8 @@
     "public-ip": "^3.0.0",
     "pure-uuid": "^1.5.7",
     "request": "^2.88.0",
-    "sprintf-js": "^1.1.2"
+    "sprintf-js": "^1.1.2",
+    "xmlbuilder": "^12.0.0"
   },
   "jshintConfig": {
     "expr": true,

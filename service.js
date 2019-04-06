@@ -3,6 +3,9 @@
 // Please see the included LICENSE file for more information.
 
 const childProcess = require('child_process');
+const xmlbuilder = require('xmlbuilder');
+const path = require("path");
+const fs = require("fs");
 
 function os_func() {
   this.execCommand = function (cmd, callback) {
@@ -22,25 +25,54 @@ const os = new os_func();
 
 // export functions
 module.exports = {
+  install: function (configOpts, configFileName) {
+    if (process.platform == "win32") {
+      var xmlFile = xmlbuilder.create('configuration')
+      xmlFile.ele('id', 'ConcealGuardian');
+      xmlFile.ele('name', 'Conceal Guardian');
+      xmlFile.ele('description', 'Conceal Guardian for monitoring the Conceal Daemon');
+      xmlFile.ele('executable', path.join(process.cwd(), 'guardian-win64.exe'));
+      xmlFile.ele('arguments', '--config ' + configFileName);
 
-  install: function (config) {
-    os.execCommand('cgservice.exe install', function (returnvalue) {
-      console.log(returnvalue);
-    });
+      fs.writeFile("cgservice.xml", xmlFile.end({ pretty: true }), function (err) {
+        if (err) {
+          console.log('\nError trying to save the XML: ' + err);
+        } else {
+          os.execCommand('cgservice.exe install', function (returnvalue) {
+            console.log(returnvalue);
+          });
+        }
+      });
+
+    } else {
+      console.log("\nPlatform is not supported!");
+    }
   },
-  remove: function (config) {
-    os.execCommand('cgservice.exe uninstall', function (returnvalue) {
-      console.log(returnvalue);
-    });
+  remove: function (configOpts, configFileName) {
+    if (process.platform == "win32") {
+      os.execCommand('cgservice.exe uninstall', function (returnvalue) {
+        console.log(returnvalue);
+      });
+    } else {
+      console.log("\nPlatform is not supported!");
+    }
   },
-  start: function (config) {
-    os.execCommand('cgservice.exe start', function (returnvalue) {
-      console.log(returnvalue);
-    });
+  start: function (configOpts, configFileName) {
+    if (process.platform == "win32") {
+      os.execCommand('cgservice.exe start', function (returnvalue) {
+        console.log(returnvalue);
+      });
+    } else {
+      console.log("\nPlatform is not supported!");
+    }
   },
-  stop: function (config) {
-    os.execCommand('cgservice.exe stop', function (returnvalue) {
-      console.log(returnvalue);
-    });
+  stop: function (configOpts, configFileName) {
+    if (process.platform == "win32") {
+      os.execCommand('cgservice.exe stop', function (returnvalue) {
+        console.log(returnvalue);
+      });
+    } else {
+      console.log("\nPlatform is not supported!");
+    }
   }
 };

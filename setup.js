@@ -65,8 +65,13 @@ module.exports = {
       configOpts.pool.notify.url = answers.poolURL;
       configOpts.error.notify.discord.url = answers.discordHookURL;
 
-      fs.writeFileSync(configFileName, JSON.stringify(configOpts, null, 2));
-      console.log('\nYour changes have been saved!');
+      fs.writeFile(configFileName, JSON.stringify(configOpts, null, 2), function (err) {
+        if (err) {
+          console.log('\nError trying to save the changes: ' + err);
+        } else {
+          console.log('\nYour changes have been saved!');
+        }
+      });
     });
   }
 };
