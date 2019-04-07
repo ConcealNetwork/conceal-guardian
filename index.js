@@ -4,10 +4,10 @@
 
 const commandLineUsage = require('command-line-usage');
 const commandLineArgs = require("command-line-args");
-const mainEngine = require("./engine.js");
+const mainEngine = require("./units/engine.js");
 const vsprintf = require("sprintf-js").vsprintf;
-const service = require("./service.js");
-const setup = require("./setup.js");
+const service = require("./units/service.js");
+const setup = require("./units/setup.js");
 const path = require("path");
 const fs = require("fs");
 
