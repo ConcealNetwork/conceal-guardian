@@ -69,6 +69,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
       id: nodeUniqueId,
       os: process.platform,
       name: configOpts.node.name || os.hostname(),
+      nodeHost: externalIP,
+      nodePort: configOpts.node.port,
       status: {
         errors: errorCount,
         startTime: starupTime
@@ -173,6 +175,9 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
     }
   }
 
+  //*************************************************************//
+  //         start the daemon process and then monitor it
+  //*************************************************************//
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(configOpts.node.path || daemonPath, configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
@@ -213,7 +218,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
     }
   }
 
-  //create a server object if required
+  // create a server object if required, its used
+  // for servicing API calls for the current node
   if (configOpts.api && configOpts.api.port) {
     apiServer.createServer(configOpts, function () {
       return getNodeInfoData();
