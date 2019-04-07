@@ -41,12 +41,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
     });
   })();
 
-  if (configOpts.node && configOpts.node.feeAddr) {
-    // add fee address to arguments
-    configOpts.node.args.push("--fee-address");
-    configOpts.node.args.push(configOpts.node.feeAddr);
-  }
-
   this.stop = function () {
     if (RpcComms) {
       RpcComms.stop();

@@ -6,7 +6,9 @@ var inquirer = require('inquirer');
 const fs = require("fs");
 
 module.exports = {
-  Initialize: function (configOpts, configFileName) {
+  Initialize: function (configFileName) {
+    const configOpts = JSON.parse(fs.readFileSync(configFileName), "utf8");
+
     var questions = [
       {
         type: 'input',
@@ -18,7 +20,14 @@ module.exports = {
         type: 'input',
         name: 'nodeName',
         message: 'Please input name for your node (this will be what others see)',
-        default: configOpts.node ? (configOpts.node.name || "") : ""
+        default: configOpts.node ? (configOpts.node.name || "") : "",
+        validate: function (value) {
+          if (value) {
+            return true;
+          } else {
+            return 'Node name cannot be empty!';
+          }
+        }
       },
       {
         type: 'confirm',
@@ -34,6 +43,12 @@ module.exports = {
         when: function (answers) {
           return answers.useFeeAddress;
         }
+      },
+      {
+        type: 'confirm',
+        name: 'reachableOutside',
+        message: 'Will your node be accessible from the outside?',
+        default: ((configOpts.node) && (configOpts.node.bindAddr == '0.0.0.0')) ? true : false
       },
       {
         type: 'input',
@@ -64,6 +79,12 @@ module.exports = {
       configOpts.node.feeAddr = answers.feeAddress;
       configOpts.pool.notify.url = answers.poolURL;
       configOpts.error.notify.discord.url = answers.discordHookURL;
+
+      if (answers.reachableOutside) {
+        configOpts.node.bindAddr = '0.0.0.0';
+      } else {
+        configOpts.node.bindAddr = '127.0.0.1';
+      }
 
       fs.writeFile(configFileName, JSON.stringify(configOpts, null, 2), function (err) {
         if (err) {

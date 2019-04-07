@@ -105,8 +105,31 @@ if (cmdOptions.help) {
     // read config option to use them either in engine or setup module
     const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
 
+    // check if arguments are specified if not make an empty array
+    if (!(configOpts.node && configOpts.node.args)) {
+      configOpts.node.args = [];
+    }
+
+    if (configOpts.node && configOpts.node.bindAddr) {
+      // add bind address to arguments
+      configOpts.node.args.push("--rpc-bind-ip");
+      configOpts.node.args.push(configOpts.node.bindAddr);
+    }
+
+    if (configOpts.node && configOpts.node.port) {
+      // add fee address to arguments
+      configOpts.node.args.push("--rpc-bind-port");
+      configOpts.node.args.push(configOpts.node.port);
+    }
+
+    if (configOpts.node && configOpts.node.feeAddr) {
+      // add fee address to arguments
+      configOpts.node.args.push("--fee-address");
+      configOpts.node.args.push(configOpts.node.feeAddr);
+    }
+
     if (cmdOptions.setup) {
-      setup.Initialize(configOpts, configFileName);
+      setup.Initialize(configFileName);
     } else if (cmdOptions.service) {
       switch (cmdOptions.service) {
         case "install":
