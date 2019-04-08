@@ -6,8 +6,10 @@ const commandLineUsage = require('command-line-usage');
 const commandLineArgs = require("command-line-args");
 const mainEngine = require("./units/engine.js");
 const vsprintf = require("sprintf-js").vsprintf;
+const download = require("./units/download.js");
 const service = require("./units/service.js");
 const setup = require("./units/setup.js");
+const utils = require("./units/utils.js");
 const path = require("path");
 const fs = require("fs");
 
@@ -23,6 +25,9 @@ try {
     type: String
   }, {
     name: "setup",
+    type: Boolean
+  }, {
+    name: "download",
     type: Boolean
   }, {
     name: "help",
@@ -149,11 +154,41 @@ if (cmdOptions.help) {
           break;
         default: console.log('wrong parameter for service command. Valid values: "install", "remove", "start", "stop"');
       }
+    } else if (cmdOptions.download) {
+      service.stop(configOpts, configFileName);
+      download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+        if (error) {
+          console.log(vsprintf("Error downloading daemon: %s", [error]));
+        } else {
+          console.log("The daemon has been succesfully downloaded");
+        }
+      });
     } else {
-      var guardInstance = new mainEngine.NodeGuard(cmdOptions, configOpts, rootPath);
+      const nodePath = utils.getNodeActualPath(cmdOptions, configOpts, rootPath);
+      var guardInstance = null;
+
+      // createGuardInstance function
+      var createGuardInstance = function () {
+        guardInstance = new mainEngine.NodeGuard(cmdOptions, configOpts, rootPath);
+      };
+
+      if (!fs.existsSync(nodePath)) {
+        download.downloadLatestDaemon(nodePath, function (error) {
+          if (error) {
+            console.log(vsprintf("Error downloading daemon: %s", [error]));
+          } else {
+            console.log("The daemon has been succesfully downloaded");
+            createGuardInstance();
+          }
+        });
+      } else {
+        createGuardInstance();
+      }
 
       process.on("exit", function () {
-        guardInstance.stop();
+        if (guardInstance) {
+          guardInstance.stop();
+        }
       });
     }
   }

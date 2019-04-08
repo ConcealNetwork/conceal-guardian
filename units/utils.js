@@ -33,5 +33,17 @@ module.exports = {
       fs.writeFileSync(nodeDataFile, JSON.stringify(nodeData), "utf8");
       return nodeData.id;
     }
+  },
+  getNodeActualPath: function (cmdOptions, configOpts, rootPath) {
+    const daemonPath = cmdOptions.node || path.join(rootPath, this.getNodeExecutableName());
+    return (configOpts.node.path || daemonPath);
+  },
+  getNodeExecutableName: function () {
+    if (process.platform === "win32") {
+      return 'conceald.exe';
+    } else {
+      return 'conceald';
+    }
   }
+
 };

@@ -12,6 +12,7 @@
     "command-line-args": "^5.1.0",
     "command-line-usage": "^5.0.5",
     "conceal-js": "^0.7.2",
+    "download-github-release": "^0.3.2",
     "inquirer": "^6.2.2",
     "iplocation": "^6.1.0",
     "moment": "^2.24.0",
@@ -22,6 +23,7 @@
     "shelljs": "^0.8.3",
     "sprintf-js": "^1.1.2",
     "string-template": "^1.0.0",
+    "temp-dir": "^1.0.0",
     "xmlbuilder": "^12.0.0"
   },
   "jshintConfig": {

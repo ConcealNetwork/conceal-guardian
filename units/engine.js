@@ -18,7 +18,6 @@ const fs = require("fs");
 const os = require("os");
 
 exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
-  const daemonPath = cmdOptions.node || path.join(rootPath, "conceald");
   const nodeUniqueId = utils.ensureNodeUniqueId();
   var starupTime = moment();
   var errorCount = 0;
@@ -179,7 +178,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
   //         start the daemon process and then monitor it
   //*************************************************************//
   function startDaemonProcess() {
-    nodeProcess = child_process.spawn(configOpts.node.path || daemonPath, configOpts.node.args || []);
+    nodeProcess = child_process.spawn(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
 
     if (!nodeProcess) {
