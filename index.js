@@ -172,9 +172,9 @@ if (cmdOptions.help) {
           service.stop(configOpts, configFileName);
           download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
             if (error) {
-              console.log(vsprintf("Error updating node: %s", [error]));
+              console.log(vsprintf("Error updating daemon: %s", [error]));
             } else {
-              console.log("The node has been succesfully updated");
+              console.log("The daemon has been succesfully updated");
             }
           });
           break;
@@ -192,9 +192,9 @@ if (cmdOptions.help) {
       if (!fs.existsSync(nodePath)) {
         download.downloadLatestDaemon(nodePath, function (error) {
           if (error) {
-            console.log(vsprintf("Error downloading daemon: %s", [error]));
+            console.log(vsprintf("Error updating daemon: %s", [error]));
           } else {
-            console.log("The daemon has been succesfully downloaded");
+            console.log("The daemon has been succesfully updated");
             createGuardInstance();
           }
         });
