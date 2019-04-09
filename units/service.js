@@ -83,7 +83,9 @@ module.exports = {
     }
   },
   status: function (configOpts, configFileName) {
-    if (process.platform == "linux") {
+    if (process.platform == "win32") {
+      shell.exec('cgservice.exe status');
+    } else if (process.platform == "linux") {
       shell.exec('systemctl status ccx-guardian');
     } else {
       console.log("\nPlatform is not supported!\n");

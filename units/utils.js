@@ -35,7 +35,7 @@ module.exports = {
     }
   },
   getNodeActualPath: function (cmdOptions, configOpts, rootPath) {
-    const daemonPath = cmdOptions.node || path.join(rootPath, this.getNodeExecutableName());
+    const daemonPath = cmdOptions.daemon || path.join(rootPath, this.getNodeExecutableName());
     return (configOpts.node.path || daemonPath);
   },
   getNodeExecutableName: function () {

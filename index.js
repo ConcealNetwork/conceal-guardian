@@ -18,7 +18,7 @@ try {
     name: "config",
     type: String
   }, {
-    name: "node",
+    name: "daemon",
     type: String
   }, {
     name: "service",
@@ -27,8 +27,8 @@ try {
     name: "setup",
     type: Boolean
   }, {
-    name: "download",
-    type: Boolean
+    name: "node",
+    type: String
   }, {
     name: "help",
     alias: "h",
@@ -55,7 +55,7 @@ if (cmdOptions.help) {
           description: 'The path to configuration file. If empty it uses the config.json in the same directory as the app.'
         },
         {
-          name: 'node',
+          name: 'daemon',
           typeLabel: '{underline file}',
           description: 'The path to node daemon executable. If empty it uses the same directory as the app.'
         },
@@ -66,6 +66,10 @@ if (cmdOptions.help) {
         {
           name: 'service',
           description: 'Controls the service behaviour. Possible values are: "install", "remove", "start", "stop"'
+        },
+        {
+          name: 'node',
+          description: 'Node related commands. Possible values are: "update"'
         },
         {
           name: 'help',
@@ -93,8 +97,16 @@ if (cmdOptions.help) {
           description: 'Stops the guardian as OS service.'
         }
       ]
+    },
+    {
+      header: 'Node option values',
+      optionList: [
+        {
+          name: 'update',
+          description: 'Updates to the latest stable version of the node daemon. Node must be stoped first'
+        }
+      ]
     }
-
   ];
   const usage = commandLineUsage(sections);
   console.log(usage);
@@ -154,15 +166,20 @@ if (cmdOptions.help) {
           break;
         default: console.log('wrong parameter for service command. Valid values: "install", "remove", "start", "stop"');
       }
-    } else if (cmdOptions.download) {
-      service.stop(configOpts, configFileName);
-      download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
-        if (error) {
-          console.log(vsprintf("Error downloading daemon: %s", [error]));
-        } else {
-          console.log("The daemon has been succesfully downloaded");
-        }
-      });
+    } else if (cmdOptions.node) {
+      switch (cmdOptions.node) {
+        case "update":
+          service.stop(configOpts, configFileName);
+          download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+            if (error) {
+              console.log(vsprintf("Error updating node: %s", [error]));
+            } else {
+              console.log("The node has been succesfully updated");
+            }
+          });
+          break;
+        default: console.log('wrong parameter for node command. Valid values: "update"');
+      }
     } else {
       const nodePath = utils.getNodeActualPath(cmdOptions, configOpts, rootPath);
       var guardInstance = null;
