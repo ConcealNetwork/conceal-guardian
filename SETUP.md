@@ -16,7 +16,7 @@ sudo apt-get install libboost-all-dev
 
 Then you are ready to go.
 
-## 2. Installation
+## 2. Options setup
 
 You can run the Guardian in two ways. You can simply run the executable and it will start and lift up the node daemon and the monitor it. But this way if you restart your computer or kill the seesion, it will not automaticall start again.
 In order to persist reboots you need to install it as a system service. Luckily the Guardian make this extremly easy for you. But first we need to configure it. The Guardian has build in interactive setup so its easy to do and you don't need to edit confi.json.
@@ -25,3 +25,34 @@ Just run it with ```guardian-linux64.exe --setup``` or on windows simply click i
 You will get something like this:
 
 ![Guardian setup](https://raw.githubusercontent.com/ConcealNetwork/conceal-guardian/master/setup/guardian_setup.jpg)
+
+## 3. Installation as service
+
+As alread said you can install the Guardian as a system service. This is very easy with build in commands. (you can always see the list of all commands with ```guardian-linux64.exe --help```).
+
+The command to install the service is:
+
+```guardian-linux64.exe --service install```
+
+Once the service is installed you can simply run it with:
+
+```guardian-linux64.exe --service start```
+
+To stop the service use the command:
+
+```guardian-linux64.exe --service stop```
+
+And to remove it just use: 
+
+```guardian-linux64.exe --service remove```
+
+To see if the service is running correctly and what happening with it you can use the command:
+
+```guardian-linux64.exe --service statuis```
+
+As I said its very easy and that is all you need to work with Guardian as a system service. The coomands are the same for Windows and Linux OS.
+
+
+
+
+
