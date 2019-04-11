@@ -10,7 +10,7 @@ It can also connect to a pool so the node is then listed among available nodes e
 
 To install and run it you have two options. Install and run it via the node.js virual machine or you can download the precompiled executabled that alreay include node.js and run that. In that case you have 0 dependencies.
 
-If you go with the first options the continue reading, otherwise go to [installation page](https://github.com/ConcealNetwork/conceal-guardian/edit/master/SETUP.md)
+If you go with the first options the continue reading, otherwise go to [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md)
 
 First need to install dependencies. There are two:
 
@@ -24,7 +24,7 @@ When you have it installed you can run the guardian by simply doing:
 1. npm install
 2. node index.js
 
-Before doing that however its wise to check the **config.json** and set the correct settings. For interactive config setup please refer to [installation page](https://github.com/ConcealNetwork/conceal-guardian/edit/master/SETUP.md). Sample of config.json
+Before doing that however its wise to check the **config.json** and set the correct settings. For interactive config setup please refer to [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md). Sample of config.json
 
 ```
 {
@@ -119,7 +119,7 @@ The explanation of config options:
     * url: the url of the Conceal Guardian Pool. The Guardian is sending its data to pool for public listing
     * interval: the interval in seconds in which the data is being sent
   
-To run as a service you can use the build in service controls described on [installation page](https://github.com/ConcealNetwork/conceal-guardian/edit/master/SETUP.md). Or you can do it the manual way. On linux you can use **systemctl**
+To run as a service you can use the build in service controls described on [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md). Or you can do it the manual way. On linux you can use **systemctl**
 
 ```
 [Unit]
