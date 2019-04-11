@@ -50,9 +50,21 @@ To see if the service is running correctly and what happening with it you can us
 
 ```guardian-linux64.exe --service statuis```
 
-As I said its very easy and that is all you need to work with Guardian as a system service. The coomands are the same for Windows and Linux OS.
+As I said its very easy and that is all you need to work with Guardian as a system service. The commands are the same for Windows and Linux OS. Take note that on Windows and Linux you need **administrative** rights for working with service commands.
 
+## 4. Updating to the latest node daemon
 
+The Guardian supports two mode of operations:
 
+1. You don't have a daemon (conceald) preinstalled, the Guardian takes care of everything
+2. You have the daemon preinstalled and the Guardian monitors that instance
 
+If you have a type 1 of installation you can use the build in updater for the daemon. First make sure that the Guardian service is not running with:
 
+```guardian-linux64.exe --service stop```
+
+Then simply do: 
+
+```guardian-linux64.exe --node update```
+
+The Guardian will download and update the latest stable daemon (conceald).
