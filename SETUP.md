@@ -22,4 +22,6 @@ You can run the Guardian in two ways. You can simply run the executable and it w
 In order to persist reboots you need to install it as a system service. Luckily the Guardian make this extremly easy for you. But first we need to configure it. The Guardian has build in interactive setup so its easy to do and you don't need to edit confi.json.
 
 Just run it with ```guardian-linux64.exe --setup``` or on windows simply click in ```setup.bat```. Each OS has the executable of a different name so please use the appropriate on for your OS (I am using the linux one here).
-You will get something like this
+You will get something like this:
+
+https://raw.githubusercontent.com/ConcealNetwork/conceal-guardian/master/setup/guardian_setup.jpg
