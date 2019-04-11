@@ -24,4 +24,4 @@ In order to persist reboots you need to install it as a system service. Luckily 
 Just run it with ```guardian-linux64.exe --setup``` or on windows simply click in ```setup.bat```. Each OS has the executable of a different name so please use the appropriate on for your OS (I am using the linux one here).
 You will get something like this:
 
-https://raw.githubusercontent.com/ConcealNetwork/conceal-guardian/master/setup/guardian_setup.jpg
+![Guardian setup](https://raw.githubusercontent.com/ConcealNetwork/conceal-guardian/master/setup/guardian_setup.jpg)
