@@ -2,11 +2,17 @@
 
 ## 1. About
 
-ConcealNodeGuard is a guardian process that monitors over the conceald daemon. It can catch daemon errors and also monitors if the block count is increasing. In case an error is detected or the block count is stale it restarts the daemon and notifies the devs on the Discord over a web hook.
+ConcealNodeGuard is a guardian process that monitors over the conceald daemon. It can catch daemon errors and also monitors if the block count is increasing. In case an error is detected or the block count is stale it restarts the daemon and notifies the devs on the Discord over a web hook, or sends a mail to the recipient, or both.
+
+It can also connect to a pool so the node is then listed among available nodes either for infrastrucure monitoring or for remote node with fee listing.
 
 ## 2. Installation
 
-To install and run it you first need to install dependencies. There are two:
+To install and run it you have two options. Install and run it via the node.js virual machine or you can download the precompiled executabled that alreay include node.js and run that. In that case you have 0 dependencies.
+
+If you go with the first options the continue reading, otherwise go to [installation page](https://github.com/ConcealNetwork/conceal-guardian/edit/master/SETUP.md)
+
+First need to install dependencies. There are two:
 
 * [nodejs](https://nodejs.org/en/)
 * [npm](https://www.npmjs.com/)
@@ -18,7 +24,7 @@ When you have it installed you can run the guardian by simply doing:
 1. npm install
 2. node index.js
 
-Before doing that however its wise to check the **config.json** and set the correct settings. Sample of config.json
+Before doing that however its wise to check the **config.json** and set the correct settings. For interactive config setup please refer to [installation page](https://github.com/ConcealNetwork/conceal-guardian/edit/master/SETUP.md). Sample of config.json
 
 ```
 {
