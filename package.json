@@ -1,13 +1,28 @@
 {
   "name": "nodeguard",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "description": "Conceal Node Guard",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ConcealNetwork/conceal-guardian.git"
+  },
+  "keywords": [
+    "conceal",
+    "cryptocurrency",
+    "guardian",
+    "daemon",
+    "node"
+  ],
+  "author": "Taegus",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ConcealNetwork/conceal-guardian/issues"
+  },
+  "homepage": "https://github.com/ConcealNetwork/conceal-guardian#readme",
   "dependencies": {
     "command-line-args": "^5.1.0",
     "command-line-usage": "^5.0.5",
