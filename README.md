@@ -10,7 +10,7 @@ It can also connect to a pool so the node is then listed among available nodes e
 
 To install and run it you have two options. Install and run it via the node.js virual machine or you can download the precompiled executabled that alreay include node.js and run that. In that case you have 0 dependencies.
 
-If you go with the first options the continue reading, otherwise go to [installation page](https://github.com/ConcealNetwork/conceal-guardian/edit/master/SETUP.md)
+If you go with the first options the continue reading, otherwise go to [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md)
 
 First need to install dependencies. There are two:
 
@@ -24,7 +24,7 @@ When you have it installed you can run the guardian by simply doing:
 1. npm install
 2. node index.js
 
-Before doing that however its wise to check the **config.json** and set the correct settings. For interactive config setup please refer to [installation page](https://github.com/ConcealNetwork/conceal-guardian/edit/master/SETUP.md). Sample of config.json
+Before doing that however its wise to check the **config.json** and set the correct settings. For interactive config setup please refer to [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md). Sample of config.json
 
 ```
 {
@@ -37,12 +37,30 @@ Before doing that however its wise to check the **config.json** and set the corr
       ],
       "path":"C:\\Wallets\\Conceal-CLI\\conceald.exe",
       "port":16000,
-      "name":"TestNode"
+      "name":"TestNode",
+      "bindAddr":"0.0.0.0",
+      "feeAddr":"your fee CCX address"
    },
    "error":{
       "notify":{
          "discord":{
             "url":"put the discord web hook url in here"
+         },
+         "email":{
+            "smtp":{
+               "host":"conceal.network",
+               "port":25,
+               "secure":false
+            },
+            "auth":{
+               "username":"your SMTP username",
+               "password":"your SMTP password"
+            },
+            "message":{
+               "from":"no-reply@conceal.network",
+               "to":"test.email@gmail.com",
+               "subject":"Guardian error occured"
+            }
          }
       }
    },
@@ -71,10 +89,24 @@ The explanation of config options:
   * path: The path of the process. If omited it uses the same path where the guardian is located
   * port: The port on which conceald is running
   * name: Name of the node. If omited it uses the hostname.
+  * feeAddr: The CCX address on which the transaction fee will be sent in case of remote node.
+  * bindAddr: The address on which you listen. 127.0.0.1 for localhost only. 0.0.0.0 for outside accesible node.
 * **error**
   * **notify**
     * **discord**
       * url: the ulr of the Discord web hook, where the error reports are send.
+    * **email**
+      * **smtp**
+         * host: SMTP hostname 
+         * port: SMTP port (default is 25) 
+         * secure: do you want secure connection (usually false)
+      * **auth**
+         * username: SMTP username 
+         * password: SMTP password
+      * **message**
+         * from: From field of the message
+         * to: To field of the message
+         * subject: Subject of the message
 * **restart**
   * errorForgetTime: The time in seconds after which the error is forgoten and error count decreased by 1.
   * maxCloseErrors: Maximum number of errors. After that the guardian stops as there is a serious issue with the daemon.
@@ -87,11 +119,11 @@ The explanation of config options:
     * url: the url of the Conceal Guardian Pool. The Guardian is sending its data to pool for public listing
     * interval: the interval in seconds in which the data is being sent
   
-To run as a service use **systemctl**
+To run as a service you can use the build in service controls described on [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md). Or you can do it the manual way. On linux you can use **systemctl**
 
 ```
 [Unit]
-Description=NodeGuardian
+Description=Node Guardian
 
 [Service]
 Type=simple
@@ -107,14 +139,14 @@ WantedBy=multi-user.target
 
 ```
 
-Copy **NodeGuardian.service.sample** to **/etc/systemd/system/NodeGuardian.service** and edit it approprietly.
+Copy **ccx-guardian.service.template** to **/etc/systemd/system/ccx-guardian.service** and edit it approprietly.
 
 Now you can start it or stop it with:
 
-- **start**: sudo systemctl start NodeGuardian
-- **stop**: sudo systemctl stop NodeGuardian
-- **status**: sudo systemctl status NodeGuardian
-- **print log**: journalctl -e -u NodeGuardian.service
+- **start**: sudo systemctl start ccx-guardian
+- **stop**: sudo systemctl stop ccx-guardian
+- **status**: sudo systemctl status ccx-guardian
+- **print log**: journalctl -e -u ccx-guardian.service
 - **reload conf**: systemctl daemon-reload
 
 ## 3. API
@@ -127,12 +159,52 @@ The result is for example:
 
 ```
 {
+   "id":"7b6e8b0c-039c-48a9-959f-2f379f897a78",
+   "os":"linux",
+   "name":"Solaris",
+   "nodeHost":"80.241.210.162",
+   "nodePort":16000,
    "status":{
-      "name":"TestNode",
       "errors":0,
-      "startTime":"2019-02-24T16:34:53.636Z",
-      "blockHeight":188023,
-      "nodeVersion":"5.2.1"
+      "startTime":"2019-04-08T15:32:03.011Z"
+   },
+   "blockchain":{
+      "alt_blocks_count":4,
+      "block_major_version":7,
+      "block_minor_version":0,
+      "difficulty":411075551,
+      "fee_address":"ccx7ZuCP9NA2KmnxbyBn9QgeLSATHXHRAXVpxgiaNxsH4GwMvQ92SeYhEeF2tJHADHbW4bZMFHvFf8GpucLrRyw49q4Gkc3AXM",
+      "full_deposit_amount":10158060988835,
+      "full_deposit_interest":54938177048,
+      "grey_peerlist_size":1120,
+      "height":220877,
+      "incoming_connections_count":37,
+      "last_block_difficulty":442618488,
+      "last_block_reward":7500300,
+      "last_block_timestamp":1555001815,
+      "last_known_block_index":220876,
+      "outgoing_connections_count":7,
+      "status":"OK",
+      "top_block_hash":"bd7ec15e292b293561cd8e153d42a4c6ab83006165faf0e37727cd7f527d4b1b",
+      "tx_count":315644,
+      "tx_pool_size":0,
+      "version":"5.3.0",
+      "white_peerlist_size":97
+   },
+   "location":{
+      "ip":"80.241.210.162",
+      "data":{
+         "country":"DE",
+         "countryCode":"DE",
+         "region":"Bavaria",
+         "regionCode":"",
+         "city":"Munich",
+         "postal":"81549",
+         "ip":"80.241.210.162",
+         "latitude":48.1089,
+         "longitude":11.6074,
+         "timezone":""
+      }
    }
 }
 ```
