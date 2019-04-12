@@ -4,7 +4,7 @@
 
 const vsprintf = require("sprintf-js").vsprintf;
 const moment = require("moment");
-const CCX = require("conceal-js");
+const CCX = require("conceal-api");
 
 module.exports = {
   RpcCommunicator: function (configOpts, errorCallback) {
