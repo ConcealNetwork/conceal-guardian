@@ -5,12 +5,13 @@
 const nodemailer = require("nodemailer");
 const vsprintf = require("sprintf-js").vsprintf;
 const request = require("request");
+const oPath = require("object-path");
 const os = require("os");
 
 function notifyViaDiscord(config, msgText, msgType, nodeData) {
-  if (config.error.notify.discord.url) {
+  if (oPath.get(config, 'error.notify.discord.url', '')) {
     var hookOptions = {
-      uri: config.error.notify.discord.url,
+      uri: oPath.get(config, 'error.notify.discord.url', ''),
       method: "POST",
       json: {
         content: vsprintf("Node **%s** reported an error -> %s \n", [
@@ -29,12 +30,12 @@ function notifyViaDiscord(config, msgText, msgType, nodeData) {
 function notifyViaEmail(config, msgText, msgType, nodeData) {
   // create reusable transporter object using the default SMTP transport
   const transporter = nodemailer.createTransport({
-    host: config.error.notify.email.smtp.host,
-    port: config.error.notify.email.smtp.port,
-    secure: config.error.notify.email.smtp.secure,
+    host: oPath.get(config, 'error.notify.email.smtp.host', ''),
+    port: oPath.get(config, 'error.notify.email.smtp.port', 25),
+    secure: oPath.get(config, 'error.notify.email.smtp.secure', false),
     auth: {
-      user: config.error.notify.email.auth.username,
-      pass: config.error.notify.email.auth.password
+      user: oPath.get(config, 'error.notify.email.auth.username', ''),
+      pass: oPath.get(config, 'error.notify.email.auth.password', '')
     },
     tls: {
       rejectUnauthorized: false
@@ -53,9 +54,9 @@ function notifyViaEmail(config, msgText, msgType, nodeData) {
 
   // setup email data with unicode symbols
   const mailOptions = {
-    from: config.error.notify.email.message.from,
-    to: config.error.notify.email.message.to,
-    subject: config.error.notify.email.message.subject || "Conceal Guardian Error",
+    from: oPath.get(config, 'error.notify.email.message.from', ''),
+    to: oPath.get(config, 'error.notify.email.message.to', ''),
+    subject: oPath.get(config, 'error.notify.email.message.subject', 'Conceal Guardian Error'),
     text: bodyContentPlain, // plain text body
     html: bodyContentHTML  // html body
   };

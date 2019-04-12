@@ -207,6 +207,10 @@ if (cmdOptions.help) {
           guardInstance.stop();
         }
       });
+
+      process.on('uncaughtException', function (err) {
+        guardInstance.logError(err)
+      });
     }
   }
 }

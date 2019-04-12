@@ -21,12 +21,12 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
   const nodeUniqueId = utils.ensureNodeUniqueId();
   var starupTime = moment();
   var errorCount = 0;
-  var PoolInterval = null;
+  var poolInterval = null;
   var locationData = null;
   var initialized = false;
   var nodeProcess = null;
   var externalIP = null;
-  var RpcComms = null;
+  var rpcComms = null;
   var self = this;
 
   // get GEO data
@@ -41,20 +41,29 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
   })();
 
   this.stop = function () {
-    if (RpcComms) {
-      RpcComms.stop();
-      RpcComms = null;
+    if (rpcComms) {
+      rpcComms.stop();
+      rpcComms = null;
 
-      if (PoolInterval) {
-        clearInterval(PoolInterval);
-        PoolInterval = null;
+      if (poolInterval) {
+        clearInterval(poolInterval);
+        poolInterval = null;
       }
     }
 
     if (nodeProcess) {
+      nodeProcess.removeListener("close", onProcessCloseCallback);
       nodeProcess.kill("SIGTERM");
     }
   };
+
+  this.logError = function (errMessage) {
+    logMessage(errMessage, "error", false);
+  };
+
+  function onProcessCloseCallback(err) {
+    restartDaemonProcess("Node process closed with: " + err, true);
+  }
 
   function errorCallback(errorData) {
     restartDaemonProcess(errorData, true);
@@ -74,7 +83,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
         errors: errorCount,
         startTime: starupTime
       },
-      blockchain: RpcComms ? RpcComms.getData() : null,
+      blockchain: rpcComms ? rpcComms.getData() : null,
       location: {
         ip: externalIP,
         data: locationData
@@ -169,8 +178,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
       logMessage("Core is initialized, starting the periodic checking...", "info", false);
       initialized = true;
 
-      RpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
-      RpcComms.start();
+      rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
+      rpcComms.start();
     }
   }
 
@@ -190,9 +199,9 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
       nodeProcess.on("error", function (err) {
         restartDaemonProcess("Error on starting the node process: " + err, false);
       });
-      nodeProcess.on("close", function (err) {
-        restartDaemonProcess("Node process closed with: " + err, true);
-      });
+
+      // if daemon closes the try to log and restart it
+      nodeProcess.on("close", onProcessCloseCallback);
 
       const dataStream = readline.createInterface({
         input: nodeProcess.stdout
