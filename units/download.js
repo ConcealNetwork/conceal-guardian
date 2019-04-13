@@ -3,6 +3,8 @@
 // Please see the included LICENSE file for more information.
 
 const downloadRelease = require('download-github-release');
+const extractZIP = require('extract-zip');
+const extractTAR = require('tar');
 const tempDir = require('temp-dir');
 const utils = require("./utils.js");
 const shell = require("shelljs");
@@ -39,17 +41,64 @@ function filterAssetGuardian(asset) {
   }
 }
 
+function extractArchive(filePath, outDir, callback) {
+  if (process.platform === "win32") {
+    extractZIP(filePath, { dir: outDir }, function (err) {
+      if (err) {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+  } else if (process.platform === "linux") {
+    try {
+      extractTAR.x({
+        cwd: outDir,
+        file: filePath,
+        sync: true,
+        preservePaths: true
+      });
+      callback(true);
+    } catch (err) {
+      callback(false);
+    }
+  } else {
+    callback(false);
+  }
+}
+
 module.exports = {
   downloadLatestDaemon: function (nodePath, callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
+    shell.rm('-rf', finalTempDir);
     shell.mkdir('-p', finalTempDir);
 
-    downloadRelease('ConcealNetwork', 'conceal-core', finalTempDir, filterRelease, filterAssetNode, false)
+    downloadRelease('ConcealNetwork', 'conceal-core', finalTempDir, filterRelease, filterAssetNode, true)
       .then(function () {
-        shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
-        shell.rm('-rf', finalTempDir);
-        shell.chmod('+x', nodePath);
-        callback(null);
+        fs.readdir(finalTempDir, function (err, items) {
+          if (items.length > 0) {
+            extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
+              if (success) {
+                shell.rm('-rf', path.join(finalTempDir, items[0]));
+
+                fs.readdir(finalTempDir, function (err, items) {
+                  if (items.length > 0) {
+                    shell.cp(path.join(finalTempDir, items[0], utils.getNodeExecutableName()), path.dirname(nodePath));
+                    shell.rm('-rf', finalTempDir);
+                    shell.chmod('+x', nodePath);
+                    callback(null);
+                  } else {
+                    callback("No downloaded archives found");
+                  }
+                });
+              } else {
+                callback("Failed to extract the archive");
+              }
+            });
+          } else {
+            callback("No downloaded archives found");
+          }
+        });
       })
       .catch(function (err) {
         callback(err.message);
@@ -57,19 +106,32 @@ module.exports = {
   },
   downloadLatestGuardian: function (nodePath, callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
+    shell.rm('-rf', finalTempDir);
     shell.mkdir('-p', finalTempDir);
 
-    downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, false)
+    downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, true)
       .then(function () {
-        var executableName = utils.getGuardianExecutableName();
-        var extensionPos = executableName.lastIndexOf(".");
-        var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
+        fs.readdir(finalTempDir, function (err, items) {
+          if (items.length > 0) {
+            extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
+              if (success) {
+                var executableName = utils.getGuardianExecutableName();
+                var extensionPos = executableName.lastIndexOf(".");
+                var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
 
-        shell.mv(path.join(process.cwd(), utils.getGuardianExecutableName()), path.join(process.cwd(), backupName));
-        shell.cp(path.join(finalTempDir, executableName), process.cwd());
-        shell.rm('-rf', finalTempDir);
-        shell.chmod('+x', nodePath);
-        callback(null);
+                shell.mv(path.join(process.cwd(), utils.getGuardianExecutableName()), path.join(process.cwd(), backupName));
+                shell.cp(path.join(finalTempDir, executableName), process.cwd());
+                shell.rm('-rf', finalTempDir);
+                shell.chmod('+x', nodePath);
+                callback(null);
+              } else {
+                callback("Failed to extract the archive");
+              }
+            });
+          } else {
+            callback("No downloaded archives found");
+          }
+        });
       })
       .catch(function (err) {
         callback(err.message);
