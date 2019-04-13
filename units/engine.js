@@ -7,6 +7,7 @@ const child_process = require("child_process");
 const iplocation = require("iplocation").default;
 const apiServer = require("./apiServer.js");
 const notifiers = require("./notifiers.js");
+const vsprintf = require("sprintf-js").vsprintf;
 const publicIp = require("public-ip");
 const readline = require("readline");
 const request = require("request");
@@ -52,7 +53,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
     }
 
     if (nodeProcess) {
-      nodeProcess.removeListener("close", onProcessCloseCallback);
       nodeProcess.kill("SIGTERM");
     }
   };
@@ -60,10 +60,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
   this.logError = function (errMessage) {
     logMessage(errMessage, "error", false);
   };
-
-  function onProcessCloseCallback(err) {
-    restartDaemonProcess("Node process closed with: " + err, true);
-  }
 
   function errorCallback(errorData) {
     restartDaemonProcess(errorData, true);
@@ -128,7 +124,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
       setTimeout(() => {
         process.exit(0);
       }, 3000);
-    } else {
+    } else if (!nodeProcess) {
       startDaemonProcess();
     }
 
@@ -201,7 +197,10 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
       });
 
       // if daemon closes the try to log and restart it
-      nodeProcess.on("close", onProcessCloseCallback);
+      nodeProcess.on("close", function (code, signal) {
+        nodeProcess = null;
+        restartDaemonProcess(vsprintf('Node process closed with code %d and signal %s', [code, signal]), true);
+      });
 
       const dataStream = readline.createInterface({
         input: nodeProcess.stdout

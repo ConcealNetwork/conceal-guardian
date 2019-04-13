@@ -228,12 +228,6 @@ if (cmdOptions.help) {
         createGuardInstance();
       }
 
-      process.on("exit", function () {
-        if (guardInstance) {
-          guardInstance.stop();
-        }
-      });
-
       process.on('uncaughtException', function (err) {
         guardInstance.logError(err);
       });
