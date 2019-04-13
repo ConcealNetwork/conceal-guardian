@@ -61,7 +61,12 @@ module.exports = {
 
     downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, false)
       .then(function () {
-        shell.cp(path.join(finalTempDir, utils.getGuardianExecutableName()), process.cwd());
+        var executableName = utils.getGuardianExecutableName();
+        var extensionPos = executableName.lastIndexOf(".");
+        var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
+
+        shell.mv(path.join(process.cwd(), utils.getGuardianExecutableName()), path.join(process.cwd(), backupName));
+        shell.cp(path.join(finalTempDir, executableName), process.cwd());
         shell.rm('-rf', finalTempDir);
         shell.chmod('+x', nodePath);
         callback(null);

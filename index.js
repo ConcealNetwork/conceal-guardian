@@ -235,7 +235,7 @@ if (cmdOptions.help) {
       });
 
       process.on('uncaughtException', function (err) {
-        guardInstance.logError(err)
+        guardInstance.logError(err);
       });
     }
   }
