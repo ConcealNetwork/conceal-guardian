@@ -11,7 +11,7 @@ const fs = require("fs");
 
 // Define a function to filter releases.
 function filterRelease(release) {
-  return release.prerelease === true;
+  return release.prerelease === false;
 }
 
 // Define a function to filter assets.
