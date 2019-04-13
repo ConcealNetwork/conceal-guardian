@@ -53,6 +53,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
     }
 
     if (nodeProcess) {
+      nodeProcess.removeListener("close", onProcessCloseCallback);
       nodeProcess.kill("SIGTERM");
     }
   };
@@ -60,6 +61,10 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
   this.logError = function (errMessage) {
     logMessage(errMessage, "error", false);
   };
+
+  function onProcessCloseCallback(code, signal) {
+    restartDaemonProcess(vsprintf("Node process closed with code %d and signal %s", [code, signal]), true);
+  }
 
   function errorCallback(errorData) {
     restartDaemonProcess(errorData, true);
@@ -124,7 +129,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
       setTimeout(() => {
         process.exit(0);
       }, 3000);
-    } else if (!nodeProcess) {
+    } else {
       startDaemonProcess();
     }
 
@@ -193,14 +198,11 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
       }, 3000);
     } else {
       nodeProcess.on("error", function (err) {
-        restartDaemonProcess("Error on starting the node process: " + err, false);
+        restartDaemonProcess(vsprintf("Error on starting the node process: %s", [err]), false);
       });
 
       // if daemon closes the try to log and restart it
-      nodeProcess.on("close", function (code, signal) {
-        nodeProcess = null;
-        restartDaemonProcess(vsprintf('Node process closed with code %d and signal %s', [code, signal]), true);
-      });
+      nodeProcess.on("close", onProcessCloseCallback);
 
       const dataStream = readline.createInterface({
         input: nodeProcess.stdout
