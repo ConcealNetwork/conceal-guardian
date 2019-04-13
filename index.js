@@ -30,6 +30,12 @@ try {
     name: "node",
     type: String
   }, {
+    name: "update",
+    type: Boolean
+  }, {
+    name: "version",
+    type: Boolean
+  }, {
     name: "help",
     alias: "h",
     type: Boolean
@@ -72,6 +78,14 @@ if (cmdOptions.help) {
           description: 'Node related commands. Possible values are: "update"'
         },
         {
+          name: 'update',
+          description: 'Update the guardian instance to the latest version'
+        },
+        {
+          name: 'version',
+          description: 'Shows the verion of the Guardian app'
+        },
+        {
           name: 'help',
           description: 'Shows this help instructions'
         }
@@ -110,6 +124,9 @@ if (cmdOptions.help) {
   ];
   const usage = commandLineUsage(sections);
   console.log(usage);
+} else if (cmdOptions.version) {
+  var pjson = require('./package.json');
+  console.log(vsprintf('\nConceal node guardian version %s', [pjson.version]));
 } else {
   const rootPath = process.cwd();
   const configFileName = cmdOptions.config || path.join(rootPath, "config.json");
@@ -180,6 +197,15 @@ if (cmdOptions.help) {
           break;
         default: console.log('wrong parameter for node command. Valid values: "update"');
       }
+    } else if (cmdOptions.update) {
+      service.stop(configOpts, configFileName);
+      download.downloadLatestGuardian(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+        if (error) {
+          console.log(vsprintf("Error updating the guardian: %s", [error]));
+        } else {
+          console.log("The guardian has been succesfully updated");
+        }
+      });
     } else {
       const nodePath = utils.getNodeActualPath(cmdOptions, configOpts, rootPath);
       var guardInstance = null;

@@ -44,5 +44,15 @@ module.exports = {
     } else {
       return 'conceald';
     }
+  },
+  getGuardianExecutableName: function () {
+    if (process.platform === "win32") {
+      return 'guardian-win64.exe';
+    } else if (process.platform === "linux") {
+      return 'guardian-linux64';
+    }
+    else {
+      return 'guardian-macos64';
+    }
   }
 };

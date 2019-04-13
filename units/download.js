@@ -11,11 +11,11 @@ const fs = require("fs");
 
 // Define a function to filter releases.
 function filterRelease(release) {
-  return release.prerelease === false;
+  return release.prerelease === true;
 }
 
 // Define a function to filter assets.
-function filterAsset(asset) {
+function filterAssetNode(asset) {
   if (process.platform === "win32") {
     return asset.name.indexOf('win64') >= 0;
   } else if (process.platform === "linux") {
@@ -27,14 +27,41 @@ function filterAsset(asset) {
   }
 }
 
+function filterAssetGuardian(asset) {
+  if (process.platform === "win32") {
+    return asset.name.indexOf('win64') >= 0;
+  } else if (process.platform === "linux") {
+    return asset.name.indexOf('linux64') >= 0;
+  } else if (process.platform === "darwin") {
+    return asset.name.indexOf('mac64') >= 0;
+  } else {
+    return false;
+  }
+}
+
 module.exports = {
   downloadLatestDaemon: function (nodePath, callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
     shell.mkdir('-p', finalTempDir);
 
-    downloadRelease('ConcealNetwork', 'conceal-core', finalTempDir, filterRelease, filterAsset, false)
+    downloadRelease('ConcealNetwork', 'conceal-core', finalTempDir, filterRelease, filterAssetNode, false)
       .then(function () {
         shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
+        shell.rm('-rf', finalTempDir);
+        shell.chmod('+x', nodePath);
+        callback(null);
+      })
+      .catch(function (err) {
+        callback(err.message);
+      });
+  },
+  downloadLatestGuardian: function (nodePath, callback) {
+    var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
+    shell.mkdir('-p', finalTempDir);
+
+    downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, false)
+      .then(function () {
+        shell.cp(path.join(finalTempDir, utils.getGuardianExecutableName()), process.cwd());
         shell.rm('-rf', finalTempDir);
         shell.chmod('+x', nodePath);
         callback(null);
