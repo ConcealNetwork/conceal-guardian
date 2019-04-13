@@ -36,7 +36,7 @@ The command to install the service is:
 
 Once the service is installed you can simply run it with:
 
-``./`guardian-linux64.exe --service start```
+```./guardian-linux64.exe --service start```
 
 To stop the service use the command:
 
