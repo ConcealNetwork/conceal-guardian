@@ -126,13 +126,13 @@ if (cmdOptions.help) {
   console.log(usage);
 } else if (cmdOptions.version) {
   var pjson = require('./package.json');
-  console.log(vsprintf('\nConceal node guardian version %s', [pjson.version]));
+  console.log(vsprintf('\nConceal node guardian version %s\n', [pjson.version]));
 } else {
   const rootPath = process.cwd();
   const configFileName = cmdOptions.config || path.join(rootPath, "config.json");
 
   if (!fs.existsSync(configFileName)) {
-    console.log(vsprintf('\n"%s" does not exist! Specify the correct path to the config file or create config.json in the same directory as the application. You can use the config.json.sample as an example', [
+    console.log(vsprintf('\n"%s" does not exist! Specify the correct path to the config file or create config.json in the same directory as the application. You can use the config.json.sample as an example\n', [
       configFileName,
     ]));
   } else {
@@ -181,7 +181,7 @@ if (cmdOptions.help) {
         case "status":
           service.status(configOpts, configFileName);
           break;
-        default: console.log('wrong parameter for service command. Valid values: "install", "remove", "start", "stop"');
+        default: console.log('\nWrong parameter for service command. Valid values: "install", "remove", "start", "stop"\n');
       }
     } else if (cmdOptions.node) {
       switch (cmdOptions.node) {
@@ -189,21 +189,21 @@ if (cmdOptions.help) {
           service.stop(configOpts, configFileName);
           download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
             if (error) {
-              console.log(vsprintf("Error updating daemon: %s", [error]));
+              console.log(vsprintf("\nError updating daemon: %s\n", [error]));
             } else {
-              console.log("The daemon has been succesfully updated");
+              console.log("\nThe daemon has been succesfully updated\n");
             }
           });
           break;
-        default: console.log('wrong parameter for node command. Valid values: "update"');
+        default: console.log('\nWrong parameter for node command. Valid values: "update"\n');
       }
     } else if (cmdOptions.update) {
       service.stop(configOpts, configFileName);
       download.downloadLatestGuardian(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
         if (error) {
-          console.log(vsprintf("Error updating the guardian: %s", [error]));
+          console.log(vsprintf("\nError updating the guardian: %s\n", [error]));
         } else {
-          console.log("The guardian has been succesfully updated");
+          console.log("\nThe guardian has been succesfully updated\n");
         }
       });
     } else {
@@ -218,9 +218,9 @@ if (cmdOptions.help) {
       if (!fs.existsSync(nodePath)) {
         download.downloadLatestDaemon(nodePath, function (error) {
           if (error) {
-            console.log(vsprintf("Error updating daemon: %s", [error]));
+            console.log(vsprintf("\nError updating daemon: %s\n", [error]));
           } else {
-            console.log("The daemon has been succesfully updated");
+            console.log("\nThe daemon has been succesfully updated\n");
             createGuardInstance();
           }
         });

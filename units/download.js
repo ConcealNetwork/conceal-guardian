@@ -83,7 +83,11 @@ module.exports = {
 
                 fs.readdir(finalTempDir, function (err, items) {
                   if (items.length > 0) {
-                    shell.cp(path.join(finalTempDir, items[0], utils.getNodeExecutableName()), path.dirname(nodePath));
+                    if (process.platform === "win32") {
+                      shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
+                    } else {
+                      shell.cp(path.join(finalTempDir, items[0], utils.getNodeExecutableName()), path.dirname(nodePath));
+                    }
                     shell.rm('-rf', finalTempDir);
                     shell.chmod('+x', nodePath);
                     callback(null);
