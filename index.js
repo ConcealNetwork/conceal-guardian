@@ -10,6 +10,7 @@ const download = require("./units/download.js");
 const service = require("./units/service.js");
 const setup = require("./units/setup.js");
 const utils = require("./units/utils.js");
+const pjson = require('./package.json');
 const path = require("path");
 const fs = require("fs");
 
@@ -125,7 +126,6 @@ if (cmdOptions.help) {
   const usage = commandLineUsage(sections);
   console.log(usage);
 } else if (cmdOptions.version) {
-  var pjson = require('./package.json');
   console.log(vsprintf('\nConceal node guardian version %s\n', [pjson.version]));
 } else {
   const rootPath = process.cwd();
@@ -212,7 +212,7 @@ if (cmdOptions.help) {
 
       // createGuardInstance function
       var createGuardInstance = function () {
-        guardInstance = new mainEngine.NodeGuard(cmdOptions, configOpts, rootPath);
+        guardInstance = new mainEngine.NodeGuard(cmdOptions, configOpts, rootPath, pjson.version);
       };
 
       if (!fs.existsSync(nodePath)) {

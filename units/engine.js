@@ -18,7 +18,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
-exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
+exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   const nodeUniqueId = utils.ensureNodeUniqueId();
   var starupTime = moment();
   var errorCount = 0;
@@ -78,6 +78,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath) {
       id: nodeUniqueId,
       os: process.platform,
       name: configOpts.node.name || os.hostname(),
+      version: guardVersion,
       nodeHost: externalIP,
       nodePort: configOpts.node.port,
       status: {
