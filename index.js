@@ -145,15 +145,27 @@ if (cmdOptions.help) {
     }
 
     if (configOpts.node && configOpts.node.bindAddr) {
-      // add bind address to arguments
-      configOpts.node.args.push("--rpc-bind-ip");
-      configOpts.node.args.push(configOpts.node.bindAddr);
+      var addrIndex = configOpts.node.args.indexOf("--rpc-bind-ip");
+
+      if (addrIndex == -1) {
+        // add bind address to arguments
+        configOpts.node.args.push("--rpc-bind-ip");
+        configOpts.node.args.push(configOpts.node.bindAddr);
+      } else {
+        configOpts.node.args[addrIndex + 1] = configOpts.node.bindAddr;
+      }
     }
 
     if (configOpts.node && configOpts.node.port) {
-      // add fee address to arguments
-      configOpts.node.args.push("--rpc-bind-port");
-      configOpts.node.args.push(configOpts.node.port);
+      var portIndex = configOpts.node.args.indexOf("--rpc-bind-port");
+
+      if (portIndex == -1) {
+        // add fee address to arguments
+        configOpts.node.args.push("--rpc-bind-port");
+        configOpts.node.args.push(configOpts.node.port);
+      } else {
+        configOpts.node.args[portIndex + 1] = configOpts.node.port;
+      }
     }
 
     if (configOpts.node && configOpts.node.feeAddr) {
