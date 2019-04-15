@@ -2,29 +2,8 @@
 	"node": {
 		"args": [],
 		"port": 16000,
-    "bindAddr": "0.0.0.0"
+		"bindAddr": "0.0.0.0"
 	},
-  "error": {
-    "notify": {
-      "discord": {},
-      "email": {
-        "smtp": {
-          "host": "smtp hostname",
-          "port": 25,
-          "secure": false
-        },
-        "auth": {
-          "username": "your username",
-          "password": "your password"
-        },
-        "message": {
-          "from": "from field",
-          "to": "list of recipients",
-          "subject": "optionally the subject"
-        }
-      }
-    }
-  },
 	"restart": {
 		"errorForgetTime": 600,
 		"maxCloseErrors": 3,
