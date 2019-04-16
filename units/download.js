@@ -13,7 +13,7 @@ const path = require("path");
 const fs = require("fs");
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
-const wrongLinuxOSMsg = "Only ubuntu 16.04 and 18.04 have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
+const wrongLinuxOSMsg = "Only Ubuntu 16.04 and 18.04 have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 const wrongOSMsg = "This operating system has no precompiled binaries you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 
 // Define a function to filter releases.
@@ -77,9 +77,15 @@ module.exports = {
           if (process.platform === "win32") {
             return asset.name.indexOf('win64') >= 0;
           } else if (process.platform === "linux") {
-            return asset.name.indexOf('ubuntu') >= 0;
+            if ((system.dist == "Ubuntu Linux") && (system.release == "16.04")) {
+              return asset.name.indexOf('ubuntu-1604') >= 0;
+            } else if ((system.dist == "Ubuntu Linux") && (system.release == "18.04")) {
+              return asset.name.indexOf('ubuntu-1804') >= 0;
+            } else {
+              return false;
+            }
           } else if (process.platform === "darwin") {
-            return asset.name.indexOf('macOS') >= 0;
+            return false;
           } else {
             return false;
           }
