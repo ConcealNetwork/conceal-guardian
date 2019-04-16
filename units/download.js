@@ -22,7 +22,7 @@ function filterRelease(release) {
 }
 
 function extractArchive(filePath, outDir, callback) {
-  if (process.platform === "win32") {
+  if (path.extname(filePath) == '.zip') {
     extractZIP(filePath, { dir: outDir }, function (err) {
       if (err) {
         callback(false);
@@ -30,7 +30,7 @@ function extractArchive(filePath, outDir, callback) {
         callback(true);
       }
     });
-  } else if (process.platform === "linux") {
+  } else if ((path.extname(filePath) == '.gz') || (path.extname(filePath) == '.tar')) {
     try {
       extractTAR.x({
         cwd: outDir,
@@ -97,22 +97,10 @@ module.exports = {
               if (items.length > 0) {
                 extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
                   if (success) {
-                    shell.rm('-rf', path.join(finalTempDir, items[0]));
-
-                    fs.readdir(finalTempDir, function (err, items) {
-                      if (items.length > 0) {
-                        if (process.platform === "win32") {
-                          shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
-                        } else {
-                          shell.cp(path.join(finalTempDir, items[0], utils.getNodeExecutableName()), path.dirname(nodePath));
-                        }
-                        shell.rm('-rf', finalTempDir);
-                        shell.chmod('+x', nodePath);
-                        callback(null);
-                      } else {
-                        callback("No downloaded archives found");
-                      }
-                    });
+                    shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
+                    shell.rm('-rf', finalTempDir);
+                    shell.chmod('+x', nodePath);
+                    callback(null);
                   } else {
                     callback("Failed to extract the archive");
                   }
