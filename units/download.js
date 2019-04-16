@@ -5,10 +5,11 @@
 const downloadRelease = require('download-github-release');
 const extractZIP = require('extract-zip');
 const extractTAR = require('tar');
+const vsprintf = require("sprintf-js").vsprintf;
+const osInfo = require('linux-os-info');
 const tempDir = require('temp-dir');
 const utils = require("./utils.js");
 const shell = require("shelljs");
-const getos = require('getos');
 const path = require("path");
 const fs = require("fs");
 
@@ -50,71 +51,89 @@ function extractArchive(filePath, outDir, callback) {
 module.exports = {
   downloadLatestDaemon: function (nodePath, callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
+    var linuxOSInfo = null;
+
     shell.rm('-rf', finalTempDir);
     shell.mkdir('-p', finalTempDir);
 
-    getos(function (error, system) {
-      if (error) {
-        callback(error);
-      } else {
-        if (system.os == "linux") {
-          if (system.dist == "Ubuntu Linux") {
-            if ((system.release !== "16.04") && (system.release !== "18.04")) {
-              callback(wrongLinuxOSMsg);
-              return false;
-            }
-          } else {
-            callback(wrongLinuxOSMsg);
-            return false;
-          }
-        } else if (system.os == "darwin") {
-          callback(wrongOSMsg);
+    // only for linux try to get it
+    if (process.platform === "linux") {
+      linuxOSInfo = osInfo({ mode: 'sync' });
+    }
+
+    if (linuxOSInfo) {
+      // if we are running on linux, print the version and flavor
+      console.log(vsprintf("Running on %s", [linuxOSInfo.pretty_name]));
+    }
+
+    if (process.platform == "linux") {
+      if (linuxOSInfo.id == "ubuntu") {
+        if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "18.04")) {
+          callback(wrongLinuxOSMsg);
           return false;
         }
+      } else {
+        callback(wrongLinuxOSMsg);
+        return false;
+      }
+    } else if (process.platform == "darwin") {
+      callback(wrongOSMsg);
+      return false;
+    }
 
-        // Define a function to filter assets.
-        var filterAssetNode = function (asset) {
-          if (process.platform === "win32") {
-            return asset.name.indexOf('win64') >= 0;
-          } else if (process.platform === "linux") {
-            if ((system.dist == "Ubuntu Linux") && (system.release == "16.04")) {
-              return asset.name.indexOf('ubuntu-1604') >= 0;
-            } else if ((system.dist == "Ubuntu Linux") && (system.release == "18.04")) {
-              return asset.name.indexOf('ubuntu-1804') >= 0;
-            } else {
-              return false;
-            }
-          } else if (process.platform === "darwin") {
-            return false;
-          } else {
-            return false;
-          }
-        };
+    // Define a function to filter assets.
+    var filterAssetNode = function (asset) {
+      if (process.platform === "win32") {
+        return asset.name.indexOf('win64') >= 0;
+      } else if (process.platform === "linux") {
+        if ((linuxOSInfo.id == "ubuntu") && (linuxOSInfo.version_id == "16.04")) {
+          return asset.name.indexOf('ubuntu-1604') >= 0;
+        } else if ((linuxOSInfo.id == "ubuntu") && (linuxOSInfo.version_id == "18.04")) {
+          return asset.name.indexOf('ubuntu-1804') >= 0;
+        } else {
+          return false;
+        }
+      } else if (process.platform === "darwin") {
+        return false;
+      } else {
+        return false;
+      }
+    };
 
-        downloadRelease('ConcealNetwork', 'conceal-core', finalTempDir, filterRelease, filterAssetNode, true)
-          .then(function () {
-            fs.readdir(finalTempDir, function (err, items) {
-              if (items.length > 0) {
-                extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
-                  if (success) {
-                    shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
+    downloadRelease('ConcealNetwork', 'conceal-core', finalTempDir, filterRelease, filterAssetNode, true)
+      .then(function () {
+        fs.readdir(finalTempDir, function (err, items) {
+          if (items.length > 0) {
+            extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
+              if (success) {
+                shell.rm('-rf', path.join(finalTempDir, items[0]));
+
+                fs.readdir(finalTempDir, function (err, items) {
+                  if (items.length > 0) {
+                    if (process.platform === "win32") {
+                      shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
+                    } else {
+                      shell.cp(path.join(finalTempDir, items[0], utils.getNodeExecutableName()), path.dirname(nodePath));
+                    }
                     shell.rm('-rf', finalTempDir);
                     shell.chmod('+x', nodePath);
                     callback(null);
                   } else {
-                    callback("Failed to extract the archive");
+                    callback("No downloaded archives found");
                   }
                 });
               } else {
-                callback("No downloaded archives found");
+                callback("Failed to extract the archive");
               }
             });
-          })
-          .catch(function (err) {
-            callback(err.message);
-          });
-      }
-    });
+          } else {
+            callback("No downloaded archives found");
+          }
+        });
+      })
+      .catch(function (err) {
+        callback(err.message);
+      });
   },
   downloadLatestGuardian: function (nodePath, callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
@@ -146,7 +165,6 @@ module.exports = {
 
                 shell.mv(path.join(process.cwd(), utils.getGuardianExecutableName()), path.join(process.cwd(), backupName));
                 shell.cp(path.join(finalTempDir, executableName), process.cwd());
-                shell.rm('-rf', finalTempDir);
                 shell.chmod('+x', nodePath);
                 callback(null);
               } else {
