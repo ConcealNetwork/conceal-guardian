@@ -16,6 +16,10 @@ sudo apt-get install libboost-all-dev
 
 Then you are ready to go.
 
+**NOTE:** 
+
+The precompiled binaries for the daemon, that guardian automatically downloads, are only available for Ubuntu 16.04 and 18.04 LTS versions. On other Linux version, you need to compile the daemon yourself like described [here](https://github.com/ConcealNetwork/conceal-core#compiling-conceal-from-source). On Windows there is no problems and the guardian downloads the precompiled binaries for the daemon automatically.
+
 ## 2. Options setup
 
 You can run the Guardian in two ways. You can simply run the executable and it will start and lift up the node daemon and then monitor it. But this way, if you restart your computer, or kill the session, it will not automatically start again.
@@ -63,7 +67,7 @@ If you have a type 1 installation, you can use the build in updater for the daem
 
 ```./guardian-linux64.exe --node update```
 
-The Guardian will download and update the latest stable daemon (conceald). Or if you have a fresh install and don't have the daemon yet, the Guardian will download it and install it on the first run automatically.
+The Guardian will download and update the latest stable daemon (conceald). Or if you have a fresh install and don't have the daemon yet, the Guardian will download it and install it on the first run automatically. **Note** however, that precompiled binaries are **only available** for Windows and for Ubuntu 16.04 and 18.04 LTS. On other Linux versions, you will have to compile the daemon binaries yourself as described [here](https://github.com/ConcealNetwork/conceal-core#compiling-conceal-from-source).
 
 ## 5. Updating to the latest guardian version
 
