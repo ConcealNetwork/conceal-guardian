@@ -32,7 +32,7 @@ You will get something like this:
 
 **Explanation of important options:**
 
-* ```Please input the path to the "conceald" executable (if you do not know what to put in, leave it empty)```
+* * ```Please input the path to the "conceald" executable (if you do not know what to put in, leave it empty)``` * *
 
 This controls where your conceald daemon executable is. If you arleady have it or you want to control where it is, then you need to specify the path to the executable here. Otherwise leave it empty and the guardian will download the latest one. 
 
