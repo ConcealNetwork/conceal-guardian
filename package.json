@@ -43,6 +43,7 @@
     "string-template": "^1.0.0",
     "tar": "^4.4.8",
     "temp-dir": "^1.0.0",
+    "username": "^4.1.0",
     "xmlbuilder": "^12.0.0"
   },
   "jshintConfig": {

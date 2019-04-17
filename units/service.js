@@ -3,6 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 const xmlbuilder = require("xmlbuilder");
+const username = require('username');
 const format = require("string-template");
 const shell = require("shelljs");
 const path = require("path");
@@ -30,7 +31,7 @@ module.exports = {
     } else if (process.platform == "linux") {
       var template = fs.readFileSync("ccx-guardian.service.template", "utf8");
       var parsedData = format(template, {
-        user: os.userInfo().username,
+        user: username.sync(),
         workDir: process.cwd(),
         execPath: path.join(process.cwd(), 'guardian-linux64'),
         configPath: configFileName
