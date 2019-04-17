@@ -32,41 +32,41 @@ You will get something like this:
 
 **Explanation of important options:**
 
-* * ```Please input the path to the "conceald" executable (if you do not know what to put in, leave it empty)``` * *
+*```Please input the path to the "conceald" executable (if you do not know what to put in, leave it empty)```*
 
 This controls where your conceald daemon executable is. If you arleady have it or you want to control where it is, then you need to specify the path to the executable here. Otherwise leave it empty and the guardian will download the latest one. 
 
 **NOTE**: The automatic donwload and install only goes for Windows and Ubuntu 16.04 and 18.04. For any other OS you need to compile your own daemon. Also note that if you leave the path empty then the guardian looks for it in the same folder as the guardian runs in 
 
-* ```Please input name for your node (this will be what others see)```
+*```Please input name for your node (this will be what others see)```*
 
 This is the name of the node that will be visible in the pool. Its a mandatory input.
 
-* ```Will this be a fee based remote node?```
+*```Will this be a fee based remote node?```*
 
 If you wan't to run your node as remote node with a fee, then answer yes to this.
 
-* ```Please input the fee address for your node (earnings will be sent to that address)```
+*```Please input the fee address for your node (earnings will be sent to that address)```*
 
 If you are running as fee based remote node then put your wallet address here. The fees will be sent to this address.
 
-* ```Will your node be accessible from the outside?```
+**```Will your node be accessible from the outside?```*
 
 This controls if your node will be accessible from the internet or not. If you run this internally then answer NO. If people will use it from the internet and connect to it, then you need to answer YES.
 
-* ```Do you want to be listed in the nodes pool?```
+*```Do you want to be listed in the nodes pool?```*
 
 Decide if you will be listed in the explorer nodes pool.
 
-* ```Please input the URL of the pool (default value should be ok)```
+*```Please input the URL of the pool (default value should be ok)```*
 
 If previous answer was yes then you select the pool address here. The default value is correct, so leave that. Just press ENTER.
 
-* ```Do you want to be notified on Discord in case of problems?```
+*```Do you want to be notified on Discord in case of problems?```*
 
 Answer YES if you want to be notified over the Discord in case the node has problems. You will be asked further questions if you answered YES.
 
-* ```Do you want to be notified over email in case of problems?```
+*```Do you want to be notified over email in case of problems?```*
 
 Answer YES if you want to be notified over the email in case the node has problems. You will be asked further questions if you answered YES.
 
