@@ -23,6 +23,8 @@ adduser conceal sudo
 adduser conceal systemd-journal
 ```
 
+When the new account is made, log in as that new account.
+
 **NOTE:** 
 
 The precompiled binaries for the daemon, that guardian automatically downloads, are only available for Ubuntu 16.04 and 18.04 LTS versions. On other Linux version, you need to compile the daemon yourself like described [here](https://github.com/ConcealNetwork/conceal-core#compiling-conceal-from-source). On Windows there is no problems and the guardian downloads the precompiled binaries for the daemon automatically.
