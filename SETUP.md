@@ -14,7 +14,14 @@ sudo apt-get update
 sudo apt-get install libboost-all-dev
 ```
 
-Then you are ready to go.
+Then you are ready to go. Also, while you can run the guardian under the root account its highly advisable to make a new account for it and run it under that. For instace I will show how to make an account with the name "conceal"
+
+```
+apt-get install sudo
+adduser conceal
+adduser conceal sudo
+adduser conceal systemd-journal
+```
 
 **NOTE:** 
 
