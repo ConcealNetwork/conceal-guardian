@@ -125,3 +125,56 @@ The updating of the guardian itself is similar and as easy as updating the node 
 ```sudo ./guardian-linux64 --update```
 
 The Guardian will download and update itself.
+
+## 6. Only instructions, step by step for installing
+
+If you want just a list of instructions on how to install the guardian then here it is:
+
+**Linux**:
+
+```
+sudo apt-get update
+sudo apt-get install libboost-all-dev
+
+sudo apt-get install sudo
+adduser conceal
+adduser conceal sudo
+adduser conceal systemd-journal
+```
+
+Then logout and login back as user conceal, then continue...
+
+```
+mkdir node
+cd node
+wget https://github.com/ConcealNetwork/conceal-guardian/releases/download/v0.3.5-beta/guardian-linux64.tar.gz
+tar -xvzf guardian-linux64.tar.gz
+./guardian-linux64 --node update
+./guardian-linux64 --setup
+```
+
+Answer all the questions (how to do it you can see above in this same tutorial). Then continue...
+
+```
+sudo ./guardian-linux64 --service install
+sudo ./guardian-linux64 --service start
+```
+
+Check that the node is running with 
+
+```
+sudo ./guardian-linux64 --service status
+```
+
+Your node should be visible in the pool shortly.
+
+**Windows**:
+
+1. Download: https://github.com/ConcealNetwork/conceal-guardian/releases/download/v0.3.5-beta/guardian-win64.zip
+2. Unzip it in the folder of your choice
+3. Click "setup.bat" in the same directory. Answer all the questions (how to do it you can see above in this same tutorial).
+4. Click "svc_install.bat"
+5. Click "svc_start.bat".
+6. Check that the node is running by clicking "svc_status.bat"
+
+Your node should be visible in the pool shortly.
