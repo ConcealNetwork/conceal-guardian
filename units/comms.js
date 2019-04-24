@@ -57,7 +57,9 @@ module.exports = {
             }
           }
         }).catch(err => {
-          errorCallback(err);
+          if (IsRunning) {
+            errorCallback(err);
+          }
         });
       }
     }
