@@ -196,7 +196,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
         if (!signal) {
           // only log is signall is empty which means it was spontaneous crash
-          logMessage(vsprintf("Node process closed with code %d", [code]), true);
+          logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
         }
 
         // check if we have crossed the maximum error number in short period

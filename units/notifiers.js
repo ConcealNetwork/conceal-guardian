@@ -28,15 +28,21 @@ function notifyViaDiscord(config, msgText, msgType, nodeData) {
 }
 
 function notifyViaEmail(config, msgText, msgType, nodeData) {
-  // create reusable transporter object using the default SMTP transport
+  var auth = null;
+
+  if (oPath.get(config, 'error.notify.email.auth.username', '')) {
+    auth = {
+      user: oPath.get(config, 'error.notify.email.auth.username', ''),
+      pass: oPath.get(config, 'error.notify.email.auth.password', '')
+    };
+  }
+
+  // create transporter object using the default SMTP transport
   const transporter = nodemailer.createTransport({
     host: oPath.get(config, 'error.notify.email.smtp.host', ''),
     port: oPath.get(config, 'error.notify.email.smtp.port', 25),
     secure: oPath.get(config, 'error.notify.email.smtp.secure', false),
-    auth: {
-      user: oPath.get(config, 'error.notify.email.auth.username', ''),
-      pass: oPath.get(config, 'error.notify.email.auth.password', '')
-    },
+    auth: auth,
     tls: {
       rejectUnauthorized: false
     }
