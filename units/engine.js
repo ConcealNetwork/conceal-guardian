@@ -14,6 +14,7 @@ const request = require("request");
 const moment = require("moment");
 const comms = require("./comms.js");
 const utils = require("./utils.js");
+const fkill = require('fkill');
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -25,6 +26,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var poolInterval = null;
   var locationData = null;
   var initialized = false;
+  var killTimeout = null;
   var nodeProcess = null;
   var externalIP = null;
   var rpcComms = null;
@@ -53,18 +55,20 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     }
 
     if (nodeProcess) {
-      nodeProcess.removeListener("close", onProcessCloseCallback);
       nodeProcess.kill("SIGTERM");
+
+      // if normal fails, do a forced terminate
+      killTimeout = setTimeout(function () {
+        (async () => {
+          await fkill(nodeProcess.pid, { force: true });
+        })();
+      }, (configOpts.restart.terminateTimeout || 5) * 1000);
     }
   };
 
   this.logError = function (errMessage) {
     logMessage(errMessage, "error", false);
   };
-
-  function onProcessCloseCallback(code, signal) {
-    restartDaemonProcess(vsprintf("Node process closed with code %d and signal %s", [code, signal]), true);
-  }
 
   function errorCallback(errorData) {
     restartDaemonProcess(errorData, true);
@@ -119,24 +123,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //*************************************************************//
   function restartDaemonProcess(errorData, sendNotification) {
     logMessage(errorData, "error", sendNotification);
-
-    // increase error count and stop instance
-    errorCount = errorCount + 1;
     self.stop();
-
-    // check if we have crossed the maximum error number in short period
-    if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
-      logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
-      setTimeout(() => {
-        process.exit(0);
-      }, 3000);
-    } else {
-      startDaemonProcess();
-    }
-
-    setTimeout(() => {
-      errorCount = errorCount - 1;
-    }, (configOpts.restart.errorForgetTime || 600) * 1000);
   }
 
   function checkIfInitialized() {
@@ -203,7 +190,29 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       });
 
       // if daemon closes the try to log and restart it
-      nodeProcess.on("close", onProcessCloseCallback);
+      nodeProcess.on("close", function (code, signal) {
+        clearTimeout(killTimeout);
+        errorCount = errorCount + 1;
+
+        if (!signal) {
+          // only log is signall is empty which means it was spontaneous crash
+          logMessage(vsprintf("Node process closed with code %d", [code]), true);
+        }
+
+        // check if we have crossed the maximum error number in short period
+        if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
+          logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+          setTimeout(() => {
+            process.exit(0);
+          }, 3000);
+        } else {
+          startDaemonProcess();
+        }
+
+        setTimeout(() => {
+          errorCount = errorCount - 1;
+        }, (configOpts.restart.errorForgetTime || 600) * 1000);
+      });
 
       const dataStream = readline.createInterface({
         input: nodeProcess.stdout
