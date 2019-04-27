@@ -86,9 +86,9 @@ module.exports = {
       if (process.platform === "win32") {
         return asset.name.indexOf('win64') >= 0;
       } else if (process.platform === "linux") {
-        if ((linuxOSInfo.id == "ubuntu") && (linuxOSInfo.version_id == "16.04")) {
+        if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "16.04") || (linuxOSInfo.version_id == "16.10"))) {
           return asset.name.indexOf('ubuntu-1604') >= 0;
-        } else if ((linuxOSInfo.id == "ubuntu") && (linuxOSInfo.version_id == "18.04")) {
+        } else if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "18.04") || (linuxOSInfo.version_id == "18.10"))) {
           return asset.name.indexOf('ubuntu-1804') >= 0;
         } else {
           return false;

@@ -53,6 +53,30 @@ module.exports = {
       },
       {
         type: 'confirm',
+        name: 'nodeUrl',
+        message: 'Will your node have a custom url? (if you do not know about it, just leave it empty)',
+        default: oPath.has(configOpts, 'url')
+      },
+      {
+        type: 'input',
+        name: 'nodeUrlHost',
+        message: 'Input the node url hostname',
+        default: oPath.get(configOpts, 'url.host', ''),
+        when: function (answers) {
+          return answers.nodeUrl;
+        }
+      },
+      {
+        type: 'input',
+        name: 'nodeUrlPort',
+        message: 'Input the node url port',
+        default: oPath.get(configOpts, 'url.port', ''),
+        when: function (answers) {
+          return answers.nodeUrl;
+        }
+      },
+      {
+        type: 'confirm',
         name: 'usePool',
         message: 'Do you want to be listed in the nodes pool?',
         default: oPath.has(configOpts, 'pool.notify')
@@ -221,6 +245,13 @@ module.exports = {
       answers.useFeeAddress ? oPath.set(configOpts, 'node.feeAddr', answers.feeAddress) : oPath.del(configOpts, 'node.feeAddr');
       answers.usePool ? oPath.set(configOpts, 'pool.notify.url', answers.poolURL) : oPath.del(configOpts, 'pool.notify');
       answers.notifyDiscord ? oPath.set(configOpts, 'error.notify.discord.url', answers.discordHookURL) : oPath.del(configOpts, 'error.notify.discord');
+
+      if (answers.nodeUrl) {
+        oPath.set(configOpts, 'url.host', answers.nodeUrlHost);
+        oPath.set(configOpts, 'url.port', answers.nodeUrlPort);
+      } else {
+        oPath.del(configOpts, 'url');
+      }
 
       if (answers.notifyEmail) {
         oPath.set(configOpts, 'error.notify.email.smtp.host', answers.emailSMTPHost);
