@@ -78,6 +78,10 @@ Before doing that however its wise to check the **config.json** and set the corr
          "url":"URL to the guardian pool service if you want to register there",
          "interval":30
       }
+   },
+   "url": {
+      "host": your custom hostname (usually an URL)
+      "port": your custom port
    }
 }
 ```
@@ -118,6 +122,9 @@ The explanation of config options:
   * **notify**
     * url: the url of the Conceal Guardian Pool. The Guardian is sending its data to pool for public listing
     * interval: the interval in seconds in which the data is being sent
+* **url**
+  * host: if you want to have a custom hostname, specify it here and it will override the automatically assigned one
+  * port: if you want to have a custom port, specify it here and it will override the automatically assigned one
   
 To run as a service you can use the build in service controls described on [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md). Or you can do it the manual way. On linux you can use **systemctl**
 
