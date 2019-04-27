@@ -1,23 +1,53 @@
 {
-	"node": {
-		"args": [],
-		"port": 16000,
-		"bindAddr": "0.0.0.0"
-	},
-	"restart": {
-		"terminateTimeout": 5,
-		"errorForgetTime": 600,
-		"maxCloseErrors": 3,
-		"maxBlockTime": 1800,
-		"maxInitTime": 600
-	},
-	"api": {
-		"port": 8080
-	},
-  "pool": {
-    "notify": {
-      "url": "https://explorer.conceal.network/pool/update",
-      "interval": 30
-    }
-  }
+   "node": {
+      "args": [
+         "--rpc-bind-ip",
+         "127.0.0.1",
+         "--rpc-bind-port",
+         "16000"
+      ],
+      "path": "/absolute/path/to/conceald",
+      "port": 16000,
+      "name": "TestNode",
+      "bindAddr": "0.0.0.0",
+      "feeAddr": "Your CCX address for receiving fees"
+   },
+   "error": {
+      "notify": {
+         "discord": {
+            "url": "Discord web hook URL"
+         },
+         "email": {
+            "smtp": {
+               "host": "conceal.network",
+               "port": 25,
+               "secure": false
+            },
+            "auth": {
+               "username": "Your SMTP username",
+               "password": "Your SMTP password"
+            },
+            "message": {
+               "from": "no-reply@conceal.network",
+               "to": "test.email@gmail.com",
+               "subject": "Guardian error occurred"
+            }
+         }
+      }
+   },
+   "restart": {
+      "errorForgetTime": 600,
+      "maxCloseErrors": 3,
+      "maxBlockTime": 1800,
+      "maxInitTime": 600
+   },
+   "api": {
+      "port": 8080
+   },
+   "pool": {
+      "notify": {
+         "url": "Guardian Pool URL (if you want to register there)",
+         "interval": 30
+      }
+   }
 }
