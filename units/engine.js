@@ -85,6 +85,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       version: guardVersion,
       nodeHost: externalIP,
       nodePort: configOpts.node.port,
+      url: configOpts.url,
       status: {
         errors: errorCount,
         startTime: starupTime
