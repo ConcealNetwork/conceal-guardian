@@ -196,18 +196,17 @@ if (cmdOptions.help) {
         default: console.log('\nWrong parameter for service command. Valid values: "install", "remove", "start", "stop"\n');
       }
     } else if (cmdOptions.node) {
-      switch (cmdOptions.node) {
-        case "update":
-          service.stop(configOpts, configFileName);
-          download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
-            if (error) {
-              console.log(vsprintf("\nError updating daemon: %s\n", [error]));
-            } else {
-              console.log("\nThe daemon has been succesfully updated\n");
-            }
-          });
-          break;
-        default: console.log('\nWrong parameter for node command. Valid values: "update"\n');
+      if (cmdOptions.node === "update") {
+        service.stop(configOpts, configFileName);
+        download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+          if (error) {
+            console.log(vsprintf("\nError updating daemon: %s\n", [error]));
+          } else {
+            console.log("\nThe daemon has been succesfully updated\n");
+          }
+        });
+      } else {
+        console.log('\nWrong parameter for node command. Valid values: "update"\n');
       }
     } else if (cmdOptions.update) {
       service.stop(configOpts, configFileName);
