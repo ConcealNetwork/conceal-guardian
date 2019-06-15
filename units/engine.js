@@ -186,6 +186,22 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
         process.exit(0);
       }, 3000);
     } else {
+      const dataStream = readline.createInterface({
+        input: nodeProcess.stdout
+      });
+
+      const errorStream = readline.createInterface({
+        input: nodeProcess.stderr
+      });
+
+      dataStream.on("line", line => {
+        processSingleLine(line);
+      });
+
+      errorStream.on("line", line => {
+        processSingleLine(line);
+      });
+
       nodeProcess.on("error", function (err) {
         restartDaemonProcess(vsprintf("Error on starting the node process: %s", [err]), false);
       });
@@ -213,22 +229,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
         setTimeout(() => {
           errorCount = errorCount - 1;
         }, (configOpts.restart.errorForgetTime || 600) * 1000);
-      });
-
-      const dataStream = readline.createInterface({
-        input: nodeProcess.stdout
-      });
-
-      const errorStream = readline.createInterface({
-        input: nodeProcess.stderr
-      });
-
-      dataStream.on("line", line => {
-        processSingleLine(line);
-      });
-
-      errorStream.on("line", line => {
-        processSingleLine(line);
       });
 
       // start notifying the pool
