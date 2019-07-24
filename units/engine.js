@@ -133,7 +133,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     if (!initialized) {
       var duration = moment.duration(moment().diff(starupTime));
 
-      if (duration.asSeconds() > (configOpts.restart.maxInitTime || 600)) {
+      if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
         restartDaemonProcess("Initialization is taking to long, restarting", true);
       } else {
         setTimeout(() => {
@@ -215,6 +215,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
       // if daemon closes the try to log and restart it
       nodeProcess.on("close", function (code, signal) {
+        self.stop();
         clearTimeout(killTimeout);
         errorCount = errorCount + 1;
 
