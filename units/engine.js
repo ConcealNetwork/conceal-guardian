@@ -28,6 +28,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var initialized = false;
   var killTimeout = null;
   var nodeProcess = null;
+  var errorStream = null;
+  var dataStream = null;
   var externalIP = null;
   var rpcComms = null;
   var self = this;
@@ -131,7 +133,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     if (!initialized) {
       var duration = moment.duration(moment().diff(starupTime));
 
-      if (duration.asSeconds() > (configOpts.restart.maxInitTime || 600)) {
+      if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
         restartDaemonProcess("Initialization is taking to long, restarting", true);
       } else {
         setTimeout(() => {
@@ -152,8 +154,10 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
           json: getNodeInfoData()
         };
 
-        request(packetData, function () {
-          // for now its fire and forget, no matter if error occurs
+        request(packetData, function (err, res, data) {
+          if (err) {
+            logMessage(err.message, "error", false);
+          }
         });
       }, (configOpts.pool.notify.interval || 30) * 1000);
     }
@@ -170,6 +174,9 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
       rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
       rpcComms.start();
+
+      errorStream.close();
+      dataStream.close();
     }
   }
 
@@ -186,12 +193,29 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
         process.exit(0);
       }, 3000);
     } else {
+      dataStream = readline.createInterface({
+        input: nodeProcess.stdout
+      });
+
+      errorStream = readline.createInterface({
+        input: nodeProcess.stderr
+      });
+
+      dataStream.on("line", line => {
+        processSingleLine(line);
+      });
+
+      errorStream.on("line", line => {
+        processSingleLine(line);
+      });
+
       nodeProcess.on("error", function (err) {
         restartDaemonProcess(vsprintf("Error on starting the node process: %s", [err]), false);
       });
 
       // if daemon closes the try to log and restart it
       nodeProcess.on("close", function (code, signal) {
+        self.stop();
         clearTimeout(killTimeout);
         errorCount = errorCount + 1;
 
@@ -213,22 +237,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
         setTimeout(() => {
           errorCount = errorCount - 1;
         }, (configOpts.restart.errorForgetTime || 600) * 1000);
-      });
-
-      const dataStream = readline.createInterface({
-        input: nodeProcess.stdout
-      });
-
-      const errorStream = readline.createInterface({
-        input: nodeProcess.stderr
-      });
-
-      dataStream.on("line", line => {
-        processSingleLine(line);
-      });
-
-      errorStream.on("line", line => {
-        processSingleLine(line);
       });
 
       // start notifying the pool

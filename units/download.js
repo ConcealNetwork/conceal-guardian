@@ -59,14 +59,9 @@ module.exports = {
     // only for linux try to get it
     if (process.platform === "linux") {
       linuxOSInfo = osInfo({ mode: 'sync' });
-    }
-
-    if (linuxOSInfo) {
       // if we are running on linux, print the version and flavor
       console.log(vsprintf("Running on %s", [linuxOSInfo.pretty_name]));
-    }
 
-    if (process.platform == "linux") {
       if (linuxOSInfo.id == "ubuntu") {
         if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "18.04")) {
           callback(wrongLinuxOSMsg);

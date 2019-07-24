@@ -1,19 +1,20 @@
 {
-	"node": {
-		"args": [],
-		"port": 16000,
-		"bindAddr": "0.0.0.0"
-	},
-	"restart": {
-		"terminateTimeout": 5,
-		"errorForgetTime": 600,
-		"maxCloseErrors": 3,
-		"maxBlockTime": 1800,
-		"maxInitTime": 600
-	},
-	"api": {
-		"port": 8080
-	},
+  "node": {
+    "args": [],
+    "port": 16000,
+    "rfcTimeout": 10,
+    "bindAddr": "0.0.0.0"
+  },
+  "restart": {
+    "terminateTimeout": 5,
+    "errorForgetTime": 600,
+    "maxCloseErrors": 3,
+    "maxBlockTime": 1800,
+    "maxInitTime": 900
+  },
+  "api": {
+    "port": 8080
+  },
   "pool": {
     "notify": {
       "url": "https://explorer.conceal.network/pool/update",

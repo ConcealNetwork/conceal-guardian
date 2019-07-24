@@ -1,32 +1,105 @@
 # Conceal Node Guardian
 
-## 1. About
+## About
 
-ConcealNodeGuard is a guardian process that monitors over the conceald daemon. It can catch daemon errors and also monitors if the block count is increasing. In case an error is detected or the block count is stale it restarts the daemon and notifies the devs on the Discord over a web hook, or sends a mail to the recipient, or both.
+Conceal Node Guardian is a process that monitors the `conceald` daemon. It is catching daemon errors, monitors the block count and, in case of an error, it restarts the daemon and notifies on Discord via web hook, sends an e-mail, or both.
 
-It can also connect to a pool so the node is then listed among available nodes either for infrastrucure monitoring or for remote node with fee listing.
+It also has an ability to connect to a pool with other nodes for the purpose of infrastructure monitoring or running a remote node with fee listing.
 
-## 2. Installation
+## Table of Contents
+  * [Installation](#installation)
+     * [Node.js](#nodejs)
+     * [Precompiled binaries](#precompiled-binaries)
+  * [Configuration](#configuration)
+  * [Running](#running)
+     * [Node.js](#nodejs-1)
+     * [Running as a System Service](#running-as-a-system-service)
+        * [Linux](#linux)
+        * [macOS](#macos)
+     * [Precompiled binaries](#precompiled-binaries-1)
+  * [API](#api)
 
-To install and run it you have two options. Install and run it via the node.js virual machine or you can download the precompiled executabled that alreay include node.js and run that. In that case you have 0 dependencies.
+## Installation
 
-If you go with the first options the continue reading, otherwise go to [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md)
+Conceal Node Guardian can be installed to run with Node.js or used as precompiled binary.
 
-First need to install dependencies. There are two:
+### Node.js
 
-* [nodejs](https://nodejs.org/en/)
+Ensure that requirements are installed:
+
+* [Node.js](https://nodejs.org/) (version 6 or higher)
 * [npm](https://www.npmjs.com/)
 
-You can see how to install it [here](https://nodejs.org/en/download/package-manager/).
+Or use [nvm](https://github.com/creationix/nvm) (Node Version Manager) to manage your Node.js installations.
 
-When you have it installed you can run the guardian by simply doing:
+Clone or download this repository and install project dependencies:
 
-1. npm install
-2. node index.js
-
-Before doing that however its wise to check the **config.json** and set the correct settings. For interactive config setup please refer to [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md). Sample of config.json
-
+```bash
+$ git clone https://github.com/ConcealNetwork/conceal-guardian.git
+$ cd conceal-guardian
+$ npm install
 ```
+
+### Precompiled binaries
+
+Please refer to [installation page](INSTALL.md) for detailed instructions how to install the Guardian with precompiled binaries.
+
+## Configuration
+
+The Guardian can be configured manually by creating `config.json` file in the project's root directory or by using interactive setup (refer to [installation page](INSTALL.md) for instructions how to run interactive setup).
+
+You can use [sample configuration](config.json.sample) and modify it for your needs.
+
+**Description of configuration options:**
+
+* `node`
+  * `args`: Additional `conceald` daemon arguments.
+  * `path`: Absolute path to `conceald` binary. If not specified, it will try to use `conceald` from project root folder.
+  * `port`: The port on which `conceald` is running (same as `--rpc-bind-port` in `conceald`).
+  * `name`: Name of the node. If omitted it uses the hostname.
+  * `feeAddr`: The CCX address on which the transaction fee will be sent if running a remote node.
+  * `bindAddr`: Bind RPC server on this address (same as `--rpc-bind-ip` in `conceald`).
+* `error`
+  * `notify`
+    * `discord`
+      * `url`: The URL for Discord webhook to send error reports.
+    * `email`
+      * `smtp`
+         * `host`: SMTP server hostname.
+         * `port`: SMTP server port (default is `25`).
+         * `secure`: Secure SMTP connection (usually `false`).
+      * `auth`
+         * `username`: SMTP server username.
+         * `password`: SMTP server password.
+      * `message`
+         * `from`: The e-mail address of the sender.
+         * `to`: The e-mail address of the recipient.
+         * `subject`: The subject of the e-mail.
+* `restart`
+  * `errorForgetTime`: The time in seconds after which the error is forgotten and error count decreased by 1.
+  * `maxCloseErrors`: Maximum number of errors. After that the Guardian stops completely as there is a serious issue with the daemon.
+  * `maxBlockTime`: Maximum time in seconds between block number increase. If after this time the block is still the same its considered an error.
+  * `maxInitTime`: Maximum time in seconds in which the node should be initialized.
+* `api`
+  * `port`: The port on which the HTTP API server listens requests. If not specified the Guardian will not listen for incoming requests.
+* `pool`
+  * `notify`
+    * `url`: The URL of the Conceal Guardian Pool. The Guardian is sending its data to pool for public listing.
+    * `interval`: The interval in seconds in which the data is being sent to pool.
+
+## Running
+
+Depending on how Guardian is installed, there are 2 ways to run it, with Node.js or by using precompiled binaries. In both cases, you can install it as a system service and run it that way too.
+
+### Node.js
+
+Navigate to project's folder and run `index.js` file:
+
+```bash
+$ cd conceal-guardian
+$ node index.js
+```
+<<<<<<< HEAD
 {
    "node":{
       "args":[
@@ -127,6 +200,14 @@ The explanation of config options:
   * port: if you want to have a custom port, specify it here and it will override the automatically assigned one
   
 To run as a service you can use the build in service controls described on [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md). Or you can do it the manual way. On linux you can use **systemctl**
+=======
+
+### Running as a System Service
+
+#### Linux
+
+On Linux, you can use `Systemd` with following configuration:
+>>>>>>> development
 
 ```
 [Unit]
@@ -143,26 +224,93 @@ RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
-
 ```
 
-Copy **ccx-guardian.service.template** to **/etc/systemd/system/ccx-guardian.service** and edit it approprietly.
+Edit the file accordingly and save it as `/etc/systemd/system/ccx-guardian.service`.
 
-Now you can start it or stop it with:
+To enable the service and run it on startup, run:
 
-- **start**: sudo systemctl start ccx-guardian
-- **stop**: sudo systemctl stop ccx-guardian
-- **status**: sudo systemctl status ccx-guardian
-- **print log**: journalctl -e -u ccx-guardian.service
-- **reload conf**: systemctl daemon-reload
+```bash
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable ccx-guardian.service
+```
 
-## 3. API
+You can control system service with following commands:
 
-The Guardian can have an api that listens for incoming requests and returns some info about the node. The api only has one handler (all other request are considered invalid and return 403):
+```bash
+# start
+$ sudo systemctl start ccx-guardian
 
-* getInfo
+# stop
+$ sudo systemctl stop ccx-guardian
 
-The result is for example: 
+# status
+$ sudo systemctl status ccx-guardian
+
+# print log
+$ journalctl -e -u ccx-guardian.service
+
+# reload configuration
+$ sudo systemctl daemon-reload
+```
+
+#### macOS
+
+On macOS, use `launchd` to configure service. Use following configuration:
+
+```plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+
+    <key>Label</key>
+    <string>conceal.guardian</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/usr/local/bin/node</string>
+      <string>/path/to/guardian/index.js</string>
+    </array>
+
+  </dict>
+</plist>
+```
+
+Edit the file accordingly and save it as `~/Library/LaunchAgents/conceal.guardian.plist`.
+
+Start it with:
+
+```bash
+launchctl load ~/Library/LaunchAgents/conceal.guardian.plist
+```
+
+If you want to unload it, run:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/conceal.guardian.plist
+```
+
+### Precompiled binaries
+
+Please refer to [installation page](INSTALL.md) for detailed instructions how to run the Guardian with precompiled binaries.
+
+## API
+
+The Guardian has an option to run HTTP server providing some general info about the node.  
+API serves a single endpoint - `/getInfo`.
+
+Sample request:
+
+```bash
+# Assuming API port in config.json is set to 8000
+$ curl http://127.0.0.1:8000/getInfo
+```
+
+Sample response:
 
 ```
 {
@@ -215,5 +363,3 @@ The result is for example:
    }
 }
 ```
-
-
