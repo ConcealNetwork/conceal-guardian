@@ -53,6 +53,12 @@ module.exports = {
       },
       {
         type: 'confirm',
+        name: 'autoUpdate',
+        message: 'Will your node have auto update enabled?',
+        default: oPath.get(configOpts, 'node.autoUpdate', false)
+      },
+      {
+        type: 'confirm',
         name: 'nodeUrl',
         message: 'Will your node have a custom url? (if you do not know about it, just leave it empty)',
         default: oPath.has(configOpts, 'url')
@@ -241,6 +247,7 @@ module.exports = {
       oPath.set(configOpts, 'node.name', answers.nodeName);
       answers.nodePath ? oPath.set(configOpts, 'node.path', answers.nodePath) : oPath.del(configOpts, 'node.path');
       answers.reachableOutside ? oPath.set(configOpts, 'node.bindAddr', '0.0.0.0') : oPath.set(configOpts, 'node.bindAddr', '127.0.0.1');
+      answers.autoUpdate ? oPath.set(configOpts, 'node.autoUpdate', true) : oPath.del(configOpts, 'node.autoUpdate');
 
       answers.useFeeAddress ? oPath.set(configOpts, 'node.feeAddr', answers.feeAddress) : oPath.del(configOpts, 'node.feeAddr');
       answers.usePool ? oPath.set(configOpts, 'pool.notify.url', answers.poolURL) : oPath.del(configOpts, 'pool.notify');

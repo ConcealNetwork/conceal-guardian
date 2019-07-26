@@ -8,6 +8,7 @@ const iplocation = require("iplocation").default;
 const apiServer = require("./apiServer.js");
 const notifiers = require("./notifiers.js");
 const vsprintf = require("sprintf-js").vsprintf;
+const download = require("./download.js");
 const publicIp = require("public-ip");
 const readline = require("readline");
 const request = require("request");
@@ -23,6 +24,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   const nodeUniqueId = utils.ensureNodeUniqueId();
   var starupTime = moment();
   var errorCount = 0;
+  var isStoping = false;
   var poolInterval = null;
   var locationData = null;
   var initialized = false;
@@ -57,6 +59,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     }
 
     if (nodeProcess) {
+      isStoping = true;
       nodeProcess.kill("SIGTERM");
 
       // if normal fails, do a forced terminate
@@ -186,6 +189,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
+    isStoping = false;
 
     if (!nodeProcess) {
       logMessage("Failed to start the process instance. Stopping.", "error", false);
@@ -215,28 +219,30 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
       // if daemon closes the try to log and restart it
       nodeProcess.on("close", function (code, signal) {
-        self.stop();
-        clearTimeout(killTimeout);
-        errorCount = errorCount + 1;
+        if (isStoping === false) {
+          self.stop();
+          clearTimeout(killTimeout);
+          errorCount = errorCount + 1;
 
-        if (!signal) {
-          // only log is signall is empty which means it was spontaneous crash
-          logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
-        }
+          if (!signal) {
+            // only log is signall is empty which means it was spontaneous crash
+            logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
+          }
 
-        // check if we have crossed the maximum error number in short period
-        if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
-          logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+          // check if we have crossed the maximum error number in short period
+          if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
+            logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+            setTimeout(() => {
+              process.exit(0);
+            }, 3000);
+          } else {
+            startDaemonProcess();
+          }
+
           setTimeout(() => {
-            process.exit(0);
-          }, 3000);
-        } else {
-          startDaemonProcess();
+            errorCount = errorCount - 1;
+          }, (configOpts.restart.errorForgetTime || 600) * 1000);
         }
-
-        setTimeout(() => {
-          errorCount = errorCount - 1;
-        }, (configOpts.restart.errorForgetTime || 600) * 1000);
       });
 
       // start notifying the pool
@@ -253,6 +259,40 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       return getNodeInfoData();
     });
   }
+
+  // check if autoupdate is turned on
+  if (configOpts.node && configOpts.node.autoUpdate) {
+    setInterval(function () {
+      if (rpcComms) {
+        nodeData = rpcComms.getData();
+
+        if (nodeData) {
+          request.get({
+            url: 'https://api.github.com/repos/ConcealNetwork/conceal-core/releases/latest',
+            headers: { 'User-Agent': 'Conceal Node Guardian' },
+            json: true
+          }, (err, res, release) => {
+            if (!err && release) {
+              if (release.tag_name !== nodeData.version) {
+                self.stop();
+                download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+                  if (error) {
+                    logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
+                  } else {
+                    logMessage("The deamon was automatically updated", "info", true);
+                  }
+
+                  // start the daemon 
+                  startDaemonProcess();
+                });
+              }
+            }
+          });
+        }
+      }
+    }, 3600000);
+  }
+
 
   // start the process
   logMessage("Starting the guardian", "info", false);
