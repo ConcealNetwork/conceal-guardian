@@ -75,6 +75,10 @@ Address where to send fees if Guardian is running as fee based remote node.
 
 This controls if your node will be accessible from the internet or not. If you run this internally then answer `NO`. If people will use it from the internet and connect to it, then you need to answer `YES`.
 
+> Will your node have auto update enabled?
+
+This option controls if your Guardian will try to autoupdate the daemon (node). If true then the Guardian will check every hour if there is a new version available and update it, if it is.
+
 > Do you want to be listed in the nodes pool?
 
 Decide if you will be listed in the explorer nodes pool.
