@@ -59,6 +59,7 @@ You can use [sample configuration](config.json.sample) and modify it for your ne
   * `name`: Name of the node. If omitted it uses the hostname.
   * `feeAddr`: The CCX address on which the transaction fee will be sent if running a remote node.
   * `bindAddr`: Bind RPC server on this address (same as `--rpc-bind-ip` in `conceald`).
+  * `autoUpdate`: `true` or `false`. Depending if you want your Guardian to autoupdate the daemon or not.
 * `error`
   * `notify`
     * `discord`
