@@ -63,7 +63,8 @@ module.exports = {
       console.log(vsprintf("Running on %s", [linuxOSInfo.pretty_name]));
 
       if (linuxOSInfo.id == "ubuntu") {
-        if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "18.04")) {
+        if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "16.10") && (linuxOSInfo.version_id !== "18.04")
+            && (linuxOSInfo.version_id !== "18.10")) {
           callback(wrongLinuxOSMsg);
           return false;
         }
