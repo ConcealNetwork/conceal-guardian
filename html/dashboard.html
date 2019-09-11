@@ -1,0 +1,116 @@
+<div class="dash-headline-two">
+  <div>
+    <h4 class="tx-white mg-b-5">Welcome</h4>
+    <p class="mg-b-0">Today is March 20, 2018</p>
+  </div>
+  <div class="d-h-t-right" id="nodeBasicInfo">
+    <div class="summary-item">
+      <h1>{{name}}</h1>
+    </div>
+    <div class="summary-item">
+      <h1>{{#if status.initialized}}<span id="statusRunning">running</span>{{else}}<span
+          id="statusInitializing">initializing</span>{{/if}}</h1>
+    </div>
+  </div>
+</div><!-- dash-headline-two -->
+
+<div class="nav-statistics-wrapper">
+  <nav class="nav">
+    <a href="" class="nav-link active">Overview</a>
+  </nav>
+
+</div><!-- nav-statistics-wrapper -->
+
+<div class="report-summary-header">
+  <div>
+    <h4 class="tx-white mg-b-3">General Info</h4>
+  </div>
+  <div>
+    <a href="" class="btn btn-primary-outline">Show on Explorer</a>
+  </div>
+</div><!-- d-flex -->
+
+<div class="row row-sm">
+  <div class="col-4">
+    <div class="card card-popular-product">
+
+      <h5 class="prod-name"><a href="">Guardian Version</a></h5>
+      <p class="prod-by">Current guardian version</p>
+      <div class="row">
+        <div class="col-12">
+          <h1>{{version}}</h1>
+        </div><!-- col -->
+      </div><!-- row -->
+    </div><!-- card -->
+  </div><!-- col-4 -->
+  <div class="col-4">
+    <div class="card card-popular-product">
+      <h5 class="prod-name"><a href="">Daemon Version</a></h5>
+      <p class="prod-by">Current daemon version</a></p>
+      <div class="row">
+        <div class="col-12">
+          <h1>{{#if blockchain.version}}{{blockchain.version}}{{else}}N/A{{/if}}</h1>
+        </div><!-- col -->
+      </div><!-- row -->
+    </div><!-- card -->
+  </div><!-- col-4 -->
+  <div class="col-4">
+    <div class="card card-popular-product">
+      <h5 class="prod-name"><a href="">Height</a></h5>
+      <p class="prod-by">Current height of the blockchain</p>
+      <div class="row">
+        <div class="col-12">
+          <h1>{{blockchain.height}}</h1>
+        </div><!-- col -->
+      </div><!-- row -->
+    </div><!-- card -->
+  </div><!-- col-4 -->
+</div><!-- row -->
+
+<hr>
+
+<div class="report-summary-header">
+  <div>
+    <h4 class="tx-white mg-b-3">Geolocation Info</h4>
+  </div>
+  <div>
+    <a href="" class="btn btn-primary-outline">Google Maps</a>
+  </div>
+</div><!-- d-flex -->
+
+<div class="row row-sm">
+  <div class="col-4">
+    <div class="card card-popular-product">
+
+      <h5 class="prod-name"><a href="">Country</a></h5>
+      <p class="prod-by">Country where the node is hosted</p>
+      <div class="row">
+        <div class="col-12">
+          <h1>{{getCountryName location.data.country}}</h1>
+        </div><!-- col -->
+      </div><!-- row -->
+    </div><!-- card -->
+  </div><!-- col-4 -->
+  <div class="col-4">
+    <div class="card card-popular-product">
+      <h5 class="prod-name"><a href="">City</a></h5>
+      <p class="prod-by">City where the node is hosted</p>
+      <div class="row">
+        <div class="col-12">
+          <h1>{{location.data.city}}</h1>
+        </div><!-- col -->
+      </div><!-- row -->
+    </div><!-- card -->
+  </div><!-- col-4 -->
+  <div class="col-4">
+    <div class="card card-popular-product">
+      <h5 class="prod-name"><a href="">Host IP</a></h5>
+      <p class="prod-by">IP of the hosting machine</p>
+      <div class="row">
+        <div class="col-12">
+          <h1>{{nodeHost}}</h1>
+        </div><!-- col -->
+      </div><!-- row -->
+    </div><!-- card -->
+  </div><!-- col-4 -->
+</div><!-- row -->

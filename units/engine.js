@@ -14,6 +14,7 @@ const readline = require("readline");
 const request = require("request");
 const moment = require("moment");
 const comms = require("./comms.js");
+const pjson = require('../package.json');
 const utils = require("./utils.js");
 const fkill = require('fkill');
 const path = require("path");
@@ -50,7 +51,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   this.stop = function () {
     if (rpcComms) {
       rpcComms.stop();
-      rpcComms = null;
 
       if (poolInterval) {
         clearInterval(poolInterval);
@@ -93,7 +93,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       url: configOpts.url,
       status: {
         errors: errorCount,
-        startTime: starupTime
+        startTime: starupTime,
+        initialized: initialized
       },
       blockchain: rpcComms ? rpcComms.getData() : null,
       location: {
@@ -175,11 +176,14 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       logMessage("Core is initialized, starting the periodic checking...", "info", false);
       initialized = true;
 
-      rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
-      rpcComms.start();
+      if (!rpcComms) {
+        rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
+      }
 
+      // close streams and start comms
       errorStream.close();
       dataStream.close();
+      rpcComms.start();
     }
   }
 
@@ -252,20 +256,13 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     }
   }
 
-  // create a server object if required, its used
-  // for servicing API calls for the current node
-  if (configOpts.api && configOpts.api.port) {
-    apiServer.createServer(configOpts, function () {
-      return getNodeInfoData();
-    });
-  }
-
   // check if autoupdate is turned on
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
       if (rpcComms) {
         nodeData = rpcComms.getData();
 
+        // check node
         if (nodeData) {
           request.get({
             url: 'https://api.github.com/repos/ConcealNetwork/conceal-core/releases/latest',
@@ -289,10 +286,41 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
             }
           });
         }
+
+        // check guardian
+        request.get({
+          url: 'https://api.github.com/repos/ConcealNetwork/conceal-guardian/releases/latest',
+          headers: { 'User-Agent': 'Conceal Node Guardian' },
+          json: true
+        }, (err, res, release) => {
+          if (!err && release) {
+            if (release.tag_name !== pjson.version) {
+              self.stop();
+              download.downloadLatestGuardian(function (error) {
+                if (error) {
+                  logMessage(vsprintf("\nError auto updating guardian: %s\n", [error]), "error", true);
+                } else {
+                  logMessage("The guardian was automatically updated", "info", true);
+                }
+
+                // start the daemon 
+                startDaemonProcess();
+              });
+            }
+          }
+        });
       }
     }, 3600000);
   }
 
+  // create a server object if required, its used
+  // for servicing API calls for the current node
+  if (configOpts.api && configOpts.api.port) {
+    logMessage("Starting the API server", "info", false);
+    apiServer.createServer(configOpts, function () {
+      return getNodeInfoData();
+    });
+  }
 
   // start the process
   logMessage("Starting the guardian", "info", false);

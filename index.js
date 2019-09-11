@@ -210,7 +210,7 @@ if (cmdOptions.help) {
       }
     } else if (cmdOptions.update) {
       service.stop(configOpts, configFileName);
-      download.downloadLatestGuardian(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+      download.downloadLatestGuardian(function (error) {
         if (error) {
           console.log(vsprintf("\nError updating the guardian: %s\n", [error]));
         } else {

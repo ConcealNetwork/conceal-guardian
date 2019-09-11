@@ -1,6 +1,6 @@
 {
   "name": "nodeguard",
-  "version": "0.3.9",
+  "version": "0.4.1",
   "description": "Conceal Node Guard",
   "main": "index.js",
   "scripts": {
@@ -28,6 +28,7 @@
     "command-line-usage": "^5.0.5",
     "conceal-api": "^0.7.5",
     "download-github-release": "^0.3.2",
+    "express": "^4.17.1",
     "extract-zip": "^1.6.7",
     "fkill": "^6.1.0",
     "inquirer": "^6.2.2",
@@ -38,6 +39,7 @@
     "object-path": "^0.11.4",
     "public-ip": "^3.0.0",
     "pure-uuid": "^1.5.7",
+    "read-last-lines": "^1.7.1",
     "request": "^2.88.0",
     "shelljs": "^0.8.3",
     "sprintf-js": "^1.1.2",

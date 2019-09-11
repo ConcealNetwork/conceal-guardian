@@ -63,7 +63,8 @@ module.exports = {
       console.log(vsprintf("Running on %s", [linuxOSInfo.pretty_name]));
 
       if (linuxOSInfo.id == "ubuntu") {
-        if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "18.04")) {
+        if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "16.10") && (linuxOSInfo.version_id !== "18.04")
+          && (linuxOSInfo.version_id !== "18.10")) {
           callback(wrongLinuxOSMsg);
           return false;
         }
@@ -130,7 +131,7 @@ module.exports = {
         callback(err.message);
       });
   },
-  downloadLatestGuardian: function (nodePath, callback) {
+  downloadLatestGuardian: function (callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
     shell.rm('-rf', finalTempDir);
     shell.mkdir('-p', finalTempDir);
@@ -154,13 +155,16 @@ module.exports = {
           if (items.length > 0) {
             extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
               if (success) {
+                var executablePath = path.join(process.cwd(), utils.getGuardianExecutableName());
                 var executableName = utils.getGuardianExecutableName();
                 var extensionPos = executableName.lastIndexOf(".");
+
+                // get the backup name for the old file and rename it to that name
                 var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
 
-                shell.mv(path.join(process.cwd(), utils.getGuardianExecutableName()), path.join(process.cwd(), backupName));
+                shell.mv(executablePath, path.join(process.cwd(), backupName));
                 shell.cp(path.join(finalTempDir, executableName), process.cwd());
-                shell.chmod('+x', nodePath);
+                shell.chmod('+x', executablePath);
                 callback(null);
               } else {
                 callback("Failed to extract the archive");
