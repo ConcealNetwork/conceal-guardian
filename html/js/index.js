@@ -1,6 +1,8 @@
-var pageState = "dashboard";
+var pageState = null;
 
 function loadDashboard() {
+  pageState = "dashboard";
+
   $.get("/dashboard.html", function (template) {
     var templateScript = Handlebars.compile(template);
 
@@ -13,6 +15,22 @@ function loadDashboard() {
         }
       }, 5000);
     });
+  });
+}
+
+function loadDaemonLog() {
+  pageState = "daemonLog";
+
+  $.get("/daemonLog.html", function (data) {
+    $("#container").html(data);
+  });
+}
+
+function loadGuardianLog() {
+  pageState = "guardianLog";
+
+  $.get("/guardianLog.html", function (data) {
+    $("#container").html(data);
   });
 }
 
@@ -31,20 +49,26 @@ $(document).ready(function () {
   });
 
   $("#daemonLogLink").on("click", function () {
-    pageState = "daemonLog";
-
-    $.get("/daemonLog.html", function (data) {
-      $("#container").html(data);
-    });
+    loadDaemonLog();
   });
 
   $("#guardianLogLink").on("click", function () {
-    pageState = "guardianLog";
-
-    $.get("/guardianLog.html", function (data) {
-      $("#container").html(data);
-    });
+    loadGuardianLog();
   });
 
-  loadDashboard();
+  switch (window.location.hash) {
+    case "#dashboard":
+      pageState = "dashboard";
+      loadDashboard();
+      break;
+    case "#daemonLog":
+      loadDaemonLog();
+      break;
+    case "#guardianLog":
+      loadGuardianLog();
+      break;
+    default:
+      pageState = "dashboard";
+      loadDashboard();
+  }
 });
