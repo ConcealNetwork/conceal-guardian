@@ -23,6 +23,7 @@ const os = require("os");
 
 exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   const nodeUniqueId = utils.ensureNodeUniqueId();
+  var poolNotifyInterval = null;
   var starupTime = moment();
   var errorCount = 0;
   var isStoping = false;
@@ -49,6 +50,16 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   })();
 
   this.stop = function () {
+    clearInterval(poolNotifyInterval);
+    if (errorStream) {
+      errorStream.close();
+      errorStream = null;
+    }
+    if (dataStream) {
+      dataStream.close();
+      dataStream = null;
+    }
+
     if (rpcComms) {
       rpcComms.stop();
 
@@ -150,7 +161,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   function setNotifyPoolInterval() {
     if (configOpts.pool && configOpts.pool.notify && configOpts.pool.notify.url) {
       // send the info about node to the pool
-      setInterval(function () {
+      poolNotifyInterval = setInterval(function () {
         var packetData = {
           uri: configOpts.pool.notify.url,
           strictSSL: false,
@@ -183,6 +194,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       // close streams and start comms
       errorStream.close();
       dataStream.close();
+      errorStream = null;
+      dataStream = null;
       rpcComms.start();
     }
   }
