@@ -17,6 +17,12 @@
 #daemonLogWrapper,
 #guardianLogWrapper {
   max-height: 500px;
+  min-height: 200px;
+}
+
+#refreshDaemonLog,
+#refreshGuardianLog {
+  float: right;
 }
 
 #statusInitializing:after {
