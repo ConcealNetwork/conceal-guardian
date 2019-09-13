@@ -16,7 +16,6 @@ const moment = require("moment");
 const comms = require("./comms.js");
 const pjson = require('../package.json');
 const utils = require("./utils.js");
-const fkill = require('fkill');
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -70,15 +69,18 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     }
 
     if (nodeProcess) {
-      isStoping = true;
-      nodeProcess.kill("SIGTERM");
+      if (nodeProcess) {
+        logMessage("Sending SIGTERM to daemon process", "info", false);
 
-      // if normal fails, do a forced terminate
-      killTimeout = setTimeout(function () {
-        (async () => {
-          await fkill(nodeProcess.pid, { force: true });
-        })();
-      }, (configOpts.restart.terminateTimeout || 5) * 1000);
+        isStoping = true;
+        nodeProcess.kill("SIGTERM");
+
+        // if normal fails, do a forced terminate
+        killTimeout = setTimeout(function () {
+          logMessage("Sending SIGKILL to daemon process", "error", false);
+          nodeProcess.kill("SIGKILL");
+        }, (configOpts.restart.terminateTimeout || 5) * 1000);
+      }
     }
   };
 

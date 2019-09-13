@@ -30,7 +30,6 @@
     "download-github-release": "^0.3.2",
     "express": "^4.17.1",
     "extract-zip": "^1.6.7",
-    "fkill": "^6.1.0",
     "inquirer": "^6.2.2",
     "iplocation": "^6.1.0",
     "linux-os-info": "^2.0.0",
