@@ -7,7 +7,7 @@ const utils = require("./utils.js");
 const path = require("path");
 
 module.exports = {
-  createServer: function (config, onDataCallback) {
+  createServer: function (config, nodeDirectory, onDataCallback) {
     const app = express();
 
     app.listen(config.api.port, () => {
@@ -22,7 +22,7 @@ module.exports = {
     });
 
     app.get("/getDaemonLog", (req, res) => {
-      readLastLines.read(path.join(process.cwd(), 'conceald.log'), 500).then((lines) => {
+      readLastLines.read(path.join(nodeDirectory, 'conceald.log'), 500).then((lines) => {
         res.send(lines);
       });
     });
