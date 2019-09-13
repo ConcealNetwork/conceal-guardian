@@ -77,8 +77,10 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
         // if normal fails, do a forced terminate
         killTimeout = setTimeout(function () {
-          logMessage("Sending SIGKILL to daemon process", "error", false);
-          nodeProcess.kill("SIGKILL");
+          if (isStoping) {
+            logMessage("Sending SIGKILL to daemon process", "error", false);
+            nodeProcess.kill("SIGKILL");
+          }
         }, (configOpts.restart.terminateTimeout || 5) * 1000);
       }
     }
@@ -238,30 +240,35 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
       // if daemon closes the try to log and restart it
       nodeProcess.on("exit", function (code, signal) {
+        nodeProcess = null;
+
+        // check if we need to stop it
         if (isStoping === false) {
           self.stop();
-          clearTimeout(killTimeout);
-          errorCount = errorCount + 1;
-
-          if (!signal) {
-            // only log is signall is empty which means it was spontaneous crash
-            logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
-          }
-
-          // check if we have crossed the maximum error number in short period
-          if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
-            logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
-            setTimeout(() => {
-              process.exit(0);
-            }, 3000);
-          } else {
-            startDaemonProcess();
-          }
-
-          setTimeout(() => {
-            errorCount = errorCount - 1;
-          }, (configOpts.restart.errorForgetTime || 600) * 1000);
         }
+
+        // always do a cleanup of resources
+        clearTimeout(killTimeout);
+        errorCount = errorCount + 1;
+
+        if (!signal) {
+          // only log if signall is empty, which means it was spontaneous crash
+          logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
+        }
+
+        // check if we have crossed the maximum error number in short period
+        if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
+          logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+          setTimeout(() => {
+            process.exit(0);
+          }, 3000);
+        } else {
+          startDaemonProcess();
+        }
+
+        setTimeout(() => {
+          errorCount = errorCount - 1;
+        }, (configOpts.restart.errorForgetTime || 600) * 1000);
       });
 
       // start notifying the pool
