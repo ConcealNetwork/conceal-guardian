@@ -237,7 +237,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       });
 
       // if daemon closes the try to log and restart it
-      nodeProcess.on("close", function (code, signal) {
+      nodeProcess.on("exit", function (code, signal) {
         if (isStoping === false) {
           self.stop();
           clearTimeout(killTimeout);
