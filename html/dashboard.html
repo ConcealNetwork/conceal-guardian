@@ -60,7 +60,7 @@
       <p class="prod-by">Current height of the blockchain</p>
       <div class="row">
         <div class="col-12">
-          <h1>{{blockchain.height}}</h1>
+          <h1>{{#if blockchain.height}}{{blockchain.height}}{{else}}N/A{{/if}}</h1>
         </div><!-- col -->
       </div><!-- row -->
     </div><!-- card -->
