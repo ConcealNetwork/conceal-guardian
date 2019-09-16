@@ -332,8 +332,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
           }
         }
       });
-    }, 60000);
-    //    }, 3600000);
+    }, 3600000);
   }
 
   // create a server object if required, its used
