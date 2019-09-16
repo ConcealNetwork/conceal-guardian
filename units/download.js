@@ -5,7 +5,6 @@
 const downloadRelease = require('download-github-release');
 const extractZIP = require('extract-zip');
 const extractTAR = require('tar');
-const lineReader = require('line-reader');
 const vsprintf = require("sprintf-js").vsprintf;
 const osInfo = require('linux-os-info');
 const tempDir = require('temp-dir');
@@ -156,10 +155,13 @@ module.exports = {
           if (items.length > 0) {
             extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
               if (success) {
+                shell.rm(path.join(finalTempDir, '*.zip'));
+                shell.rm(path.join(finalTempDir, '*.tar'));
+                shell.rm(path.join(finalTempDir, '*.gz'));
 
                 // check for files we need to exclude
                 if (fs.existsSync(path.join(finalTempDir, 'exclude.txt'))) {
-                  lineReader.eachLine('/path/to/file', function (line) {
+                  fs.readFileSync(path.join(finalTempDir, 'exclude.txt'), 'utf-8').split(/\r?\n/).forEach(function (line) {
                     shell.rm(path.join(finalTempDir, line));
                   });
                 }

@@ -32,7 +32,6 @@
     "extract-zip": "^1.6.7",
     "inquirer": "^6.2.2",
     "iplocation": "^6.1.0",
-    "line-reader": "^0.4.0",
     "linux-os-info": "^2.0.0",
     "moment": "^2.24.0",
     "nodemailer": "^6.1.0",
