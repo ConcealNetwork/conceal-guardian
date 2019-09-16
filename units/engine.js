@@ -308,31 +308,32 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
             }
           });
         }
-
-        // check guardian
-        request.get({
-          url: 'https://api.github.com/repos/ConcealNetwork/conceal-guardian/releases/latest',
-          headers: { 'User-Agent': 'Conceal Node Guardian' },
-          json: true
-        }, (err, res, release) => {
-          if (!err && release) {
-            if (release.tag_name !== pjson.version) {
-              self.stop();
-              download.downloadLatestGuardian(function (error) {
-                if (error) {
-                  logMessage(vsprintf("\nError auto updating guardian: %s\n", [error]), "error", true);
-                } else {
-                  logMessage("The guardian was automatically updated", "info", true);
-                }
-
-                // start the daemon 
-                startDaemonProcess();
-              });
-            }
-          }
-        });
       }
-    }, 3600000);
+
+      // check guardian
+      request.get({
+        url: 'https://api.github.com/repos/ConcealNetwork/conceal-guardian/releases/latest',
+        headers: { 'User-Agent': 'Conceal Node Guardian' },
+        json: true
+      }, (err, res, release) => {
+        if (!err && release) {
+          if (release.tag_name !== pjson.version) {
+            self.stop();
+            download.downloadLatestGuardian(function (error) {
+              if (error) {
+                logMessage(vsprintf("\nError auto updating guardian: %s\n", [error]), "error", true);
+              } else {
+                logMessage("The guardian was automatically updated", "info", true);
+              }
+
+              // start the daemon 
+              startDaemonProcess();
+            });
+          }
+        }
+      });
+    }, 60000);
+    //    }, 3600000);
   }
 
   // create a server object if required, its used

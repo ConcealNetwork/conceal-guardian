@@ -5,6 +5,7 @@
 const downloadRelease = require('download-github-release');
 const extractZIP = require('extract-zip');
 const extractTAR = require('tar');
+const lineReader = require('line-reader');
 const vsprintf = require("sprintf-js").vsprintf;
 const osInfo = require('linux-os-info');
 const tempDir = require('temp-dir');
@@ -155,16 +156,24 @@ module.exports = {
           if (items.length > 0) {
             extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
               if (success) {
-                var executablePath = path.join(process.cwd(), utils.getGuardianExecutableName());
+
+                // check for files we need to exclude
+                if (fs.existsSync(path.join(finalTempDir, 'exclude.txt'))) {
+                  lineReader.eachLine('/path/to/file', function (line) {
+                    shell.rm(path.join(finalTempDir, line));
+                  });
+                }
+
                 var executableName = utils.getGuardianExecutableName();
                 var extensionPos = executableName.lastIndexOf(".");
 
                 // get the backup name for the old file and rename it to that name
                 var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
 
-                shell.mv(executablePath, path.join(process.cwd(), backupName));
-                shell.cp(path.join(finalTempDir, executableName), process.cwd());
-                shell.chmod('+x', executablePath);
+                shell.mv(path.join(process.cwd(), utils.getGuardianExecutableName()), path.join(process.cwd(), backupName));
+                shell.cp('-rf', path.join(finalTempDir, '*'), process.cwd());
+                shell.chmod('+x', process.cwd());
+                shell.rm('-rf', finalTempDir);
                 callback(null);
               } else {
                 callback("Failed to extract the archive");
