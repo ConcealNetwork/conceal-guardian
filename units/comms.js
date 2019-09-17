@@ -25,6 +25,7 @@ module.exports = {
 
     this.start = function () {
       IsRunning = true;
+      lastTS = moment();
       checkAliveAndWell();
     };
 
