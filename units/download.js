@@ -53,6 +53,11 @@ module.exports = {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
     var linuxOSInfo = null;
 
+    if (!fs.existsSync(tempDir)) {
+      shell.mkdir('-p', tempDir);
+    }
+
+    // remove and remake the dir
     shell.rm('-rf', finalTempDir);
     shell.mkdir('-p', finalTempDir);
 
@@ -132,6 +137,12 @@ module.exports = {
   },
   downloadLatestGuardian: function (callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
+
+    if (!fs.existsSync(tempDir)) {
+      shell.mkdir('-p', tempDir);
+    }
+
+    // remove and remake the dir
     shell.rm('-rf', finalTempDir);
     shell.mkdir('-p', finalTempDir);
 

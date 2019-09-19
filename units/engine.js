@@ -132,7 +132,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
     // write every error to a log file for possible later analization
     fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join("\t") + "\n", function () { });
-    console.log(logEntry.join("\t"));
 
     // send notification if specified in the config
     if (sendNotification && configOpts.error && configOpts.error.notify) {
@@ -293,45 +292,21 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
           }, (err, res, release) => {
             if (!err && release) {
               if (release.tag_name !== nodeData.version) {
-                self.stop();
+                logMessage("Starting automatic daemon update", "info", false);
                 download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
                   if (error) {
                     logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
                   } else {
                     logMessage("The deamon was automatically updated", "info", true);
+                    // start the daemon back up
+                    startDaemonProcess();
                   }
-
-                  // start the daemon 
-                  startDaemonProcess();
                 });
               }
             }
           });
         }
       }
-
-      // check guardian
-      request.get({
-        url: 'https://api.github.com/repos/ConcealNetwork/conceal-guardian/releases/latest',
-        headers: { 'User-Agent': 'Conceal Node Guardian' },
-        json: true
-      }, (err, res, release) => {
-        if (!err && release) {
-          if (release.tag_name !== pjson.version) {
-            self.stop();
-            download.downloadLatestGuardian(function (error) {
-              if (error) {
-                logMessage(vsprintf("\nError auto updating guardian: %s\n", [error]), "error", true);
-              } else {
-                logMessage("The guardian was automatically updated", "info", true);
-              }
-
-              // start the daemon 
-              startDaemonProcess();
-            });
-          }
-        }
-      });
     }, 3600000);
   }
 
