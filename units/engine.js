@@ -14,14 +14,15 @@ const readline = require("readline");
 const request = require("request");
 const moment = require("moment");
 const comms = require("./comms.js");
+const pjson = require('../package.json');
 const utils = require("./utils.js");
-const fkill = require('fkill');
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
 exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   const nodeUniqueId = utils.ensureNodeUniqueId();
+  var poolNotifyInterval = null;
   var starupTime = moment();
   var errorCount = 0;
   var isStoping = false;
@@ -48,9 +49,18 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   })();
 
   this.stop = function () {
+    clearInterval(poolNotifyInterval);
+    if (errorStream) {
+      errorStream.close();
+      errorStream = null;
+    }
+    if (dataStream) {
+      dataStream.close();
+      dataStream = null;
+    }
+
     if (rpcComms) {
       rpcComms.stop();
-      rpcComms = null;
 
       if (poolInterval) {
         clearInterval(poolInterval);
@@ -59,15 +69,20 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     }
 
     if (nodeProcess) {
-      isStoping = true;
-      nodeProcess.kill("SIGTERM");
+      if (nodeProcess) {
+        logMessage("Sending SIGTERM to daemon process", "info", false);
 
-      // if normal fails, do a forced terminate
-      killTimeout = setTimeout(function () {
-        (async () => {
-          await fkill(nodeProcess.pid, { force: true });
-        })();
-      }, (configOpts.restart.terminateTimeout || 5) * 1000);
+        isStoping = true;
+        nodeProcess.kill("SIGTERM");
+
+        // if normal fails, do a forced terminate
+        killTimeout = setTimeout(function () {
+          if (isStoping) {
+            logMessage("Sending SIGKILL to daemon process", "error", false);
+            nodeProcess.kill("SIGKILL");
+          }
+        }, (configOpts.restart.terminateTimeout || 5) * 1000);
+      }
     }
   };
 
@@ -93,7 +108,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       url: configOpts.url,
       status: {
         errors: errorCount,
-        startTime: starupTime
+        startTime: starupTime,
+        initialized: initialized
       },
       blockchain: rpcComms ? rpcComms.getData() : null,
       location: {
@@ -149,7 +165,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   function setNotifyPoolInterval() {
     if (configOpts.pool && configOpts.pool.notify && configOpts.pool.notify.url) {
       // send the info about node to the pool
-      setInterval(function () {
+      poolNotifyInterval = setInterval(function () {
         var packetData = {
           uri: configOpts.pool.notify.url,
           strictSSL: false,
@@ -175,11 +191,16 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       logMessage("Core is initialized, starting the periodic checking...", "info", false);
       initialized = true;
 
-      rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
-      rpcComms.start();
+      if (!rpcComms) {
+        rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
+      }
 
+      // close streams and start comms
       errorStream.close();
       dataStream.close();
+      errorStream = null;
+      dataStream = null;
+      rpcComms.start();
     }
   }
 
@@ -218,31 +239,36 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       });
 
       // if daemon closes the try to log and restart it
-      nodeProcess.on("close", function (code, signal) {
+      nodeProcess.on("exit", function (code, signal) {
+        nodeProcess = null;
+
+        // check if we need to stop it
         if (isStoping === false) {
           self.stop();
-          clearTimeout(killTimeout);
-          errorCount = errorCount + 1;
-
-          if (!signal) {
-            // only log is signall is empty which means it was spontaneous crash
-            logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
-          }
-
-          // check if we have crossed the maximum error number in short period
-          if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
-            logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
-            setTimeout(() => {
-              process.exit(0);
-            }, 3000);
-          } else {
-            startDaemonProcess();
-          }
-
-          setTimeout(() => {
-            errorCount = errorCount - 1;
-          }, (configOpts.restart.errorForgetTime || 600) * 1000);
         }
+
+        // always do a cleanup of resources
+        clearTimeout(killTimeout);
+        errorCount = errorCount + 1;
+
+        if (!signal) {
+          // only log if signall is empty, which means it was spontaneous crash
+          logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
+        }
+
+        // check if we have crossed the maximum error number in short period
+        if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
+          logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+          setTimeout(() => {
+            process.exit(0);
+          }, 3000);
+        } else {
+          startDaemonProcess();
+        }
+
+        setTimeout(() => {
+          errorCount = errorCount - 1;
+        }, (configOpts.restart.errorForgetTime || 600) * 1000);
       });
 
       // start notifying the pool
@@ -252,20 +278,13 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     }
   }
 
-  // create a server object if required, its used
-  // for servicing API calls for the current node
-  if (configOpts.api && configOpts.api.port) {
-    apiServer.createServer(configOpts, function () {
-      return getNodeInfoData();
-    });
-  }
-
   // check if autoupdate is turned on
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
       if (rpcComms) {
         nodeData = rpcComms.getData();
 
+        // check node
         if (nodeData) {
           request.get({
             url: 'https://api.github.com/repos/ConcealNetwork/conceal-core/releases/latest',
@@ -290,9 +309,41 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
           });
         }
       }
+
+      // check guardian
+      request.get({
+        url: 'https://api.github.com/repos/ConcealNetwork/conceal-guardian/releases/latest',
+        headers: { 'User-Agent': 'Conceal Node Guardian' },
+        json: true
+      }, (err, res, release) => {
+        if (!err && release) {
+          if (release.tag_name !== pjson.version) {
+            self.stop();
+            download.downloadLatestGuardian(function (error) {
+              if (error) {
+                logMessage(vsprintf("\nError auto updating guardian: %s\n", [error]), "error", true);
+              } else {
+                logMessage("The guardian was automatically updated", "info", true);
+              }
+
+              // start the daemon 
+              startDaemonProcess();
+            });
+          }
+        }
+      });
     }, 3600000);
   }
 
+  // create a server object if required, its used
+  // for servicing API calls for the current node
+  if (configOpts.api && configOpts.api.port) {
+    logMessage("Starting the API server", "info", false);
+    nodeDirectory = path.dirname(utils.getNodeActualPath(cmdOptions, configOpts, rootPath));
+    apiServer.createServer(configOpts, nodeDirectory, function () {
+      return getNodeInfoData();
+    });
+  }
 
   // start the process
   logMessage("Starting the guardian", "info", false);

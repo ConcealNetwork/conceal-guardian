@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="css/prism.css">
+<div class="card mg-t-20" id="daemonLogCard">
+  <div class="card-header tx-medium bd-0 tx-white bg-primary-dark">
+    <h2>
+      <i class="icon ion-ios-book-outline"></i></i> Daemon Log</span>
+      <button class="btn btn-primary-outline" type="button" id="refreshDaemonLog">
+        <span class="btnIcon fa fa-search"></span><span tkey="refreshDaemonLog">Refresh</span>
+      </button>
+    </h2>
+  </div>
+  <div class="card-body card-body-info">
+    <div class="row">
+      <div class="col-lg-12">
+        <pre id="daemonLogWrapper" data-src="prism.js"><code class="language-css" id="daemonLog"></code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/prism.js"></script>
+<script>
+  var daemonLogIndicator = null;
+
+  function loadDaemonLogData() {
+    if (daemonLogIndicator == null) {
+      daemonLogIndicator = $('#daemonLogCard').loadingIndicator({
+        useImage: false,
+        showOnInit: false
+      }).data("loadingIndicator");
+    }
+
+    // show the indicator
+    daemonLogIndicator.show();
+
+    $.get("/getDaemonLog", function (data) {
+      $("#daemonLog").text(data);
+      daemonLogIndicator.hide();
+    });
+  }
+
+  $("#refreshDaemonLog").on("click", function () {
+    loadDaemonLogData();
+  });
+
+  loadDaemonLogData();
+</script>

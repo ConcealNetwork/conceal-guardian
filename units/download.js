@@ -63,8 +63,7 @@ module.exports = {
       console.log(vsprintf("Running on %s", [linuxOSInfo.pretty_name]));
 
       if (linuxOSInfo.id == "ubuntu") {
-        if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "16.10") && (linuxOSInfo.version_id !== "18.04")
-            && (linuxOSInfo.version_id !== "18.10")) {
+        if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "16.10") && (linuxOSInfo.version_id !== "18.04") && (linuxOSInfo.version_id !== "18.10")) {
           callback(wrongLinuxOSMsg);
           return false;
         }
@@ -131,7 +130,7 @@ module.exports = {
         callback(err.message);
       });
   },
-  downloadLatestGuardian: function (nodePath, callback) {
+  downloadLatestGuardian: function (callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
     shell.rm('-rf', finalTempDir);
     shell.mkdir('-p', finalTempDir);
@@ -155,13 +154,27 @@ module.exports = {
           if (items.length > 0) {
             extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
               if (success) {
+                shell.rm(path.join(finalTempDir, '*.zip'));
+                shell.rm(path.join(finalTempDir, '*.tar'));
+                shell.rm(path.join(finalTempDir, '*.gz'));
+
+                // check for files we need to exclude
+                if (fs.existsSync(path.join(finalTempDir, 'exclude.txt'))) {
+                  fs.readFileSync(path.join(finalTempDir, 'exclude.txt'), 'utf-8').split(/\r?\n/).forEach(function (line) {
+                    shell.rm(path.join(finalTempDir, line));
+                  });
+                }
+
                 var executableName = utils.getGuardianExecutableName();
                 var extensionPos = executableName.lastIndexOf(".");
+
+                // get the backup name for the old file and rename it to that name
                 var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
 
                 shell.mv(path.join(process.cwd(), utils.getGuardianExecutableName()), path.join(process.cwd(), backupName));
-                shell.cp(path.join(finalTempDir, executableName), process.cwd());
-                shell.chmod('+x', nodePath);
+                shell.cp('-rf', path.join(finalTempDir, '*'), process.cwd());
+                shell.chmod('+x', process.cwd());
+                shell.rm('-rf', finalTempDir);
                 callback(null);
               } else {
                 callback("Failed to extract the archive");
