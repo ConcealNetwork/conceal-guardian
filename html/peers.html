@@ -1,0 +1,81 @@
+<div class="card mg-t-20" id="peerNodesCard">
+  <div class="card-header tx-medium bd-0 tx-white bg-primary-dark">
+    <h2>
+      <i class="icon ion-ios-book-outline"></i></i> Peer Nodes</span>
+      <button class="btn btn-primary-outline" type="button" id="refreshPeerNodes">
+        <span class="btnIcon fa fa-search"></span><span tkey="refreshPeerNodes">Refresh</span>
+      </button>
+    </h2>
+  </div>
+  <div class="card-body card-body-info">
+    <div class="row">
+      <div class="col-lg-12">
+        <div id="map" style="height: 60vh; border: 1px solid #AAA;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var peerNodesIndicator = null;
+  var layerGroup = null;
+
+  var map = L.map('map', {
+    center: [10.0, 5.0],
+    minZoom: 2,
+    zoom: 2
+  });
+
+  L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    subdomains: ['a', 'b', 'c']
+  }).addTo(map);
+
+  var mbAttr = 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+    '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+    'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    mbUrl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+  L.tileLayer(mbUrl, { id: 'mapbox.light', attribution: mbAttr }).addTo(map);
+
+  var myIcon = L.icon({
+    iconUrl: 'img/pin24.png',
+    iconRetinaUrl: 'img/pin48.png',
+    iconSize: [29, 24],
+    iconAnchor: [9, 21],
+    popupAnchor: [0, -14]
+  });
+
+  function loadPeerNodesData() {
+    if (peerNodesIndicator == null) {
+      peerNodesIndicator = $('#peerNodesCard').loadingIndicator({
+        useImage: false,
+        showOnInit: false
+      }).data("loadingIndicator");
+    }
+
+    // show the indicator
+    peerNodesIndicator.show();
+
+    $.getJSON("/getPeersData", function (data) {
+      if (layerGroup !== null) {
+        layerGroup.clearLayers();
+      }
+
+      // add a new layer group for the nodes
+      layerGroup = L.layerGroup().addTo(map);
+
+      for (var i = 0; i < data.length; ++i) {
+        var popup = '<b>city:</b> ' + data[i].city + '<br/>' + '<b>region:</b> ' + data[i].region + '<br/>' + '<b>country:</b> ' + data[i].country;
+        L.marker([data[i].ll[0], data[i].ll[1]], { icon: myIcon }).bindPopup(popup).addTo(layerGroup);
+      }
+
+      peerNodesIndicator.hide();
+    });
+  }
+
+  $("#refreshPeerNodes").on("click", function () {
+    loadPeerNodesData();
+  });
+
+  loadPeerNodesData();
+</script>

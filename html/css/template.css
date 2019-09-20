@@ -21,6 +21,7 @@
 }
 
 #refreshDaemonLog,
+#refreshPeerNodes,
 #refreshGuardianLog {
   float: right;
 }
