@@ -10,6 +10,7 @@ module.exports = {
   RpcCommunicator: function (configOpts, errorCallback) {
     // create the CCX api interface object
     var CCXApi = new CCX("http://127.0.0.1", "3333", configOpts.node.port, (configOpts.node.rfcTimeout || 5) * 1000);
+    var timeoutCount = 0;
     var IsRunning = false;
     var lastHeight = 0;
     var infoData = null;
@@ -25,6 +26,7 @@ module.exports = {
 
     this.start = function () {
       IsRunning = true;
+      timeoutCount = 0;
       lastTS = moment();
       checkAliveAndWell();
     };
@@ -52,6 +54,8 @@ module.exports = {
             if (data.status !== "OK") {
               errorCallback("Status is: " + data.status);
             } else {
+              // reset count and repeat
+              timeoutCount = 0;
               setTimeout(() => {
                 checkAliveAndWell();
               }, 5000);
@@ -59,7 +63,10 @@ module.exports = {
           }
         }).catch(err => {
           if (IsRunning) {
-            errorCallback(err);
+            timeoutCount++;
+            if (timeoutCount >= 3) {
+              errorCallback(err);
+            }
           }
         });
       }

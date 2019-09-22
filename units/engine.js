@@ -280,7 +280,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // check if autoupdate is turned on
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
-      if (rpcComms) {
+      if (rpcComms && initialized) {
         nodeData = rpcComms.getData();
 
         // check node
@@ -293,6 +293,9 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
             if (!err && release) {
               if (release.tag_name !== nodeData.version) {
                 logMessage("Starting automatic daemon update", "info", false);
+                // stop the daemon first
+                self.stop();
+
                 download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
                   if (error) {
                     logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
