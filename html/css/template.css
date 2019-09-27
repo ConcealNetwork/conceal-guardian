@@ -2,6 +2,10 @@
   font-size: 1.5em;
 }
 
+.dashboardField {
+  min-width: 300px;
+}
+
 #nodeBasicInfo span {
   font-size: 0.8em;
 }
@@ -50,5 +54,11 @@
     text-shadow:
       .25em 0 0 white,
       .5em 0 0 white;
+  }
+}
+
+@media only screen and (max-width: 800px) {
+  .codeContainer {
+    font-size: 0.8em !important; 
   }
 }
