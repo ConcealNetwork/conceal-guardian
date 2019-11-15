@@ -53,7 +53,11 @@ module.exports = {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
     var linuxOSInfo = null;
 
-    shell.rm('-rf', finalTempDir);
+    if (fs.existsSync(finalTempDir)) {
+      shell.rm('-rf', finalTempDir);
+    }
+
+    // create the temp dir again
     shell.mkdir('-p', finalTempDir);
 
     // only for linux try to get it

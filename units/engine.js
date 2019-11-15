@@ -28,6 +28,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var isStoping = false;
   var poolInterval = null;
   var locationData = null;
+  var autoRestart = null;
   var initialized = false;
   var killTimeout = null;
   var nodeProcess = null;
@@ -48,8 +49,10 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     });
   })();
 
-  this.stop = function () {
+  this.stop = function (doAutoRestart) {
+    autoRestart == doAutoRestart ? doAutoRestart : true;
     clearInterval(poolNotifyInterval);
+
     if (errorStream) {
       errorStream.close();
       errorStream = null;
@@ -210,6 +213,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
+    autoRestart = null;
     isStoping = false;
 
     if (!nodeProcess) {
@@ -249,26 +253,30 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
         // always do a cleanup of resources
         clearTimeout(killTimeout);
-        errorCount = errorCount + 1;
 
-        if (!signal) {
-          // only log if signall is empty, which means it was spontaneous crash
-          logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
-        }
+        // check if we need to restart
+        if (autoRestart) {
+          errorCount = errorCount + 1;
 
-        // check if we have crossed the maximum error number in short period
-        if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
-          logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+          if (!signal) {
+            // only log if signall is empty, which means it was spontaneous crash
+            logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
+          }
+
+          // check if we have crossed the maximum error number in short period
+          if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
+            logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+            setTimeout(() => {
+              process.exit(0);
+            }, 3000);
+          } else {
+            startDaemonProcess();
+          }
+
           setTimeout(() => {
-            process.exit(0);
-          }, 3000);
-        } else {
-          startDaemonProcess();
+            errorCount = errorCount - 1;
+          }, (configOpts.restart.errorForgetTime || 600) * 1000);
         }
-
-        setTimeout(() => {
-          errorCount = errorCount - 1;
-        }, (configOpts.restart.errorForgetTime || 600) * 1000);
       });
 
       // start notifying the pool
@@ -293,45 +301,30 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
           }, (err, res, release) => {
             if (!err && release) {
               if (release.tag_name !== nodeData.version) {
-                self.stop();
-                download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
-                  if (error) {
-                    logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
-                  } else {
-                    logMessage("The deamon was automatically updated", "info", true);
-                  }
+                // stop the daemon
+                self.stop(false);
 
-                  // start the daemon 
-                  startDaemonProcess();
-                });
+                var waitStopInteval = setInterval(function () {
+                  if (nodeProcess == null) {
+                    clearInterval(waitStopInteval);
+
+                    download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+                      if (error) {
+                        logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
+                      } else {
+                        logMessage("The deamon was automatically updated", "info", true);
+                      }
+
+                      // start the daemon 
+                      startDaemonProcess();
+                    });
+                  }
+                }, 1000);
               }
             }
           });
         }
       }
-
-      // check guardian
-      request.get({
-        url: 'https://api.github.com/repos/ConcealNetwork/conceal-guardian/releases/latest',
-        headers: { 'User-Agent': 'Conceal Node Guardian' },
-        json: true
-      }, (err, res, release) => {
-        if (!err && release) {
-          if (release.tag_name !== pjson.version) {
-            self.stop();
-            download.downloadLatestGuardian(function (error) {
-              if (error) {
-                logMessage(vsprintf("\nError auto updating guardian: %s\n", [error]), "error", true);
-              } else {
-                logMessage("The guardian was automatically updated", "info", true);
-              }
-
-              // start the daemon 
-              startDaemonProcess();
-            });
-          }
-        }
-      });
     }, 3600000);
   }
 
