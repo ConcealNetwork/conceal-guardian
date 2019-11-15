@@ -244,6 +244,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
       // if daemon closes the try to log and restart it
       nodeProcess.on("exit", function (code, signal) {
+        initialized = false;
         nodeProcess = null;
 
         // check if we need to stop it
@@ -289,7 +290,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // check if autoupdate is turned on
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
-      if (rpcComms) {
+      if (rpcComms && initialized) {
         nodeData = rpcComms.getData();
 
         // check node
