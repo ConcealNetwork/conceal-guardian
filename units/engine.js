@@ -28,6 +28,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var isStoping = false;
   var poolInterval = null;
   var locationData = null;
+  var autoRestart = true;
   var initialized = false;
   var killTimeout = null;
   var nodeProcess = null;
@@ -48,8 +49,10 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     });
   })();
 
-  this.stop = function () {
+  this.stop = function (doAutoRestart) {
+    autoRestart = (doAutoRestart != null) ? doAutoRestart : true;
     clearInterval(poolNotifyInterval);
+
     if (errorStream) {
       errorStream.close();
       errorStream = null;
@@ -209,6 +212,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
+    autoRestart = true;
     isStoping = false;
 
     if (!nodeProcess) {
@@ -239,6 +243,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
       // if daemon closes the try to log and restart it
       nodeProcess.on("exit", function (code, signal) {
+        initialized = false;
         nodeProcess = null;
 
         // check if we need to stop it
@@ -248,26 +253,30 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
         // always do a cleanup of resources
         clearTimeout(killTimeout);
-        errorCount = errorCount + 1;
 
-        if (!signal) {
-          // only log if signall is empty, which means it was spontaneous crash
-          logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
-        }
+        // check if we need to restart
+        if (autoRestart) {
+          errorCount = errorCount + 1;
 
-        // check if we have crossed the maximum error number in short period
-        if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
-          logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+          if (!signal) {
+            // only log if signall is empty, which means it was spontaneous crash
+            logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
+          }
+
+          // check if we have crossed the maximum error number in short period
+          if (errorCount > (configOpts.restart.maxCloseErrors || 3)) {
+            logMessage("To many errors in a short ammount of time. Stopping.", "error", true);
+            setTimeout(() => {
+              process.exit(0);
+            }, 3000);
+          } else {
+            startDaemonProcess();
+          }
+
           setTimeout(() => {
-            process.exit(0);
-          }, 3000);
-        } else {
-          startDaemonProcess();
+            errorCount = errorCount - 1;
+          }, (configOpts.restart.errorForgetTime || 600) * 1000);
         }
-
-        setTimeout(() => {
-          errorCount = errorCount - 1;
-        }, (configOpts.restart.errorForgetTime || 600) * 1000);
       });
 
       // start notifying the pool
@@ -292,19 +301,25 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
           }, (err, res, release) => {
             if (!err && release) {
               if (release.tag_name !== nodeData.version) {
-                logMessage("Starting automatic daemon update", "info", false);
-                // stop the daemon first
-                self.stop();
+                // stop the daemon
+                self.stop(false);
 
-                download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
-                  if (error) {
-                    logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
-                  } else {
-                    logMessage("The deamon was automatically updated", "info", true);
-                    // start the daemon back up
-                    startDaemonProcess();
+                var waitStopInteval = setInterval(function () {
+                  if (nodeProcess == null) {
+                    clearInterval(waitStopInteval);
+
+                    download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+                      if (error) {
+                        logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
+                      } else {
+                        logMessage("The deamon was automatically updated", "info", true);
+                      }
+
+                      // start the daemon 
+                      startDaemonProcess();
+                    });
                   }
-                });
+                }, 1000);
               }
             }
           });
