@@ -28,7 +28,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var isStoping = false;
   var poolInterval = null;
   var locationData = null;
-  var autoRestart = null;
+  var autoRestart = true;
   var initialized = false;
   var killTimeout = null;
   var nodeProcess = null;
@@ -50,7 +50,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   })();
 
   this.stop = function (doAutoRestart) {
-    autoRestart == doAutoRestart ? doAutoRestart : true;
+    autoRestart = (doAutoRestart != null) ? doAutoRestart : true;
     clearInterval(poolNotifyInterval);
 
     if (errorStream) {
@@ -213,7 +213,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   function startDaemonProcess() {
     nodeProcess = child_process.spawn(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
-    autoRestart = null;
+    autoRestart = true;
     isStoping = false;
 
     if (!nodeProcess) {
