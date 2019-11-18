@@ -100,7 +100,6 @@ Navigate to project's folder and run `index.js` file:
 $ cd conceal-guardian
 $ node index.js
 ```
-<<<<<<< HEAD
 {
    "node":{
       "args":[
@@ -208,7 +207,6 @@ To run as a service you can use the build in service controls described on [inst
 #### Linux
 
 On Linux, you can use `Systemd` with following configuration:
->>>>>>> development
 
 ```
 [Unit]
