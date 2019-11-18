@@ -100,6 +100,7 @@ Navigate to project's folder and run `index.js` file:
 $ cd conceal-guardian
 $ node index.js
 ```
+```
 {
    "node":{
       "args":[
