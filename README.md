@@ -110,6 +110,8 @@ You can use [sample configuration](config.json.sample) and modify it for your ne
 }
 ```
 
+**Description of configuration options:**
+
 * **node**
   * args: The arguments that get appended to the monitored process.
   * path: The path of the process. If omited it uses the same path where the guardian is located
