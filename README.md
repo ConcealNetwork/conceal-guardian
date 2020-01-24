@@ -50,57 +50,7 @@ The Guardian can be configured manually by creating `config.json` file in the pr
 
 You can use [sample configuration](config.json.sample) and modify it for your needs.
 
-**Description of configuration options:**
-
-* `node`
-  * `args`: Additional `conceald` daemon arguments.
-  * `path`: Absolute path to `conceald` binary. If not specified, it will try to use `conceald` from project root folder.
-  * `port`: The port on which `conceald` is running (same as `--rpc-bind-port` in `conceald`).
-  * `name`: Name of the node. If omitted it uses the hostname.
-  * `feeAddr`: The CCX address on which the transaction fee will be sent if running a remote node.
-  * `bindAddr`: Bind RPC server on this address (same as `--rpc-bind-ip` in `conceald`).
-  * `autoUpdate`: `true` or `false`. Depending if you want your Guardian to autoupdate the daemon or not.
-* `error`
-  * `notify`
-    * `discord`
-      * `url`: The URL for Discord webhook to send error reports.
-    * `email`
-      * `smtp`
-         * `host`: SMTP server hostname.
-         * `port`: SMTP server port (default is `25`).
-         * `secure`: Secure SMTP connection (usually `false`).
-      * `auth`
-         * `username`: SMTP server username.
-         * `password`: SMTP server password.
-      * `message`
-         * `from`: The e-mail address of the sender.
-         * `to`: The e-mail address of the recipient.
-         * `subject`: The subject of the e-mail.
-* `restart`
-  * `errorForgetTime`: The time in seconds after which the error is forgotten and error count decreased by 1.
-  * `maxCloseErrors`: Maximum number of errors. After that the Guardian stops completely as there is a serious issue with the daemon.
-  * `maxBlockTime`: Maximum time in seconds between block number increase. If after this time the block is still the same its considered an error.
-  * `maxInitTime`: Maximum time in seconds in which the node should be initialized.
-* `api`
-  * `port`: The port on which the HTTP API server listens requests. If not specified the Guardian will not listen for incoming requests.
-* `pool`
-  * `notify`
-    * `url`: The URL of the Conceal Guardian Pool. The Guardian is sending its data to pool for public listing.
-    * `interval`: The interval in seconds in which the data is being sent to pool.
-
-## Running
-
-Depending on how Guardian is installed, there are 2 ways to run it, with Node.js or by using precompiled binaries. In both cases, you can install it as a system service and run it that way too.
-
-### Node.js
-
-Navigate to project's folder and run `index.js` file:
-
-```bash
-$ cd conceal-guardian
-$ node index.js
 ```
-<<<<<<< HEAD
 {
    "node":{
       "args":[
@@ -160,7 +110,7 @@ $ node index.js
 }
 ```
 
-The explanation of config options:
+**Description of configuration options:**
 
 * **node**
   * args: The arguments that get appended to the monitored process.
@@ -199,6 +149,19 @@ The explanation of config options:
 * **url**
   * host: if you want to have a custom hostname, specify it here and it will override the automatically assigned one
   * port: if you want to have a custom port, specify it here and it will override the automatically assigned one
+
+## Running
+
+Depending on how Guardian is installed, there are 2 ways to run it, with Node.js or by using precompiled binaries. In both cases, you can install it as a system service and run it that way too.
+
+### Node.js
+
+Navigate to project's folder and run `index.js` file:
+
+```bash
+$ cd conceal-guardian
+$ node index.js
+```
   
 To run as a service you can use the build in service controls described on [installation page](https://github.com/ConcealNetwork/conceal-guardian/blob/master/SETUP.md). Or you can do it the manual way. On linux you can use **systemctl**
 =======
@@ -208,7 +171,6 @@ To run as a service you can use the build in service controls described on [inst
 #### Linux
 
 On Linux, you can use `Systemd` with following configuration:
->>>>>>> development
 
 ```
 [Unit]
