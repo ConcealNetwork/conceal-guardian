@@ -169,18 +169,23 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     if (configOpts.pool && configOpts.pool.notify && configOpts.pool.notify.url) {
       // send the info about node to the pool
       poolNotifyInterval = setInterval(function () {
-        var packetData = {
-          uri: configOpts.pool.notify.url,
-          strictSSL: false,
-          method: "POST",
-          json: getNodeInfoData()
-        };
+        try {
+          var packetData = {
+            uri: configOpts.pool.notify.url,
+            strictSSL: false,
+            method: "POST",
+            json: getNodeInfoData()
+          };
 
-        request(packetData, function (err, res, data) {
-          if (err) {
-            logMessage(err.message, "error", false);
-          }
-        });
+          request(packetData, function (err, res, data) {
+            if (err) {
+              logMessage(err.message, "error", false);
+            }
+          });
+
+        } catch (err) {
+          logMessage(err.message, "error", false);
+        }
       }, (configOpts.pool.notify.interval || 30) * 1000);
     }
   }
