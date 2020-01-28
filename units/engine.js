@@ -168,6 +168,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   function setNotifyPoolInterval() {
     if (configOpts.pool && configOpts.pool.notify && configOpts.pool.notify.url) {
       // send the info about node to the pool
+      logMessage("Starting the periodic pool notifications", "info", false);
+
       poolNotifyInterval = setInterval(function () {
         try {
           var packetData = {
