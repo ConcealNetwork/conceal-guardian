@@ -298,7 +298,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
       if (rpcComms && initialized) {
-        nodeData = rpcComms.getData();
+        var nodeData = rpcComms.getData();
 
         // check node
         if (nodeData) {
@@ -340,7 +340,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // for servicing API calls for the current node
   if (configOpts.api && configOpts.api.port) {
     logMessage("Starting the API server", "info", false);
-    nodeDirectory = path.dirname(utils.getNodeActualPath(cmdOptions, configOpts, rootPath));
+    var nodeDirectory = path.dirname(utils.getNodeActualPath(cmdOptions, configOpts, rootPath));
     apiServer.createServer(configOpts, nodeDirectory, function () {
       return getNodeInfoData();
     });

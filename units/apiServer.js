@@ -6,6 +6,12 @@ const express = require("express");
 const geoip = require('geoip-lite');
 const utils = require("./utils.js");
 const path = require("path");
+const fs = require("fs");
+
+function safeResolve(relPath) {
+  var safeSuffix = path.normalize(relPath).replace(/^(\.\.(\/|\\|$))+/, '');
+  return path.resolve(safeSuffix);
+}
 
 module.exports = {
   createServer: function (config, nodeDirectory, onDataCallback) {
@@ -65,7 +71,13 @@ module.exports = {
 
     app.get("*", (req, res) => {
       if (path.extname(req.path) !== '.map') {
-        res.sendFile(path.resolve('html' + req.path));
+        var pathName = safeResolve('html' + req.path);
+
+        if (fs.existsSync(pathName)) {
+          res.sendFile(pathName);
+        } else {
+          res.status(404).send('Not found');
+        }
       } else {
         res.status(404).send('Not found');
       }
