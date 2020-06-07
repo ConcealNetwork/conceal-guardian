@@ -28,6 +28,7 @@
     "command-line-usage": "^5.0.5",
     "conceal-api": "^0.7.5",
     "download-github-release": "^0.3.2",
+    "execa": "^4.0.2",
     "express": "^4.17.1",
     "extract-zip": "^1.6.7",
     "geoip-lite": "^1.4.0",

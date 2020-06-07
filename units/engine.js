@@ -16,6 +16,7 @@ const moment = require("moment");
 const comms = require("./comms.js");
 const pjson = require('../package.json');
 const utils = require("./utils.js");
+const execa = require('execa');
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -50,6 +51,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   })();
 
   this.stop = function (doAutoRestart) {
+    logMessage("Stopping the daemon process", "info", false);
+
     autoRestart = (doAutoRestart != null) ? doAutoRestart : true;
     clearInterval(poolNotifyInterval);
 
@@ -76,15 +79,9 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
         logMessage("Sending SIGTERM to daemon process", "info", false);
 
         isStoping = true;
-        nodeProcess.kill("SIGTERM");
-
-        // if normal fails, do a forced terminate
-        killTimeout = setTimeout(function () {
-          if (isStoping) {
-            logMessage("Sending SIGKILL to daemon process", "error", false);
-            nodeProcess.kill("SIGKILL");
-          }
-        }, (configOpts.restart.terminateTimeout || 5) * 1000);
+        nodeProcess.kill('SIGTERM', {
+          forceKillAfterTimeout: (configOpts.restart.terminateTimeout || 5) * 1000
+        });
       }
     }
   };
@@ -218,7 +215,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //         start the daemon process and then monitor it
   //*************************************************************//
   function startDaemonProcess() {
-    nodeProcess = child_process.spawn(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
+    nodeProcess = execa(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
     autoRestart = true;
     isStoping = false;
