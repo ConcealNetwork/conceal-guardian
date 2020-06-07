@@ -43,7 +43,7 @@ if '%1'=='ELEV' (del "%vbsGetPrivileges%" 1>nul 2>nul  &  shift /1)
 ::::::::::::::::::::::::::::
 ::START
 ::::::::::::::::::::::::::::
-%~dp0guardian-win64.exe --service install
+%~dp0guardian-win64.exe --node update
 
 :End
 PAUSE
