@@ -48,6 +48,7 @@
     "tar": "^4.4.13",
     "temp-dir": "^1.0.0",
     "username": "^4.1.0",
+    "webtorrent": "^0.108.6",
     "xmlbuilder": "^12.0.1"
   },
   "jshintConfig": {
