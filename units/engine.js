@@ -33,8 +33,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var initialized = false;
   var killTimeout = null;
   var nodeProcess = null;
-  var errorStream = null;
-  var dataStream = null;
   var externalIP = null;
   var rpcComms = null;
   var self = this;
@@ -55,15 +53,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
     autoRestart = (doAutoRestart != null) ? doAutoRestart : true;
     clearInterval(poolNotifyInterval);
-
-    if (errorStream) {
-      errorStream.close();
-      errorStream = null;
-    }
-    if (dataStream) {
-      dataStream.close();
-      dataStream = null;
-    }
 
     if (rpcComms) {
       rpcComms.stop();
@@ -148,20 +137,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     self.stop();
   }
 
-  function checkIfInitialized() {
-    if (!initialized) {
-      var duration = moment.duration(moment().diff(starupTime));
-
-      if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
-        restartDaemonProcess("Initialization is taking to long, restarting", true);
-      } else {
-        setTimeout(() => {
-          checkIfInitialized();
-        }, 5000);
-      }
-    }
-  }
-
   function setNotifyPoolInterval() {
     if (configOpts.pool && configOpts.pool.notify && configOpts.pool.notify.url) {
       // send the info about node to the pool
@@ -190,24 +165,38 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   }
 
   //*************************************************************//
-  //         processes a single line from data or error stream
+  //         periodically check if the core has initialized
   //*************************************************************//
-  function processSingleLine(line) {
-    // core is initialized, we can start the queries
-    if (line.indexOf("Core initialized OK") > -1) {
-      logMessage("Core is initialized, starting the periodic checking...", "info", false);
-      initialized = true;
+  function waitForCoreToInitialize() {
+    if (!initialized) {
+      var duration = moment.duration(moment().diff(starupTime));
 
-      if (!rpcComms) {
-        rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
+      if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
+        restartDaemonProcess("Initialization is taking to long, restarting", true);
+      } else {
+        setTimeout(() => {
+          request.get({
+            url: `http://127.0.0.1:${configOpts.node.port}/getinfo`,
+            headers: { 'User-Agent': 'Conceal Node Guardian' },
+            timeout: 5000,
+            json: true
+          }, (err, res, release) => {
+            if ((!err) && (res.body.status === "OK")) {
+              logMessage("Core is initialized, starting the periodic checking...", "info", false);
+              initialized = true;
+
+              if (!rpcComms) {
+                rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
+              }
+
+              // start comms
+              rpcComms.start();
+            } else {
+              waitForCoreToInitialize();
+            }
+          });
+        }, 5000);
       }
-
-      // close streams and start comms
-      errorStream.close();
-      dataStream.close();
-      errorStream = null;
-      dataStream = null;
-      rpcComms.start();
     }
   }
 
@@ -226,22 +215,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
         process.exit(0);
       }, 3000);
     } else {
-      dataStream = readline.createInterface({
-        input: nodeProcess.stdout
-      });
-
-      errorStream = readline.createInterface({
-        input: nodeProcess.stderr
-      });
-
-      dataStream.on("line", line => {
-        processSingleLine(line);
-      });
-
-      errorStream.on("line", line => {
-        processSingleLine(line);
-      });
-
       nodeProcess.on("error", function (err) {
         restartDaemonProcess(vsprintf("Error on starting the node process: %s", [err]), false);
       });
@@ -287,7 +260,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       // start notifying the pool
       setNotifyPoolInterval();
       // start the initilize checking
-      checkIfInitialized();
+      waitForCoreToInitialize();
     }
   }
 
