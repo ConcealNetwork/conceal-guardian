@@ -18,6 +18,7 @@ module.exports = {
     var lastTS = moment();
 
     this.stop = function () {
+      clearInterval(checkInterval);
       IsRunning = false;
     };
 
@@ -36,11 +37,6 @@ module.exports = {
       }, 30000);
     };
 
-    function reportError(reason) {
-      clearInterval(checkInterval);
-      errorCallback(reason);
-    }
-
     function checkAliveAndWell() {
       if (IsRunning) {
         CCXApi.info().then(data => {
@@ -55,14 +51,14 @@ module.exports = {
             var duration = moment.duration(moment().diff(lastTS));
 
             if (duration.asSeconds() > (configOpts.restart.maxBlockTime || 1800)) {
-              reportError(vsprintf("No new block has be seen for more then %d minutes", [(configOpts.restart.maxBlockTime || 1800) / 60]));
+              errorCallback(vsprintf("No new block has be seen for more then %d minutes", [(configOpts.restart.maxBlockTime || 1800) / 60]));
               heightIsOK = false;
             }
           }
 
           if (heightIsOK) {
             if (data.status !== "OK") {
-              reportError("Status is: " + data.status);
+              errorCallback("Status is: " + data.status);
             } else {
               // reset counter
               timeoutCount = 0;
@@ -72,7 +68,7 @@ module.exports = {
           if (IsRunning) {
             timeoutCount++;
             if (timeoutCount >= 3) {
-              reportError(err);
+              errorCallback(err);
             }
           }
         });

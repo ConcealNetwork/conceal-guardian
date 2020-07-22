@@ -27,7 +27,6 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var starupTime = moment();
   var errorCount = 0;
   var isStoping = false;
-  var initChecking = false;
   var initInterval = null;
   var poolInterval = null;
   var locationData = null;
@@ -171,9 +170,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //         periodically check if the core has initialized
   //*************************************************************//
   function waitForCoreToInitialize() {
-    if (!initialized && !initChecking) {
+    if (!initialized) {
       var duration = moment.duration(moment().diff(starupTime));
-      initChecking = true;
 
       if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
         restartDaemonProcess("Initialization is taking to long, restarting", true);
@@ -181,11 +179,9 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
         request.get({
           url: `http://127.0.0.1:${configOpts.node.port}/getinfo`,
           headers: { 'User-Agent': 'Conceal Node Guardian' },
-          timeout: 3000,
+          timeout: 5000,
           json: true
         }, (err, res, release) => {
-          initChecking = false;
-
           if ((!err) && (res.body.status === "OK")) {
             logMessage("Core is initialized, starting the periodic checking...", "info", false);
             clearInterval(initInterval);
@@ -265,7 +261,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       // start the initilize checking
       initInterval = setInterval(function () {
         waitForCoreToInitialize();
-      }, 5000);
+      }, 10000);
     }
   }
 
