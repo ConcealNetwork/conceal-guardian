@@ -10,6 +10,7 @@ module.exports = {
   RpcCommunicator: function (configOpts, errorCallback) {
     // create the CCX api interface object
     var CCXApi = new CCX("http://127.0.0.1", "3333", configOpts.node.port, (configOpts.node.rfcTimeout || 5) * 1000);
+    var checkInterval = null;
     var timeoutCount = 0;
     var IsRunning = false;
     var lastHeight = 0;
@@ -28,8 +29,17 @@ module.exports = {
       IsRunning = true;
       timeoutCount = 0;
       lastTS = moment();
-      checkAliveAndWell();
+
+      // set the periodic checking interval
+      checkInterval = setInterval(function () {
+        checkAliveAndWell();
+      }, 30000);
     };
+
+    function reportError(reason) {
+      clearInterval(checkInterval);
+      errorCallback(reason);
+    }
 
     function checkAliveAndWell() {
       if (IsRunning) {
@@ -45,27 +55,24 @@ module.exports = {
             var duration = moment.duration(moment().diff(lastTS));
 
             if (duration.asSeconds() > (configOpts.restart.maxBlockTime || 1800)) {
-              errorCallback(vsprintf("No new block has be seen for more then %d minutes", [(configOpts.restart.maxBlockTime || 1800) / 60]));
+              reportError(vsprintf("No new block has be seen for more then %d minutes", [(configOpts.restart.maxBlockTime || 1800) / 60]));
               heightIsOK = false;
             }
           }
 
           if (heightIsOK) {
             if (data.status !== "OK") {
-              errorCallback("Status is: " + data.status);
+              reportError("Status is: " + data.status);
             } else {
-              // reset count and repeat
+              // reset counter
               timeoutCount = 0;
-              setTimeout(() => {
-                checkAliveAndWell();
-              }, 5000);
             }
           }
         }).catch(err => {
           if (IsRunning) {
             timeoutCount++;
             if (timeoutCount >= 3) {
-              errorCallback(err);
+              reportError(err);
             }
           }
         });

@@ -27,6 +27,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var starupTime = moment();
   var errorCount = 0;
   var isStoping = false;
+  var initChecking = false;
+  var initInterval = null;
   var poolInterval = null;
   var locationData = null;
   var autoRestart = true;
@@ -134,6 +136,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //*************************************************************//
   function restartDaemonProcess(errorData, sendNotification) {
     logMessage(errorData, "error", sendNotification);
+    clearInterval(initInterval);
     self.stop();
   }
 
@@ -168,34 +171,34 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //         periodically check if the core has initialized
   //*************************************************************//
   function waitForCoreToInitialize() {
-    if (!initialized) {
+    if (!initialized && !initChecking) {
       var duration = moment.duration(moment().diff(starupTime));
+      initChecking = true;
 
       if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
         restartDaemonProcess("Initialization is taking to long, restarting", true);
       } else {
-        setTimeout(() => {
-          request.get({
-            url: `http://127.0.0.1:${configOpts.node.port}/getinfo`,
-            headers: { 'User-Agent': 'Conceal Node Guardian' },
-            timeout: 5000,
-            json: true
-          }, (err, res, release) => {
-            if ((!err) && (res.body.status === "OK")) {
-              logMessage("Core is initialized, starting the periodic checking...", "info", false);
-              initialized = true;
+        request.get({
+          url: `http://127.0.0.1:${configOpts.node.port}/getinfo`,
+          headers: { 'User-Agent': 'Conceal Node Guardian' },
+          timeout: 3000,
+          json: true
+        }, (err, res, release) => {
+          initChecking = false;
 
-              if (!rpcComms) {
-                rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
-              }
+          if ((!err) && (res.body.status === "OK")) {
+            logMessage("Core is initialized, starting the periodic checking...", "info", false);
+            clearInterval(initInterval);
+            initialized = true;
 
-              // start comms
-              rpcComms.start();
-            } else {
-              waitForCoreToInitialize();
+            if (!rpcComms) {
+              rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
             }
-          });
-        }, 5000);
+
+            // start comms
+            rpcComms.start();
+          }
+        });
       }
     }
   }
@@ -260,7 +263,9 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       // start notifying the pool
       setNotifyPoolInterval();
       // start the initilize checking
-      waitForCoreToInitialize();
+      initInterval = setInterval(function () {
+        waitForCoreToInitialize();
+      }, 5000);
     }
   }
 
