@@ -24,7 +24,7 @@ const os = require("os");
 exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   const nodeUniqueId = utils.ensureNodeUniqueId();
   var poolNotifyInterval = null;
-  var starupTime = moment();
+  var startupTime = moment();
   var errorCount = 0;
   var isStoping = false;
   var initInterval = null;
@@ -98,7 +98,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       url: configOpts.url,
       status: {
         errors: errorCount,
-        startTime: starupTime,
+        startTime: startupTime,
         initialized: initialized
       },
       blockchain: rpcComms ? rpcComms.getData() : null,
@@ -171,7 +171,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //*************************************************************//
   function waitForCoreToInitialize() {
     if (!initialized) {
-      var duration = moment.duration(moment().diff(starupTime));
+      var duration = moment.duration(moment().diff(startupTime));
 
       if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
         restartDaemonProcess("Initialization is taking to long, restarting", true);
@@ -205,6 +205,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   function startDaemonProcess() {
     nodeProcess = execa(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
     logMessage("Started the daemon process", "info", false);
+    startupTime = moment();
     autoRestart = true;
     isStoping = false;
 
