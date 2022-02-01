@@ -14,7 +14,7 @@ const path = require("path");
 const fs = require("fs");
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
-const wrongLinuxOSMsg = "Only Ubuntu 16.04 and 18.04 have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
+const wrongLinuxOSMsg = "Only Ubuntu (18.04, 18.10) and (20.04, 20.10) have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 const wrongOSMsg = "This operating system has no precompiled binaries you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 
 // Define a function to filter releases.
@@ -67,7 +67,7 @@ module.exports = {
       console.log(vsprintf("Running on %s", [linuxOSInfo.pretty_name]));
 
       if (linuxOSInfo.id == "ubuntu") {
-        if ((linuxOSInfo.version_id !== "16.04") && (linuxOSInfo.version_id !== "16.10") && (linuxOSInfo.version_id !== "18.04") && (linuxOSInfo.version_id !== "18.10")) {
+        if ((linuxOSInfo.version_id !== "18.04") && (linuxOSInfo.version_id !== "18.10") && (linuxOSInfo.version_id !== "20.04") && (linuxOSInfo.version_id !== "20.10")) {
           callback(wrongLinuxOSMsg);
           return false;
         }
@@ -85,10 +85,10 @@ module.exports = {
       if (process.platform === "win32") {
         return asset.name.indexOf('win64') >= 0;
       } else if (process.platform === "linux") {
-        if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "16.04") || (linuxOSInfo.version_id == "16.10"))) {
-          return asset.name.indexOf('ubuntu-1604') >= 0;
-        } else if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "18.04") || (linuxOSInfo.version_id == "18.10"))) {
+        if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "18.04") || (linuxOSInfo.version_id == "18.10"))) {
           return asset.name.indexOf('ubuntu-1804') >= 0;
+        } else if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "20.04") || (linuxOSInfo.version_id == "20.10"))) {
+          return asset.name.indexOf('ubuntu-2004') >= 0;
         } else {
           return false;
         }
