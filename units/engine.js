@@ -4,7 +4,6 @@
 
 const commandLineArgs = require("command-line-args");
 const child_process = require("child_process");
-const ipLocation = require("iplocation");
 const apiServer = require("./apiServer.js");
 const notifiers = require("./notifiers.js");
 const vsprintf = require("sprintf-js").vsprintf;
@@ -41,8 +40,25 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // get GEO data
   (async () => {
     try {
-      response = await axios.get('https://api.ipify.org');
-      locationData = await ipLocation(response.data);
+      ipResponse = await axios.get('https://api.ipify.org');
+      // set the external ip data from request
+      externalIP = ipResponse.data;      
+
+      // then get the geo data for the external IP
+      geoResponse = await axios.get(`https://ipapi.co/${ipResponse.data}/json/`);
+      
+      locationData = {
+        country: geoResponse.data.country_name,
+        countryCode: geoResponse.data.country_code,
+        region: geoResponse.data.region,
+        regionCode: geoResponse.data.region_code,
+        city: geoResponse.data.city,
+        postal: geoResponse.data.postal,
+        ip: geoResponse.data.ip,
+        latitude: geoResponse.data.latitude,
+        longitude: geoResponse.data.longitude,
+        timezone: geoResponse.data.timezone
+      }
     } catch(err) {
       locationData = null;
       console.log(err);
@@ -150,6 +166,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
             uri: configOpts.pool.notify.url,
             strictSSL: false,
             method: "POST",
+            timeout: 10000,
             json: getNodeInfoData()
           };
 

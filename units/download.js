@@ -24,13 +24,14 @@ function filterRelease(release) {
 
 function extractArchive(filePath, outDir, callback) {
   if (path.extname(filePath) == '.zip') {
-    extractZIP(filePath, { dir: outDir }, function (err) {
-      if (err) {
-        callback(false);
-      } else {
+    (async () => {
+      try {
+        await extractZIP(filePath, { dir: outDir });
         callback(true);
-      }
-    });
+      } catch (err) {
+        callback(false);
+      }  
+    })();  
   } else if ((path.extname(filePath) == '.gz') || (path.extname(filePath) == '.tar')) {
     try {
       extractTAR.x({
@@ -99,40 +100,38 @@ module.exports = {
       }
     };
 
-    downloadRelease('ConcealNetwork', 'conceal-core', finalTempDir, filterRelease, filterAssetNode, true)
-      .then(function () {
-        fs.readdir(finalTempDir, function (err, items) {
-          if (items.length > 0) {
-            extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
-              if (success) {
-                shell.rm('-rf', path.join(finalTempDir, items[0]));
+    downloadRelease('ConcealNetwork', 'conceal-core', finalTempDir, filterRelease, filterAssetNode, true) .then(function () {
+      fs.readdir(finalTempDir, function (err, items) {
+        if (items.length > 0) {
+          extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
+            if (success) {
+              shell.rm('-rf', path.join(finalTempDir, items[0]));
 
-                fs.readdir(finalTempDir, function (err, items) {
-                  if (items.length > 0) {
-                    if (process.platform === "win32") {
-                      shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
-                    } else {
-                      shell.cp(path.join(finalTempDir, items[0], utils.getNodeExecutableName()), path.dirname(nodePath));
-                    }
-                    shell.rm('-rf', finalTempDir);
-                    shell.chmod('+x', nodePath);
-                    callback(null);
+              fs.readdir(finalTempDir, function (err, items) {
+                if (items.length > 0) {
+                  if (process.platform === "win32") {
+                    shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
                   } else {
-                    callback("No downloaded archives found");
+                    shell.cp(path.join(finalTempDir, items[0], utils.getNodeExecutableName()), path.dirname(nodePath));
                   }
-                });
-              } else {
-                callback("Failed to extract the archive");
-              }
-            });
-          } else {
-            callback("No downloaded archives found");
-          }
-        });
-      })
-      .catch(function (err) {
-        callback(err.message);
+                  shell.rm('-rf', finalTempDir);
+                  shell.chmod('+x', nodePath);
+                  callback(null);
+                } else {
+                  callback("No downloaded archives found");
+                }
+              });
+            } else {
+              callback("Failed to extract the archive");
+            }
+          });
+        } else {
+          callback("No downloaded archives found");
+        }
       });
+    }).catch(function (err) {
+      callback(err.message);
+    });
   },
   downloadLatestGuardian: function (callback) {
     var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
