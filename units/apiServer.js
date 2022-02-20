@@ -2,7 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 const readLastLines = require('read-last-lines');
-const RateLimit = require('express-rate-limit');
+const rateLimit = require('express-rate-limit');
 const express = require("express");
 const geoip = require('geoip-lite');
 const utils = require("./utils.js");
@@ -16,7 +16,7 @@ function safeResolve(relPath) {
 
 module.exports = {
   createServer: function (config, nodeDirectory, onDataCallback) {
-    let limiter = new RateLimit({
+    let limiter = rateLimit({
       windowMs: 1*60*1000, // 1 minute
       max: 15
     });

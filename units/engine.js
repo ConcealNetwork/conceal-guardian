@@ -4,12 +4,11 @@
 
 const commandLineArgs = require("command-line-args");
 const child_process = require("child_process");
-const iplocation = require("iplocation").default;
+const ipLocation = require("iplocation");
 const apiServer = require("./apiServer.js");
 const notifiers = require("./notifiers.js");
 const vsprintf = require("sprintf-js").vsprintf;
 const download = require("./download.js");
-const publicIp = require("public-ip");
 const readline = require("readline");
 const request = require("request");
 const moment = require("moment");
@@ -17,6 +16,7 @@ const comms = require("./comms.js");
 const pjson = require('../package.json');
 const utils = require("./utils.js");
 const execa = require('execa');
+const axios = require('axios');
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -40,13 +40,13 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
   // get GEO data
   (async () => {
-    externalIP = await publicIp.v4();
-
-    iplocation(externalIP, [], (error, res) => {
-      if (!error) {
-        locationData = res;
-      }
-    });
+    try {
+      response = await axios.get('https://api.ipify.org');
+      locationData = await ipLocation(response.data);
+    } catch(err) {
+      locationData = null;
+      console.log(err);
+    }
   })();
 
   this.stop = function (doAutoRestart) {
