@@ -5,7 +5,6 @@
 const downloadRelease = require('download-github-release');
 const extractZIP = require('extract-zip');
 const extractTAR = require('tar');
-const vsprintf = require("sprintf-js").vsprintf;
 const osInfo = require('linux-os-info');
 const tempDir = require('temp-dir');
 const utils = require("./utils.js");
@@ -65,7 +64,7 @@ module.exports = {
     if (process.platform === "linux") {
       linuxOSInfo = osInfo({ mode: 'sync' });
       // if we are running on linux, print the version and flavor
-      console.log(vsprintf("Running on %s", [linuxOSInfo.pretty_name]));
+      console.log(`Running on ${linuxOSInfo.pretty_name}`);
 
       if (linuxOSInfo.id == "ubuntu") {
         if ((linuxOSInfo.version_id !== "18.04") && (linuxOSInfo.version_id !== "18.10") && (linuxOSInfo.version_id !== "20.04") && (linuxOSInfo.version_id !== "20.10")) {

@@ -6,7 +6,6 @@ const commandLineArgs = require("command-line-args");
 const child_process = require("child_process");
 const apiServer = require("./apiServer.js");
 const notifiers = require("./notifiers.js");
-const vsprintf = require("sprintf-js").vsprintf;
 const download = require("./download.js");
 const readline = require("readline");
 const request = require("request");
@@ -86,7 +85,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
         isStoping = true;
         nodeProcess.kill('SIGTERM', {
-          forceKillAfterTimeout: (configOpts.restart.terminateTimeout || 5) * 1000
+          forceKillAfterTimeout: (configOpts.restart.terminateTimeout || 60) * 1000
         });
       }
     }
@@ -95,6 +94,10 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   this.logError = function (errMessage) {
     logMessage(errMessage, "error", false);
   };
+
+  this.getProcess = function() {
+    return nodeProcess;
+  }
 
   function errorCallback(errorData) {
     restartDaemonProcess(errorData, true);
@@ -233,7 +236,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       }, 3000);
     } else {
       nodeProcess.on("error", function (err) {
-        restartDaemonProcess(vsprintf("Error on starting the node process: %s", [err]), false);
+        restartDaemonProcess(`Error on starting the node process: ${err}`, false);
       });
 
       // if daemon closes the try to log and restart it
@@ -243,7 +246,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
         // check if we need to stop it
         if (isStoping === false) {
-          self.stop();
+          self.stop(false);
         }
 
         // always do a cleanup of resources
@@ -255,7 +258,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
           if (!signal) {
             // only log if signall is empty, which means it was spontaneous crash
-            logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
+            logMessage(`Node process closed with code ${code}`, "error", true);
           }
 
           // check if we have crossed the maximum error number in short period
@@ -307,7 +310,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
                     download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
                       if (error) {
-                        logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
+                        logMessage(`\nError auto updating daemon: ${error}\n`, "error", true);
                       } else {
                         logMessage("The deamon was automatically updated", "info", true);
                       }

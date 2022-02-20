@@ -5,7 +5,6 @@
 const commandLineUsage = require('command-line-usage');
 const commandLineArgs = require("command-line-args");
 const mainEngine = require("./units/engine.js");
-const vsprintf = require("sprintf-js").vsprintf;
 const download = require("./units/download.js");
 const service = require("./units/service.js");
 const setup = require("./units/setup.js");
@@ -126,15 +125,13 @@ if (cmdOptions.help) {
   const usage = commandLineUsage(sections);
   console.log(usage);
 } else if (cmdOptions.version) {
-  console.log(vsprintf('\nConceal node guardian version %s\n', [pjson.version]));
+  console.log(`\nConceal node guardian version ${pjson.version}\n`);
 } else {
   const rootPath = process.cwd();
   const configFileName = cmdOptions.config || path.join(rootPath, "config.json");
 
   if (!fs.existsSync(configFileName)) {
-    console.log(vsprintf('\n"%s" does not exist! Specify the correct path to the config file or create config.json in the same directory as the application. You can use the config.json.sample as an example\n', [
-      configFileName,
-    ]));
+    console.log(`\n"${configFileName}" does not exist! Specify the correct path to the config file or create config.json in the same directory as the application. You can use the config.json.sample as an example\n`);
   } else {
     // read config option to use them either in engine or setup module
     const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
@@ -200,7 +197,7 @@ if (cmdOptions.help) {
         service.stop(configOpts, configFileName);
         download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
           if (error) {
-            console.log(vsprintf("\nError updating daemon: %s\n", [error]));
+            console.log(`\nError updating daemon: ${error}\n`);
           } else {
             console.log("\nThe daemon has been succesfully updated\n");
           }
@@ -212,7 +209,7 @@ if (cmdOptions.help) {
       service.stop(configOpts, configFileName);
       download.downloadLatestGuardian(function (error) {
         if (error) {
-          console.log(vsprintf("\nError updating the guardian: %s\n", [error]));
+          console.log(`\nError updating the guardian: ${error}\n`);
         } else {
           console.log("\nThe guardian has been succesfully updated\n");
         }
@@ -229,7 +226,7 @@ if (cmdOptions.help) {
       if (!fs.existsSync(nodePath)) {
         download.downloadLatestDaemon(nodePath, function (error) {
           if (error) {
-            console.log(vsprintf("\nError updating daemon: %s\n", [error]));
+            console.log(`\nError updating daemon: ${error}\n`);
           } else {
             console.log("\nThe daemon has been succesfully updated\n");
             createGuardInstance();
@@ -242,6 +239,22 @@ if (cmdOptions.help) {
       process.on('uncaughtException', function (err) {
         guardInstance.logError(err);
       });
+
+      process.on('SIGINT', function() {
+        console.log("Stopping the guardian....");
+
+        if (guardInstance.getProcess()) {
+          guardInstance.getProcess().on("exit", function (code, signal) {
+            console.log("Daemon stopped, exiting....");
+            process.exit();
+          });
+
+          // stop the daemon process
+          guardInstance.stop(false);
+        } else {
+          process.exit();
+        }
+      });      
     }
   }
 }

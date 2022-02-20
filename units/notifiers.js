@@ -3,7 +3,6 @@
 // Please see the included LICENSE file for more information.
 
 const nodemailer = require("nodemailer");
-const vsprintf = require("sprintf-js").vsprintf;
 const request = require("request");
 const oPath = require("object-path");
 const os = require("os");
@@ -14,10 +13,7 @@ function notifyViaDiscord(config, msgText, msgType, nodeData) {
       uri: oPath.get(config, 'error.notify.discord.url', ''),
       method: "POST",
       json: {
-        content: vsprintf("Node **%s** reported an error -> %s \n", [
-          nodeData.name,
-          msgText
-        ])
+        content: `Node **${nodeData.name}** reported an error -> ${msgText} \n`
       }
     };
 
@@ -48,15 +44,9 @@ function notifyViaEmail(config, msgText, msgType, nodeData) {
     }
   });
 
-  const bodyContentHTML = vsprintf("Node <B>%s</B> reported an error -> %s", [
-    nodeData.name,
-    msgText
-  ]);
-
-  const bodyContentPlain = vsprintf("Node **%s** reported an error -> %s", [
-    nodeData.name,
-    msgText
-  ]);
+  // HTML and plain bodies for the notification mail
+  const bodyContentHTML = `Node <B>${nodeData.name}</B> reported an error -> ${msgText}`;
+  const bodyContentPlain = `Node **${nodeData.name}** reported an error -> ${msgText}`;
 
   // setup email data with unicode symbols
   const mailOptions = {
