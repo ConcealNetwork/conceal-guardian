@@ -9,7 +9,11 @@ const CCX = require("conceal-api");
 module.exports = {
   RpcCommunicator: function (configOpts, errorCallback) {
     // create the CCX api interface object
-    var CCXApi = new CCX("http://127.0.0.1", "3333", configOpts.node.port, (configOpts.node.rfcTimeout || 5) * 1000);
+    var CCXApi = new CCX({
+      daemonHost: "http://127.0.0.1", 
+      daemonRpcPort: configOpts.node.port,
+      timeout: (configOpts.node.rfcTimeout || 5) * 1000
+    });
     var checkInterval = null;
     var timeoutCount = 0;
     var IsRunning = false;
