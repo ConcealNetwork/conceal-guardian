@@ -223,8 +223,14 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //         start the daemon process and then monitor it
   //*************************************************************//
   function startDaemonProcess() {
-    nodeProcess = execa(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
-    logMessage("Started the daemon process", "info", false);
+    (async () => {
+      nodeProcess = execa(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
+    })().catch(err => {
+      logMessage(`Error starting the daemon process: ${err}`, 'info', false);
+      nodeProcess = null;
+    });
+
+    logMessage('Started the daemon process', 'info', false);
     startupTime = moment();
     autoRestart = true;
     isStoping = false;
@@ -289,7 +295,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // check if autoupdate is turned on
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
-      if (rpcComms && initialized) {
+      console.log("do autoupdate check...", rpcComms, initialized);
+      if (rpcComms && initialized) {        
         var nodeData = rpcComms.getData();
 
         // check node
@@ -321,6 +328,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
                   }
                 }, 1000);
               }
+            } else {
+              logMessage(`\nError auto updating daemon: ${err}\n`, "error", true);
             }
           });
         }
