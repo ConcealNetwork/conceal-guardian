@@ -25,6 +25,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   var startupTime = moment();
   var errorCount = 0;
   var isStoping = false;
+  var isUpdating = false;
   var initInterval = null;
   var poolInterval = null;
   var locationData = null;
@@ -295,8 +296,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // check if autoupdate is turned on
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
-      console.log("do autoupdate check...", rpcComms, initialized);
-      if (rpcComms && initialized) {        
+      if (rpcComms && initialized && !isUpdating) {        
         var nodeData = rpcComms.getData();
 
         // check node
@@ -309,6 +309,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
             if (!err && release) {
               if (release.tag_name !== nodeData.version) {
                 // stop the daemon
+                isUpdating = true;
                 self.stop(false);
 
                 var waitStopInteval = setInterval(function () {
@@ -324,12 +325,14 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
                       // start the daemon 
                       startDaemonProcess();
+                      isUpdating = false;
                     });
                   }
                 }, 1000);
               }
             } else {
               logMessage(`\nError auto updating daemon: ${err}\n`, "error", true);
+              isUpdating = false;
             }
           });
         }
