@@ -297,7 +297,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
       if (rpcComms && initialized && !isUpdating) {        
-        var nodeData = rpcComms.getData();
+        let nodeData = rpcComms.getData();
 
         // check node
         if (nodeData) {
@@ -312,7 +312,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
                 isUpdating = true;
                 self.stop(false);
 
-                var waitStopInteval = setInterval(function () {
+                let waitStopInteval = setInterval(function () {
                   if (nodeProcess == null) {
                     clearInterval(waitStopInteval);
 

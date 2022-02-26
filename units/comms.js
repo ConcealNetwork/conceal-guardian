@@ -23,6 +23,7 @@ module.exports = {
     this.stop = function () {
       clearInterval(checkInterval);
       IsRunning = false;
+      infoData = null;
     };
 
     this.getData = function () {
