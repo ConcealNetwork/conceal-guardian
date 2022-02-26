@@ -18,7 +18,7 @@ module.exports = {
   createServer: function (config, nodeDirectory, onDataCallback) {
     let limiter = rateLimit({
       windowMs: 1*60*1000, // 1 minute
-      max: 15
+      max: 60
     });
 
     // create express and rate limiter
