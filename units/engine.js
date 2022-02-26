@@ -166,7 +166,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
       poolNotifyInterval = setInterval(function () {
         try {
-          var packetData = {
+          let packetData = {
             uri: configOpts.pool.notify.url,
             strictSSL: false,
             method: "POST",
@@ -192,7 +192,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //*************************************************************//
   function waitForCoreToInitialize() {
     if (!initialized) {
-      var duration = moment.duration(moment().diff(startupTime));
+      let duration = moment.duration(moment().diff(startupTime));
 
       if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
         restartDaemonProcess("Initialization is taking to long, restarting", true);
