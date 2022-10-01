@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 import xmlbuilder from "xmlbuilder";
-import username from "username";
+import { username } from "username";
 import format from "string-template";
 import shell from "shelljs";
 import path from "path";
