@@ -1,16 +1,16 @@
-// Copyright (c) 2019, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
-const downloadRelease = require('download-github-release');
-const extractZIP = require('extract-zip');
-const extractTAR = require('tar');
-const osInfo = require('linux-os-info');
-const tempDir = require('temp-dir');
-const utils = require("./utils.js");
-const shell = require("shelljs");
-const path = require("path");
-const fs = require("fs");
+import { ensureNodeUniqueId, getNodeExecutableName, getGuardianExecutableName } from "./utils.js";
+import downloadRelease from "download-github-release";
+import extractZIP from "extract-zip";
+import extractTAR from "tar";
+import osInfo from "linux-os-info";
+import tempDir from "temp-dir";
+import shell from "shelljs";
+import path from "path";
+import fs from "fs";
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
 const wrongLinuxOSMsg = "Only Ubuntu (18.04, 18.10) and (20.04, 20.10) have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
@@ -48,9 +48,8 @@ function extractArchive(filePath, outDir, callback) {
   }
 }
 
-module.exports = {
-  downloadLatestDaemon: function (nodePath, callback) {
-    var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
+export function downloadLatestDaemon(nodePath, callback) {
+    var finalTempDir = path.join(tempDir, ensureNodeUniqueId());
     var linuxOSInfo = null;
 
     if (fs.existsSync(finalTempDir)) {
@@ -109,9 +108,9 @@ module.exports = {
               fs.readdir(finalTempDir, function (err, items) {
                 if (items.length > 0) {
                   if (process.platform === "win32") {
-                    shell.cp(path.join(finalTempDir, utils.getNodeExecutableName()), path.dirname(nodePath));
+                    shell.cp(path.join(finalTempDir, getNodeExecutableName()), path.dirname(nodePath));
                   } else {
-                    shell.cp(path.join(finalTempDir, items[0], utils.getNodeExecutableName()), path.dirname(nodePath));
+                    shell.cp(path.join(finalTempDir, items[0], getNodeExecutableName()), path.dirname(nodePath));
                   }
                   shell.rm('-rf', finalTempDir);
                   shell.chmod('+x', nodePath);
@@ -131,70 +130,71 @@ module.exports = {
     }).catch(function (err) {
       callback(err.message);
     });
-  },
-  downloadLatestGuardian: function (callback) {
-    var finalTempDir = path.join(tempDir, utils.ensureNodeUniqueId());
+};
 
-    if (!fs.existsSync(tempDir)) {
-      shell.mkdir('-p', tempDir);
-    }
 
-    // remove and remake the dir
-    shell.rm('-rf', finalTempDir);
-    shell.mkdir('-p', finalTempDir);
+export function downloadLatestGuardian(callback) {
+  var finalTempDir = path.join(tempDir, ensureNodeUniqueId());
 
-    // Define a function to filter assets.
-    var filterAssetGuardian = function (asset) {
-      if (process.platform === "win32") {
-        return asset.name.indexOf('win64') >= 0;
-      } else if (process.platform === "linux") {
-        return asset.name.indexOf('linux64') >= 0;
-      } else if (process.platform === "darwin") {
-        return asset.name.indexOf('mac64') >= 0;
-      } else {
-        return false;
-      }
-    };
-
-    downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, true)
-      .then(function () {
-        fs.readdir(finalTempDir, function (err, items) {
-          if (items.length > 0) {
-            extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
-              if (success) {
-                shell.rm(path.join(finalTempDir, '*.zip'));
-                shell.rm(path.join(finalTempDir, '*.tar'));
-                shell.rm(path.join(finalTempDir, '*.gz'));
-
-                // check for files we need to exclude
-                if (fs.existsSync(path.join(finalTempDir, 'exclude.txt'))) {
-                  fs.readFileSync(path.join(finalTempDir, 'exclude.txt'), 'utf-8').split(/\r?\n/).forEach(function (line) {
-                    shell.rm(path.join(finalTempDir, line));
-                  });
-                }
-
-                var executableName = utils.getGuardianExecutableName();
-                var extensionPos = executableName.lastIndexOf(".");
-
-                // get the backup name for the old file and rename it to that name
-                var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
-
-                shell.mv(path.join(process.cwd(), utils.getGuardianExecutableName()), path.join(process.cwd(), backupName));
-                shell.cp('-rf', path.join(finalTempDir, '*'), process.cwd());
-                shell.chmod('+x', process.cwd());
-                shell.rm('-rf', finalTempDir);
-                callback(null);
-              } else {
-                callback("Failed to extract the archive");
-              }
-            });
-          } else {
-            callback("No downloaded archives found");
-          }
-        });
-      })
-      .catch(function (err) {
-        callback(err.message);
-      });
+  if (!fs.existsSync(tempDir)) {
+    shell.mkdir('-p', tempDir);
   }
+
+  // remove and remake the dir
+  shell.rm('-rf', finalTempDir);
+  shell.mkdir('-p', finalTempDir);
+
+  // Define a function to filter assets.
+  var filterAssetGuardian = function (asset) {
+    if (process.platform === "win32") {
+      return asset.name.indexOf('win64') >= 0;
+    } else if (process.platform === "linux") {
+      return asset.name.indexOf('linux64') >= 0;
+    } else if (process.platform === "darwin") {
+      return asset.name.indexOf('mac64') >= 0;
+    } else {
+      return false;
+    }
+  };
+
+  downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, true)
+    .then(function () {
+      fs.readdir(finalTempDir, function (err, items) {
+        if (items.length > 0) {
+          extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
+            if (success) {
+              shell.rm(path.join(finalTempDir, '*.zip'));
+              shell.rm(path.join(finalTempDir, '*.tar'));
+              shell.rm(path.join(finalTempDir, '*.gz'));
+
+              // check for files we need to exclude
+              if (fs.existsSync(path.join(finalTempDir, 'exclude.txt'))) {
+                fs.readFileSync(path.join(finalTempDir, 'exclude.txt'), 'utf-8').split(/\r?\n/).forEach(function (line) {
+                  shell.rm(path.join(finalTempDir, line));
+                });
+              }
+
+              var executableName = getGuardianExecutableName();
+              var extensionPos = executableName.lastIndexOf(".");
+
+              // get the backup name for the old file and rename it to that name
+              var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
+
+              shell.mv(path.join(process.cwd(), getGuardianExecutableName()), path.join(process.cwd(), backupName));
+              shell.cp('-rf', path.join(finalTempDir, '*'), process.cwd());
+              shell.chmod('+x', process.cwd());
+              shell.rm('-rf', finalTempDir);
+              callback(null);
+            } else {
+              callback("Failed to extract the archive");
+            }
+          });
+        } else {
+          callback("No downloaded archives found");
+        }
+      });
+    })
+    .catch(function (err) {
+      callback(err.message);
+    });
 };

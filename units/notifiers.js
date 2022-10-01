@@ -1,11 +1,11 @@
-// Copyright (c) 2019, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
-const nodemailer = require("nodemailer");
-const request = require("request");
-const oPath = require("object-path");
-const os = require("os");
+import nodemailer from "nodemailer";
+import request from "request";
+import oPath from "object-path";
+import os from "os";
 
 function notifyViaDiscord(config, msgText, msgType, nodeData) {
   if (oPath.get(config, 'error.notify.discord.url', '')) {
@@ -63,15 +63,14 @@ function notifyViaEmail(config, msgText, msgType, nodeData) {
   });
 }
 
-module.exports = {
-  notifyOnError: function (config, msgText, msgType, nodeData) {
-    // check if we need to notify the Discord
-    if (config.error.notify.discord) {
-      notifyViaDiscord(config, msgText, msgType, nodeData);
-    }
 
-    if (config.error.notify.email) {
-      notifyViaEmail(config, msgText, msgType, nodeData);
-    }
+export function notifyOnError(config, msgText, msgType, nodeData) {
+  // check if we need to notify the Discord
+  if (config.error.notify.discord) {
+    notifyViaDiscord(config, msgText, msgType, nodeData);
+  }
+
+  if (config.error.notify.email) {
+    notifyViaEmail(config, msgText, msgType, nodeData);
   }
 };

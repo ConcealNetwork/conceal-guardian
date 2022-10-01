@@ -1,26 +1,32 @@
-// Copyright (c) 2019, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
-const commandLineArgs = require("command-line-args");
-const child_process = require("child_process");
-const apiServer = require("./apiServer.js");
-const notifiers = require("./notifiers.js");
-const download = require("./download.js");
-const readline = require("readline");
-const request = require("request");
-const moment = require("moment");
-const comms = require("./comms.js");
-const pjson = require('../package.json');
-const utils = require("./utils.js");
-const execa = require('execa');
-const axios = require('axios');
-const path = require("path");
-const fs = require("fs");
-const os = require("os");
+import { downloadLatestDaemon } from "./download.js";
+import commandLineArgs from "command-line-args";
+import child_process from "child_process";
+import { RpcCommunicator } from "./comms.js";
+import { notifyOnError } from "./notifiers.js";
+import { createServer } from "./apiServer.js";
+import readline from "readline";
+import request from "request";
+import moment from "moment";
+import execa from "execa";
+import axios from "axios";
+import path from "path";
+import fs from "fs";
+import os from "os";
+import { 
+  ensureNodeUniqueId, 
+  ensureUserDataDir, 
+  getNodeActualPath 
+} from "./utils.js";
 
-exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
-  const nodeUniqueId = utils.ensureNodeUniqueId();
+// read the package.json to have version info available
+const pjson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")));
+
+export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
+  const nodeUniqueId = ensureNodeUniqueId();
   var poolNotifyInterval = null;
   var startupTime = moment();
   var errorCount = 0;
@@ -40,12 +46,12 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // get GEO data
   (async () => {
     try {
-      ipResponse = await axios.get('https://api.ipify.org');
+      let ipResponse = await axios.get('https://api.ipify.org');
       // set the external ip data from request
       externalIP = ipResponse.data;      
 
       // then get the geo data for the external IP
-      geoResponse = await axios.get(`https://ipapi.co/${ipResponse.data}/json/`);
+      let geoResponse = await axios.get(`https://ipapi.co/${ipResponse.data}/json/`);
       
       locationData = {
         country: geoResponse.data.country_name,
@@ -133,7 +139,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //       log the error to text file and send it to Discord
   //*************************************************************//
   function logMessage(msgText, msgType, sendNotification) {
-    var userDataDir = utils.ensureUserDataDir();
+    var userDataDir = ensureUserDataDir();
     var logEntry = [];
 
     logEntry.push(moment().format("YYYY-MM-DD hh:mm:ss"));
@@ -146,7 +152,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
     // send notification if specified in the config
     if (sendNotification && configOpts.error && configOpts.error.notify) {
-      notifiers.notifyOnError(configOpts, msgText, msgType, getNodeInfoData());
+      notifyOnError(configOpts, msgText, msgType, getNodeInfoData());
     }
   }
 
@@ -209,7 +215,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
             initialized = true;
 
             if (!rpcComms) {
-              rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
+              rpcComms = new RpcCommunicator(configOpts, errorCallback);
             }
 
             // start comms
@@ -225,7 +231,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //*************************************************************//
   function startDaemonProcess() {
     (async () => {
-      nodeProcess = execa(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
+      nodeProcess = execa(getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
     })().catch(err => {
       logMessage(`Error starting the daemon process: ${err}`, 'info', false);
       nodeProcess = null;
@@ -316,7 +322,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
                   if (nodeProcess == null) {
                     clearInterval(waitStopInteval);
 
-                    download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+                    downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
                       if (error) {
                         logMessage(`\nError auto updating daemon: ${error}\n`, "error", true);
                       } else {
@@ -344,8 +350,8 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // for servicing API calls for the current node
   if (configOpts.api && configOpts.api.port) {
     logMessage("Starting the API server", "info", false);
-    var nodeDirectory = path.dirname(utils.getNodeActualPath(cmdOptions, configOpts, rootPath));
-    apiServer.createServer(configOpts, nodeDirectory, function () {
+    var nodeDirectory = path.dirname(getNodeActualPath(cmdOptions, configOpts, rootPath));
+    createServer(configOpts, nodeDirectory, function () {
       return getNodeInfoData();
     });
   }

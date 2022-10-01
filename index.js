@@ -1,17 +1,28 @@
-// Copyright (c) 2019, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
-const commandLineUsage = require('command-line-usage');
-const commandLineArgs = require("command-line-args");
-const mainEngine = require("./units/engine.js");
-const download = require("./units/download.js");
-const service = require("./units/service.js");
-const setup = require("./units/setup.js");
-const utils = require("./units/utils.js");
-const pjson = require('./package.json');
-const path = require("path");
-const fs = require("fs");
+import { getNodeActualPath } from "./units/utils.js";
+import commandLineUsage from "command-line-usage";
+import commandLineArgs from "command-line-args";
+import { NodeGuard } from "./units/engine.js";
+import { Initialize } from "./units/setup.js";
+import path from "path";
+import fs from "fs";
+import { 
+  downloadLatestDaemon, 
+  downloadLatestGuardian
+} from "./units/download.js";
+import {
+  install, 
+  remove, 
+  stop, 
+  start, 
+  status
+} from "./units/service.js";
+
+// read the package.json to have version info available
+const pjson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")));
 
 try {
   var cmdOptions = commandLineArgs([{
@@ -172,30 +183,30 @@ if (cmdOptions.help) {
     }
 
     if (cmdOptions.setup) {
-      setup.Initialize(configFileName);
+      Initialize(configFileName);
     } else if (cmdOptions.service) {
       switch (cmdOptions.service) {
         case "install":
-          service.install(configOpts, configFileName);
+          install(configOpts, configFileName);
           break;
         case "remove":
-          service.remove(configOpts, configFileName);
+          remove(configOpts, configFileName);
           break;
         case "start":
-          service.start(configOpts, configFileName);
+          start(configOpts, configFileName);
           break;
         case "stop":
-          service.stop(configOpts, configFileName);
+          stop(configOpts, configFileName);
           break;
         case "status":
-          service.status(configOpts, configFileName);
+          tatus(configOpts, configFileName);
           break;
         default: console.log('\nWrong parameter for service command. Valid values: "install", "remove", "start", "stop"\n');
       }
     } else if (cmdOptions.node) {
       if (cmdOptions.node === "update") {
-        service.stop(configOpts, configFileName);
-        download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+        stop(configOpts, configFileName);
+        downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
           if (error) {
             console.log(`\nError updating daemon: ${error}\n`);
           } else {
@@ -206,8 +217,8 @@ if (cmdOptions.help) {
         console.log('\nWrong parameter for node command. Valid values: "update"\n');
       }
     } else if (cmdOptions.update) {
-      service.stop(configOpts, configFileName);
-      download.downloadLatestGuardian(function (error) {
+      stop(configOpts, configFileName);
+      downloadLatestGuardian(function (error) {
         if (error) {
           console.log(`\nError updating the guardian: ${error}\n`);
         } else {
@@ -215,16 +226,16 @@ if (cmdOptions.help) {
         }
       });
     } else {
-      const nodePath = utils.getNodeActualPath(cmdOptions, configOpts, rootPath);
+      const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
       var guardInstance = null;
 
       // createGuardInstance function
       var createGuardInstance = function () {
-        guardInstance = new mainEngine.NodeGuard(cmdOptions, configOpts, rootPath, pjson.version);
+        guardInstance = new NodeGuard(cmdOptions, configOpts, rootPath, pjson.version);
       };
 
       if (!fs.existsSync(nodePath)) {
-        download.downloadLatestDaemon(nodePath, function (error) {
+        downloadLatestDaemon(nodePath, function (error) {
           if (error) {
             console.log(`\nError updating daemon: ${error}\n`);
           } else {
