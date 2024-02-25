@@ -13,7 +13,7 @@ import path from "path";
 import fs from "fs";
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
-const wrongLinuxOSMsg = "Only Ubuntu (18.04, 18.10) and (20.04, 20.10) have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
+const wrongLinuxOSMsg = "Only Ubuntu (20.04, 20.10) and (22.04, 22.10) have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 const wrongOSMsg = "This operating system has no precompiled binaries you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 
 // Define a function to filter releases.
@@ -66,7 +66,7 @@ export function downloadLatestDaemon(nodePath, callback) {
       console.log(`Running on ${linuxOSInfo.pretty_name}`);
 
       if (linuxOSInfo.id == "ubuntu") {
-        if ((linuxOSInfo.version_id !== "18.04") && (linuxOSInfo.version_id !== "18.10") && (linuxOSInfo.version_id !== "20.04") && (linuxOSInfo.version_id !== "20.10")) {
+        if ((linuxOSInfo.version_id !== "20.04") && (linuxOSInfo.version_id !== "20.10") && (linuxOSInfo.version_id !== "22.04") && (linuxOSInfo.version_id !== "22.10")) {
           callback(wrongLinuxOSMsg);
           return false;
         }

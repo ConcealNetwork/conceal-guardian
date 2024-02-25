@@ -2,7 +2,7 @@
 REM Windows build
 del .\bin\win\*.* /F /Q
 for /D %%p in (".\bin\win\*.*") do rmdir "%%p" /s /q
-call pkg index.js --targets node10-win-x64 --output .\bin\win\guardian-win64.exe
+call pkg index.js --targets node18-win-x64 --output .\bin\win\guardian-win64.exe
 copy .\tools\cgservice.exe .\bin\win
 xcopy /s /q /i html bin\win\html
 copy .\commands\win\*.* .\bin\win
@@ -13,7 +13,7 @@ copy config.json.sample .\bin\win\config.json
 REM Linux build
 del .\bin\linux\*.* /F /Q
 for /D %%p in (".\bin\linux\*.*") do rmdir "%%p" /s /q
-call pkg index.js --targets node10-linux-x64 --output .\bin\linux\guardian-linux64
+call pkg index.js --targets node18-linux-x64 --output .\bin\linux\guardian-linux64
 xcopy /s /q /i html bin\linux\html
 copy exclude.txt .\bin\linux\exclude.txt
 copy ccx-guardian.service.template .\bin\linux
