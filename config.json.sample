@@ -6,7 +6,7 @@
     "bindAddr": "0.0.0.0"
   },
   "restart": {
-    "terminateTimeout": 60,
+    "terminateTimeout": 120,
     "errorForgetTime": 600,
     "maxCloseErrors": 3,
     "maxBlockTime": 3600,

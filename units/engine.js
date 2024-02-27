@@ -92,7 +92,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
 
         isStoping = true;
         nodeProcess.kill('SIGTERM', {
-          forceKillAfterTimeout: (configOpts.restart.terminateTimeout || 60) * 1000
+          forceKillAfterTimeout: (configOpts.restart.terminateTimeout || 120) * 1000
         });
       }
     }
