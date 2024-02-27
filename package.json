@@ -1,6 +1,6 @@
 {
   "name": "nodeguard",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Conceal Node Guard",
   "main": "index.js",
   "type": "module",
@@ -30,11 +30,11 @@
     "command-line-usage": "^7.0.1",
     "conceal-api": "^0.8.6",
     "download-github-release": "^0.3.2",
-    "execa": "^6.1.0",
+    "execa": "^8.0.1",
     "express": "^4.18.1",
     "express-rate-limit": "^7.1.5",
     "extract-zip": "^2.0.1",
-    "geoip-lite": "^1.4.6",
+    "geoip2-api": "^1.0.2",
     "inquirer": "^9.1.2",
     "linux-os-info": "^2.0.0",
     "moment": "^2.29.4",
@@ -46,12 +46,15 @@
     "shelljs": "^0.8.5",
     "string-template": "^1.0.0",
     "tar": "^6.1.11",
-    "temp-dir": "^3.0.0",
     "username": "^7.0.0",
     "xmlbuilder": "^15.1.1"
   },
   "jshintConfig": {
     "expr": true,
     "esversion": 8
+  },
+  "devDependencies": {
+    "@babel/plugin-syntax-top-level-await": "^7.14.5",
+    "esbuild": "^0.20.1"
   }
 }

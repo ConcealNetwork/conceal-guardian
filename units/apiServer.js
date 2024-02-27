@@ -5,7 +5,7 @@ import { ensureUserDataDir } from "./utils.js";
 import readLastLines from "read-last-lines";
 import rateLimit from "express-rate-limit";
 import express from "express";
-import geoip from "geoip-lite";
+import geoip from "geoip2-api";
 import path from "path";
 import fs from "fs";
 
@@ -49,15 +49,25 @@ export function createServer(config, nodeDirectory, onDataCallback) {
 
   app.get("/getPeersData", (req, res) => {
     var statusResponse = onDataCallback();
+    var itemsProcessed = 0;
     var peerGeoData = [];
 
     if ((statusResponse.blockchain) && (statusResponse.blockchain.connections)) {
-      statusResponse.blockchain.connections.forEach(function (value) {
-        peerGeoData.push(geoip.lookup(value));
-      });
-    }
+      if (statusResponse.blockchain.connections.length > 0) {
+        statusResponse.blockchain.connections.forEach((item, index, array) => {
+          geoip.get(value).then(data => {
+            peerGeoData.push(data);
+            itemsProcessed++;
 
-    res.send(peerGeoData);
+            if(itemsProcessed === array.length) {
+              res.send(peerGeoData);  
+            }          
+          });
+        });
+      } else {
+        res.send(peerGeoData);  
+      }
+    }
   });
 
   app.get("/index.html", (req, res) => {

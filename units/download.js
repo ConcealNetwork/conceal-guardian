@@ -7,10 +7,10 @@ import downloadRelease from "download-github-release";
 import extractZIP from "extract-zip";
 import extractTAR from "tar";
 import osInfo from "linux-os-info";
-import tempDir from "temp-dir";
 import shell from "shelljs";
 import path from "path";
 import fs from "fs";
+import os from "os";
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
 const wrongLinuxOSMsg = "Only Ubuntu (20.04, 20.10) and (22.04, 22.10) have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
@@ -49,7 +49,7 @@ function extractArchive(filePath, outDir, callback) {
 }
 
 export function downloadLatestDaemon(nodePath, callback) {
-    var finalTempDir = path.join(tempDir, ensureNodeUniqueId());
+    var finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
     var linuxOSInfo = null;
 
     if (fs.existsSync(finalTempDir)) {
@@ -134,7 +134,7 @@ export function downloadLatestDaemon(nodePath, callback) {
 
 
 export function downloadLatestGuardian(callback) {
-  var finalTempDir = path.join(tempDir, ensureNodeUniqueId());
+  var finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
 
   if (!fs.existsSync(tempDir)) {
     shell.mkdir('-p', tempDir);
