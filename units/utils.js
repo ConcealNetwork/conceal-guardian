@@ -3,7 +3,6 @@
 // Please see the included LICENSE file for more information.
 
 import UUID from "pure-uuid";
-import shell from "shelljs";
 import path from "path";
 import fs from "fs";
 
@@ -12,7 +11,7 @@ export function ensureUserDataDir() {
   userDataDir = path.join(userDataDir, "ccxNodeGuard");
 
   if (!fs.existsSync(userDataDir)) {
-    shell.mkdir('-p', userDataDir);
+    fs.mkdirSync(userDataDir, { recursive: true });
   }
 
   return userDataDir;

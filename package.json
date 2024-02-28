@@ -44,7 +44,6 @@
     "pure-uuid": "^1.6.2",
     "read-last-lines": "^1.8.0",
     "request": "^2.88.2",
-    "shelljs": "^0.8.5",
     "string-template": "^1.0.0",
     "tar": "^6.1.11",
     "username": "^7.0.0",

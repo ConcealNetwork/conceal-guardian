@@ -2,10 +2,10 @@
 //
 // Please see the included LICENSE file for more information.
 
+import { exec } from "child_process";
 import xmlbuilder from "xmlbuilder";
 import { username } from "username";
 import format from "string-template";
-import shell from "shelljs";
 import path from "path";
 import fs from "fs";
 import os from "os";
@@ -24,7 +24,7 @@ export function install(configOpts, configFileName) {
         if (err) {
           console.log('\nError trying to save the XML: ' + err);
         } else {
-          shell.exec('cgservice.exe install');
+          exec('cgservice.exe install');
         }
       });
     } else if (process.platform == "linux") {
@@ -41,7 +41,7 @@ export function install(configOpts, configFileName) {
           console.log('\nError trying to save the service file: ' + err);
         } else {
           console.log('\nService is succesfully installed.\n');
-          shell.exec('systemctl daemon-reload');
+          exec('systemctl daemon-reload');
         }
       });
     } else {
@@ -55,7 +55,7 @@ export function install(configOpts, configFileName) {
 export function remove(configOpts, configFileName) {
   try {
     if (process.platform == "win32") {
-      shell.exec('cgservice.exe uninstall');
+      exec('cgservice.exe uninstall');
     } else if (process.platform == "linux") {
       fs.unlink("/etc/systemd/system/ccx-guardian.service", function (err) {
         if (err) {
@@ -75,10 +75,10 @@ export function remove(configOpts, configFileName) {
 export function start(configOpts, configFileName) {
   try {
     if (process.platform == "win32") {
-      shell.exec('cgservice.exe start');
+      exec('cgservice.exe start');
     } else if (process.platform == "linux") {
-      shell.exec('systemctl start ccx-guardian');
-      shell.exec('systemctl status ccx-guardian');
+      exec('systemctl start ccx-guardian');
+      exec('systemctl status ccx-guardian');
     } else {
       console.log("\nPlatform is not supported!\n");
     }
@@ -90,9 +90,9 @@ export function start(configOpts, configFileName) {
 export function stop(configOpts, configFileName) {
   try {
     if (process.platform == "win32") {
-      shell.exec('cgservice.exe stop');
+      exec('cgservice.exe stop');
     } else if (process.platform == "linux") {
-      shell.exec('systemctl stop ccx-guardian');
+      exec('systemctl stop ccx-guardian');
     } else {
       console.log("\nPlatform is not supported!\n");
     }
@@ -104,9 +104,9 @@ export function stop(configOpts, configFileName) {
 export function status(configOpts, configFileName) {
   try {
     if (process.platform == "win32") {
-      shell.exec('cgservice.exe status');
+      exec('cgservice.exe status');
     } else if (process.platform == "linux") {
-      shell.exec('systemctl status ccx-guardian');
+      exec('systemctl status ccx-guardian');
     } else {
       console.log("\nPlatform is not supported!\n");
     }

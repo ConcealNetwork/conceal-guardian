@@ -8,7 +8,6 @@ call nexe index.js --build -o .\bin\win\guardian-win64.exe
 copy .\tools\cgservice.exe .\bin\win
 xcopy /s /q /i html bin\win\html
 xcopy /s /q /i dist\index.js bin\win\index.js*
-xcopy /s /q /i dist\exec-child.js bin\win\exec-child.js*
 copy .\commands\win\*.* .\bin\win
 copy exclude.txt .\bin\win\exclude.txt
 copy package.json .\bin\win\package.json

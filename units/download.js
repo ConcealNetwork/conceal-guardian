@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2024, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -7,7 +7,6 @@ import downloadRelease from "download-github-release";
 import extractZIP from "extract-zip";
 import extractTAR from "tar";
 import osInfo from "linux-os-info";
-import shell from "shelljs";
 import path from "path";
 import fs from "fs";
 import os from "os";
@@ -53,11 +52,11 @@ export function downloadLatestDaemon(nodePath, callback) {
     var linuxOSInfo = null;
 
     if (fs.existsSync(finalTempDir)) {
-      shell.rm('-rf', finalTempDir);
+      fs.rmSync(finalTempDir, { recursive: true, force: true });
     }
 
     // create the temp dir again
-    shell.mkdir('-p', finalTempDir);
+    fs.mkdirSync(finalTempDir, { recursive: true });
 
     // only for linux try to get it
     if (process.platform === "linux") {
@@ -103,17 +102,17 @@ export function downloadLatestDaemon(nodePath, callback) {
         if (items.length > 0) {
           extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
             if (success) {
-              shell.rm('-rf', path.join(finalTempDir, items[0]));
+              fs.rmSync(path.join(finalTempDir, items[0]), { recursive: true, force: true });
 
               fs.readdir(finalTempDir, function (err, items) {
                 if (items.length > 0) {
                   if (process.platform === "win32") {
-                    shell.cp(path.join(finalTempDir, getNodeExecutableName()), path.dirname(nodePath));
+                    fs.cp(path.join(finalTempDir, getNodeExecutableName()), path.join(path.dirname(nodePath), getNodeExecutableName()));
                   } else {
-                    shell.cp(path.join(finalTempDir, items[0], getNodeExecutableName()), path.dirname(nodePath));
+                    fs.cp(path.join(finalTempDir, items[0], getNodeExecutableName()), path.join(path.dirname(nodePath), getNodeExecutableName()));
                   }
-                  shell.rm('-rf', finalTempDir);
-                  shell.chmod('+x', nodePath);
+                  fs.rmSync(finalTempDir, { recursive: true, force: true });
+                  fs.chmod(nodePath, fs.constants.S_IRWXU);
                   callback(null);
                 } else {
                   callback("No downloaded archives found");
@@ -137,12 +136,12 @@ export function downloadLatestGuardian(callback) {
   var finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
 
   if (!fs.existsSync(tempDir)) {
-    shell.mkdir('-p', tempDir);
+    fs.mkdirSync(tempDir, { recursive: true });
   }
 
   // remove and remake the dir
-  shell.rm('-rf', finalTempDir);
-  shell.mkdir('-p', finalTempDir);
+  fs.rmSync(finalTempDir, { recursive: true, force: true });
+  fs.mkdirSync(finalTempDir, { recursive: true });
 
   // Define a function to filter assets.
   var filterAssetGuardian = function (asset) {
@@ -163,14 +162,14 @@ export function downloadLatestGuardian(callback) {
         if (items.length > 0) {
           extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
             if (success) {
-              shell.rm(path.join(finalTempDir, '*.zip'));
-              shell.rm(path.join(finalTempDir, '*.tar'));
-              shell.rm(path.join(finalTempDir, '*.gz'));
+              fs.rmSync(path.join(finalTempDir, '*.zip'), { force: true });
+              fs.rmSync(path.join(finalTempDir, '*.tar'), { force: true });
+              fs.rmSync(path.join(finalTempDir, '*.gz'), { force: true });
 
               // check for files we need to exclude
               if (fs.existsSync(path.join(finalTempDir, 'exclude.txt'))) {
                 fs.readFileSync(path.join(finalTempDir, 'exclude.txt'), 'utf-8').split(/\r?\n/).forEach(function (line) {
-                  shell.rm(path.join(finalTempDir, line));
+                  fs.rmSync(finalTempDir, { force: true });
                 });
               }
 
@@ -180,10 +179,10 @@ export function downloadLatestGuardian(callback) {
               // get the backup name for the old file and rename it to that name
               var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
 
-              shell.mv(path.join(process.cwd(), getGuardianExecutableName()), path.join(process.cwd(), backupName));
-              shell.cp('-rf', path.join(finalTempDir, '*'), process.cwd());
-              shell.chmod('+x', process.cwd());
-              shell.rm('-rf', finalTempDir);
+              fs.renameSync(path.join(process.cwd(), getGuardianExecutableName()), path.join(process.cwd(), backupName));
+              fs.cp(path.join(finalTempDir, '*'), process.cwd(), { recursive: true, force: true });
+              fs.chmod(process.cwd(), fs.constants.S_IRWXU);
+              fs.rmSync(finalTempDir, { recursive: true, force: true });
               callback(null);
             } else {
               callback("Failed to extract the archive");

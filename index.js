@@ -51,7 +51,6 @@ try {
     alias: "h",
     type: Boolean
   }]);
-
 } catch (err) {
   console.error("\nUknown command line parameter. Use --help for instructions.");
   process.exit();
