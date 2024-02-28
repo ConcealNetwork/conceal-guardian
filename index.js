@@ -198,7 +198,7 @@ if (cmdOptions.help) {
           stop(configOpts, configFileName);
           break;
         case "status":
-          tatus(configOpts, configFileName);
+          status(configOpts, configFileName);
           break;
         default: console.log('\nWrong parameter for service command. Valid values: "install", "remove", "start", "stop"\n');
       }
