@@ -119,6 +119,10 @@ if (cmdOptions.help) {
         {
           name: 'stop',
           description: 'Stops the guardian as OS service.'
+        },
+        {
+          name: 'status',
+          description: 'Shows the status of the OS service.'
         }
       ]
     },
@@ -200,7 +204,7 @@ if (cmdOptions.help) {
         case "status":
           status(configOpts, configFileName);
           break;
-        default: console.log('\nWrong parameter for service command. Valid values: "install", "remove", "start", "stop"\n');
+        default: console.log('\nWrong parameter for service command. Valid values: "install", "remove", "start", "stop", "status"\n');
       }
     } else if (cmdOptions.node) {
       if (cmdOptions.node === "update") {

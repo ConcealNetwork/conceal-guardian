@@ -71,19 +71,19 @@ export function createServer(config, nodeDirectory, onDataCallback) {
   });
 
   app.get("/index.html", (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'html/index.html'));
+    res.sendFile(safeResolve('./html/index.html'));
   });
 
   app.get("/dashboard.html", (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'html/dashboard.html'));
+    res.sendFile(safeResolve('./html/dashboard.html'));
   });
 
   app.get("/daemonLog.html", (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'html/daemonLog.html'));
+    res.sendFile(safeResolve('./html/daemonLog.html'));
   });
 
   app.get("/peers.html", (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'html/peers.html'));
+    res.sendFile(safeResolve('./html/peers.html'));
   });
 
   app.get("*", (req, res) => {
