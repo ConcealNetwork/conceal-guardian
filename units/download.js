@@ -83,10 +83,10 @@ export function downloadLatestDaemon(nodePath, callback) {
       if (process.platform === "win32") {
         return asset.name.indexOf('win64') >= 0;
       } else if (process.platform === "linux") {
-        if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "18.04") || (linuxOSInfo.version_id == "18.10"))) {
-          return asset.name.indexOf('ubuntu-1804') >= 0;
-        } else if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "20.04") || (linuxOSInfo.version_id == "20.10"))) {
+        if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "20.04") || (linuxOSInfo.version_id == "20.10"))) {
           return asset.name.indexOf('ubuntu-2004') >= 0;
+        } else if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "22.04") || (linuxOSInfo.version_id == "22.10"))) {
+          return asset.name.indexOf('ubuntu-2204') >= 0;
         } else {
           return false;
         }
@@ -107,12 +107,16 @@ export function downloadLatestDaemon(nodePath, callback) {
               fs.readdir(finalTempDir, function (err, items) {
                 if (items.length > 0) {
                   if (process.platform === "win32") {
-                    fs.cp(path.join(finalTempDir, getNodeExecutableName()), path.join(path.dirname(nodePath), getNodeExecutableName()));
+                    let sourceFile = path.join(finalTempDir, getNodeExecutableName());
+                    let targetFile = path.join(path.dirname(nodePath), getNodeExecutableName());
+                    fs.cpSync(sourceFile, targetFile);
                   } else {
-                    fs.cp(path.join(finalTempDir, items[0], getNodeExecutableName()), path.join(path.dirname(nodePath), getNodeExecutableName()));
+                    let sourceFile = path.join(finalTempDir, items[0], getNodeExecutableName());
+                    let targetFile = path.join(path.dirname(nodePath), getNodeExecutableName());
+                    fs.cpSync(sourceFile, targetFile);
                   }
                   fs.rmSync(finalTempDir, { recursive: true, force: true });
-                  fs.chmod(nodePath, fs.constants.S_IRWXU);
+                  fs.chmodSync(nodePath, fs.constants.S_IRWXU);
                   callback(null);
                 } else {
                   callback("No downloaded archives found");
@@ -156,44 +160,42 @@ export function downloadLatestGuardian(callback) {
     }
   };
 
-  downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, true)
-    .then(function () {
-      fs.readdir(finalTempDir, function (err, items) {
-        if (items.length > 0) {
-          extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
-            if (success) {
-              fs.rmSync(path.join(finalTempDir, '*.zip'), { force: true });
-              fs.rmSync(path.join(finalTempDir, '*.tar'), { force: true });
-              fs.rmSync(path.join(finalTempDir, '*.gz'), { force: true });
+  downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, true).then(function () {
+    fs.readdir(finalTempDir, function (err, items) {
+      if (items.length > 0) {
+        extractArchive(path.join(finalTempDir, items[0]), finalTempDir, function (success) {
+          if (success) {
+            fs.rmSync(path.join(finalTempDir, '*.zip'), { force: true });
+            fs.rmSync(path.join(finalTempDir, '*.tar'), { force: true });
+            fs.rmSync(path.join(finalTempDir, '*.gz'), { force: true });
 
-              // check for files we need to exclude
-              if (fs.existsSync(path.join(finalTempDir, 'exclude.txt'))) {
-                fs.readFileSync(path.join(finalTempDir, 'exclude.txt'), 'utf-8').split(/\r?\n/).forEach(function (line) {
-                  fs.rmSync(finalTempDir, { force: true });
-                });
-              }
-
-              var executableName = getGuardianExecutableName();
-              var extensionPos = executableName.lastIndexOf(".");
-
-              // get the backup name for the old file and rename it to that name
-              var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
-
-              fs.renameSync(path.join(process.cwd(), getGuardianExecutableName()), path.join(process.cwd(), backupName));
-              fs.cp(path.join(finalTempDir, '*'), process.cwd(), { recursive: true, force: true });
-              fs.chmod(process.cwd(), fs.constants.S_IRWXU);
-              fs.rmSync(finalTempDir, { recursive: true, force: true });
-              callback(null);
-            } else {
-              callback("Failed to extract the archive");
+            // check for files we need to exclude
+            if (fs.existsSync(path.join(finalTempDir, 'exclude.txt'))) {
+              fs.readFileSync(path.join(finalTempDir, 'exclude.txt'), 'utf-8').split(/\r?\n/).forEach(function (line) {
+                fs.rmSync(finalTempDir, { force: true });
+              });
             }
-          });
-        } else {
-          callback("No downloaded archives found");
-        }
-      });
-    })
-    .catch(function (err) {
-      callback(err.message);
+
+            var executableName = getGuardianExecutableName();
+            var extensionPos = executableName.lastIndexOf(".");
+
+            // get the backup name for the old file and rename it to that name
+            var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
+
+            fs.renameSync(path.join(process.cwd(), getGuardianExecutableName()), path.join(process.cwd(), backupName));
+            fs.cpSync(path.join(finalTempDir, '*'), process.cwd(), { recursive: true, force: true });
+            fs.chmodSync(process.cwd(), fs.constants.S_IRWXU);
+            fs.rmSync(finalTempDir, { recursive: true, force: true });
+            callback(null);
+          } else {
+            callback("Failed to extract the archive");
+          }
+        });
+      } else {
+        callback("No downloaded archives found");
+      }
     });
+  }).catch(function (err) {
+    callback(err.message);
+  });
 };
