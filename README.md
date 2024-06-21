@@ -27,7 +27,7 @@ Conceal Node Guardian can be installed to run with Node.js or used as precompile
 
 Ensure that requirements are installed:
 
-* [Node.js](https://nodejs.org/) (version 6 or higher)
+* [Node.js](https://nodejs.org/) (version 18.19.0 or higher)
 * [npm](https://www.npmjs.com/)
 
 Or use [nvm](https://github.com/creationix/nvm) (Node Version Manager) to manage your Node.js installations.
