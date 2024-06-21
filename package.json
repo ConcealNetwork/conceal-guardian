@@ -1,6 +1,6 @@
 {
   "name": "nodeguard",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Conceal Node Guard",
   "main": "index.js",
   "type": "module",
