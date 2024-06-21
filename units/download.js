@@ -5,7 +5,7 @@
 import { ensureNodeUniqueId, getNodeExecutableName, getGuardianExecutableName } from "./utils.js";
 import downloadRelease from "download-github-release";
 import extractZIP from "extract-zip";
-import extractTAR from "tar";
+import * as extractTAR from "tar";
 import osInfo from "linux-os-info";
 import path from "path";
 import fs from "fs";
