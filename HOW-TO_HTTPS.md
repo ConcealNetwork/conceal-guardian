@@ -19,7 +19,9 @@
 		* [Configure Virtual Host](#configure-virtual-host)
 		* [Adding SSL module](#adding-ssl-module)
 		* [Redirect http to https](#redirect-http-to-https)
-* [Test](#test)
+* [Broadcast](#broadcast)
+* [Final Test](#final-test)
+
 
   
 
@@ -29,12 +31,12 @@ This tutorial aims to provide, step by step, the necessary actions required to a
   
 | your node is accessible | before the tutorial   | after this tutotial                |
 | ----------------------- | --------------------- | ---------------------------------- |
-| localy                  | localhost:16000       | localhost:16000                    |
+| on the server itself    | localhost:16000       | localhost:16000                    |
 | local network           | *your_local_ip*:16000 | *your_local_ip*:16000              |
 | worldwide               | *global_ip*:16000     | *global_ip*:16000                  |
 |                         |                       | http://subdomain.your_domain.xyz/  |
 |                         |                       | https://subdomain.your_domain.xyz/ |
-| Client compatibility    | desktop wallet        | web wallet                         |
+| Client compatibility    | desktop wallet        | desktop and web wallet             |
 
 **For the ease of this tutorial, let's assume:**
 
@@ -49,21 +51,8 @@ This tutorial aims to provide, step by step, the necessary actions required to a
 ## Prerequisite
 
 ### Conceal Guardian
-should be already up and running. Before moving forward, make sure you can access, in a web browser: `localhost:16000/getinfo`
+should be already up and running. Before moving forward, in a web browser, make sure you can access, : `localhost:16000/getinfo`
 
-Modify your **config.json** file to include the following parameters :
-
-```
-"url": {
-"host": "conceal.your_domain.xyz",
-"port": ""
-}
-```
-  
-and restart Conceal-guardian. if you're using a service to launch, it should be something like :
-```
-sudo systemctl restart ccx-guardian.service
-```
 ### Port Forwarding
 
 on your router you probably already have port 16000 forwarded, you now have to add 80 and 443.
@@ -85,12 +74,11 @@ on your router you probably already have port 16000 forwarded, you now have to a
 
 ### Firewall
 
-on the server running the Apache server, you'll need to allow connections :
+The Apache server will run on the same server as the node. You'll need to allow connections :
 
 `sudo ufw allow in "Apache Full"`
 
   
-
 ## Domain Name providers
 
 Here is a list of domain name providers, note those who are including SSL certificate service. Pick one depending of your budget and/or location
@@ -106,7 +94,7 @@ For the purpose of this tutorial let’s say you acquired *your_domain.xyz*
 
 In your Domain Name provider website, you should have a **manage** tab associated with the domain name you just purchased. Add a subdomain  *(ie. conceal)* and have it pointing to your IPv4 *global_ip* address using the A record.
 
-You can access your node via:
+After doing so, you'll be able to access your node with the following address:  
 
 `conceal.your_domain.xyz:16000/getinfo`
 
@@ -125,6 +113,9 @@ Will go with first option and download the certificate, you should end up with t
 	* your_domain.xyz.crt
 Store them in a folder requiring superior privileges like:
 `/etc/letsencrypt/live/conceal.your_domain.xyz/`  
+  
+Note: you should be able to generate a certificate with a wildcard, ie  *.your_domain.xyz  
+  
 
 ### Reverse proxy with Apache
 
@@ -158,11 +149,11 @@ create a file with your configuration:
 sudo nano conceal-your_domain-xyz.conf
 ```
 
-with following:
+and paste the following:
 ```
 <VirtualHost *:80>
-ServerName conceal.your_domain.xyz:16000
-ServerAlias conceal.your_domain.xyz:16000
+ServerName conceal.your_domain.xyz
+ServerAlias conceal.your_domain.xyz
 ServerAdmin your@email.com
 
 ProxyPreserveHost On
@@ -174,8 +165,10 @@ CustomLog /var/log/apache2/access.log combined
 
 </VirtualHost>
 ```
+Important: make sure the name in the certificate match the ServerName  
+  
 
-enable your config:
+save and enable your config:
 ```
 sudo a2ensite conceal-your_domain-xyz.conf
 ```
@@ -187,7 +180,7 @@ sudo systemctl restart apache2
 ```
   
 now you should be able to access your node from any web browser, using the url : `http://conceal.your_domain.xyz/`
-test it with `http://conceal.your_domain.xyz/getinfo`
+test it with `http://conceal.your_domain.xyz/getinfo`  
 
 #### Adding SSL module
 
@@ -199,10 +192,11 @@ sudo a2enmod ssl
   
 #### Redirect http to https
 Lets' modify our config file to redirect the http request to https and to include the certificate information:
+still within `/etc/apache2/sites-available`
 ```
 sudo nano conceal-your_domain-xyz.conf
 ```
-and modify the file with following (uncomment, removing #, if you want to add more options):
+and modify the file to reflect the following changes (uncomment, removing #, if you want to add more options):
 ```
 <VirtualHost *:80>
 
@@ -328,7 +322,7 @@ save and check configuration :
 ```
 sudo apache2ctl configtest
 ```
-you may obtain one line of error and then an "OK" message.
+you may obtain one line of error and then an "OK" message, which is fine.
 
 reload and restart
 ```
@@ -340,6 +334,33 @@ you can test with:
 ```
 https://conceal.your_domain.xyz/getinfo
 ```
+  
+## Broadcast
 
-## Test
+Within **conceal-gurdian** folder, modify your **config.json** file to include the following parameters :
+
+```
+"url": {
+"host": "conceal.your_domain.xyz",
+"port": ""
+}
+```
+  
+and restart Conceal-guardian. if you're using a service to launch, it should be something like :
+```
+sudo systemctl restart ccx-guardian.service
+```
+  
+ 
+## Final Test
 in a web wallet, go in **Settings** tab, toggle the switch **Use custom node** and fill with the url : `https://conceal.your_domain.xyz/`
+  
+
+```
+
+this complete this tutorial.
+
+Note.  
+Some circumpstances may increase the level of difficulty of this procedure such as:
+* ISP does not provide a fix IP
+* self-issued cetificate
