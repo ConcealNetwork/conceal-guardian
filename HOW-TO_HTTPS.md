@@ -54,17 +54,12 @@ should be already up and running. Before moving forward, make sure you can acces
 Modify your **config.json** file to include the following parameters :
 
 ```
-
 "url": {
-
 "host": "conceal.your_domain.xyz",
-
 "port": ""
-
 }
-
 ```
-
+  
 and restart Conceal-guardian. if you're using a service to launch, it should be something like :
 ```
 sudo systemctl restart ccx-guardian.service
