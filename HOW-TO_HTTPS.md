@@ -355,12 +355,12 @@ sudo systemctl restart ccx-guardian.service
 ## Final Test
 in a web wallet, go in **Settings** tab, toggle the switch **Use custom node** and fill with the url : `https://conceal.your_domain.xyz/`
   
-
-```
+  
 
 this complete this tutorial.
 
-Note.  
+Notes.
+We decided to proceed in two steps, first create the http reverse proxy and then redirect it to https, for educational purpose and also to allow intermediate testing.    
 Some circumpstances may increase the level of difficulty of this procedure such as:
 * ISP does not provide a fix IP
 * self-issued cetificate
