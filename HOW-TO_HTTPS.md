@@ -86,10 +86,10 @@ Here is a list of domain name providers, note those who are including SSL certif
 [https://certbot.eff.org/hosting_providers/](https://certbot.eff.org/hosting_providers/)
 
 Note that to save some money you only need the domain name, and don’t specifically need hosting service
-If your domain name provider doesn't provide SSL certificate, you will have to self-issue it, which defeat the purpose on the trust level.  
-
-For the purpose of this tutorial let’s say you acquired *your_domain.xyz*
-
+If your domain name provider doesn't provide SSL certificate, you will have to self-issue it, which defeat the purpose on a trust level stand point.  
+  
+Let’s say you acquired *your_domain.xyz*
+  
 ### Manage DNS Zone
 
 In your Domain Name provider website, you should have a **manage** tab associated with the domain name you just purchased. Add a subdomain  *(ie. conceal)* and have it pointing to your IPv4 *global_ip* address using the A record.
@@ -102,7 +102,7 @@ After doing so, you'll be able to access your node with the following address:
 ## From http to https
 
 ### SSL certificate
-Now we need to implement SSL adding a certificate. Two options to get a ssl certificate :
+First we'll configure a http server and then modify it to redirect to https, for which we'll need to implement SSL adding a certificate. Two options to get a SSL certificate :
 
 * provided by your Domain Name provider
 
