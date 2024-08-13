@@ -337,7 +337,7 @@ https://conceal.your_domain.xyz/getinfo
   
 ## Broadcast
 
-Within **conceal-gurdian** folder, modify your **config.json** file to include the following parameters :
+Within **conceal-guardian** folder, modify your **config.json** file to include the following parameters :
 
 ```
 "url": {
