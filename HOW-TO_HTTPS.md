@@ -1,7 +1,5 @@
 # Remote node over https
 
-  
-
 ## Table of Contents
 
 * [Preamble](#preamble)
@@ -23,7 +21,6 @@
 		* [Redirect http to https](#redirect-http-to-https)
 * [Test](#test)
 
-  
   
 
 ## Preamble
@@ -52,7 +49,7 @@ This tutorial aims to provide, step by step, the necessary actions required to a
 ## Prerequisite
 
 ### Conceal Guardian
-should be already up and running. Before moving forward, make sure you can access [localhost:16000/getinfo](localhost:16000/getinfo)
+should be already up and running. Before moving forward, make sure you can access, in a web browser: `localhost:16000/getinfo`
 
 Modify your **config.json** file to include the following parameters :
 
@@ -116,7 +113,7 @@ In your Domain Name provider website, you should have a **manage** tab associate
 
 You can access your node via:
 
-[conceal.your_domain.xyz:16000/getinfo](conceal.your_domain.xyz:16000/getinfo)
+`conceal.your_domain.xyz:16000/getinfo`
 
  
 ## From http to https
@@ -133,6 +130,7 @@ Will go with first option and download the certificate, you should end up with t
 	* your_domain.xyz.crt
 Store them in a folder requiring superior privileges like:
 `/etc/letsencrypt/live/conceal.your_domain.xyz/`  
+
 ### Reverse proxy with Apache
 
 The express nodejs server running on port 16000 doesn’t handle https connection, so we’ll use an Apache server to do it with a reverse proxy method.
