@@ -128,7 +128,7 @@ sudo apt install apache2
 
 * enable proxy modules :
 ```
-sudo a2enmod proxy proxy_http
+sudo a2enmod proxy proxy_http headers
 ```
 
 Restart your Apache service:
@@ -237,7 +237,7 @@ SSLCipherSuite ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-E
 SSLHonorCipherOrder on
 
 # Activation of HSTS (HTTP Strict Transport Security).
-# Header always set Strict-Transport-Security "max-age=15768000"
+Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains"
 
 # Certbot (automatique certification) or Letsencrypt from DomainName provider
 
@@ -274,12 +274,12 @@ SSLCertificateKeyFile /etc/letsencrypt/live/conceal.your_domain.xyz/your_domain.
 # This enables optimized SSL connection renegotiation handling when SSL
 # directives are used in per-directory context.
 #SSLOptions +FakeBasicAuth +ExportCertData +StrictRequire
-# <FilesMatch "\.(cgi|shtml|phtml|php)$">
-# SSLOptions +StdEnvVars
-# </FilesMatch>
-# <Directory /usr/lib/cgi-bin>
-# SSLOptions +StdEnvVars
-# </Directory>
+<FilesMatch "\.(cgi|shtml|phtml|php)$">
+ SSLOptions +StdEnvVars
+</FilesMatch>
+<Directory /usr/lib/cgi-bin>
+ SSLOptions +StdEnvVars
+</Directory>
 
 # SSL Protocol Adjustments:
 # The safe and default but still SSL/TLS standard compliant shutdown
@@ -305,11 +305,11 @@ SSLCertificateKeyFile /etc/letsencrypt/live/conceal.your_domain.xyz/your_domain.
 # Similarly, one has to force some clients to use HTTP/1.0 to workaround
 # their broken HTTP/1.1 implementation. Use variables "downgrade-1.0" and
 # "force-response-1.0" for this.
-# BrowserMatch "MSIE [2-6]" \
-# nokeepalive ssl-unclean-shutdown \
-# downgrade-1.0 force-response-1.0
+BrowserMatch "MSIE [2-6]" \
+nokeepalive ssl-unclean-shutdown \
+downgrade-1.0 force-response-1.0
 # MSIE 7 and newer should be able to use keepalive
-# BrowserMatch "MSIE [17-9]" ssl-unclean-shutdown
+BrowserMatch "MSIE [17-9]" ssl-unclean-shutdown
 
 ErrorLog /var/log/apache2/error.log
 CustomLog /var/log/apache2/access.log combined
@@ -354,13 +354,15 @@ sudo systemctl restart ccx-guardian.service
  
 ## Final Test
 in a web wallet, go in **Settings** tab, toggle the switch **Use custom node** and fill with the url : `https://conceal.your_domain.xyz/`
-  
+
+an other way to test, is to check if your node is listed in the [Conceal Network explorer page json file](https://explorer.conceal.network/pool/list?hasFeeAddr=true&isReachable=true&hasSSL=true)
   
 
 this complete this tutorial.
 
 Notes.
 We decided to proceed in two steps, first create the http reverse proxy and then redirect it to https, for educational purpose and also to allow intermediate testing.    
-Some circumpstances may increase the level of difficulty of this procedure such as:
+Some circumpstances may increase the level of difficulty of this procedure and would need to be addressed, such as:
 * ISP does not provide a fix IP
 * self-issued cetificate
+* certificate renewal
