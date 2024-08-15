@@ -240,6 +240,10 @@ SSLHonorCipherOrder on
 # Activation of HSTS (HTTP Strict Transport Security).
 Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains"
 
+# other Header settings for CORS
+Header always set Access-Control-Allow-Headers "*"
+Header always set Access-Control-Allow-Methods "GET,POST,OPTIONS" 
+
 # Certbot (automatique certification) or Letsencrypt from DomainName provider
 
 SSLCertificateFile /etc/letsencrypt/live/conceal.your_domain.xyz/your_domain.xyz.crt
