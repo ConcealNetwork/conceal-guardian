@@ -5,12 +5,12 @@
 1. [Preamble](#1-preamble)
 
 2. [Prerequisite](#2-prerequisite)  
-a. [Conceal Guardian](#a-conceal-guardian)  
-b. [Port Forwarding](#b-port-forwarding)  
-c. [Firewall](#c-firewall)  
-d. [skills](#d-skills)  
+a. [skills](#a-skills)  
+b. [Conceal Guardian](#b-conceal-guardian)  
+c. [Port Forwarding](#c-port-forwarding)  
+d. [Firewall](#d-firewall)  
 
-3. [Domain Name Provider](#3-domain-name-provider)
+3. [Domain Name Providers](#3-domain-name-providers)
 	* [Manage DNS Zone](#manage-dns-zone)
 4. [From http to https](#4-from-http-to-https)  
 a. [SSL Certificate](#a-ssl-certificate)  
