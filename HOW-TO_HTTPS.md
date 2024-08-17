@@ -2,35 +2,36 @@
 
 ## Table of Contents
 
-* [Preamble](#preamble)
+1. [Preamble](#preamble)
 
-* [Prerequisite](#prerequisite)
-	* [Conceal Guardian](#conceal-guardian)
-	* [Port Forwarding](#port-forwarding)
-	* [Firewall](#firewall)
+2. [Prerequisite](#prerequisite)  
+a. [Conceal Guardian](#conceal-guardian)  
+b. [Port Forwarding](#port-forwarding)  
+c. [Firewall](#firewall)  
+d. [skills](#skills)  
 
-* [Domain Name Provider](#domain-name-provider)
+3. [Domain Name Provider](#domain-name-provider)
 	* [Manage DNS Zone](#manage-dns-zone)
+4. [From http to https](#from-http-to-https)  
+a. [SSL Certificate](#ssl-certificate)  
+b. [Reverse proxy with Apache](#reverse-proxy-with-apache)  
+	- [Install Apache](#install-apache)  
+	- [Configure Virtual Host](#configure-virtual-host)  
+	- [Adding SSL module](#adding-ssl-module)  
+	- [Redirect http to https](#redirect-http-to-https)  
 
-* [From http to https](#from-http-to-https)
-	* [SSL Certificate](#ssl-certificate)
-	* [Reverse proxy with Apache](#reverse-proxy-with-apache)
-		* [Install Apache](#install-apache)
-		* [Configure Virtual Host](#configure-virtual-host)
-		* [Adding SSL module](#adding-ssl-module)
-		* [Redirect http to https](#redirect-http-to-https)
-* [Broadcast](#broadcast)
-* [Final Test](#final-test)
+5. [Broadcast](#broadcast)
+6. [Final Test](#final-test)
 
 
   
 
-## Preamble
+## 1. Preamble
 
 This tutorial aims to provide, step by step, the necessary actions required to allow your node to be accessible via http and https in particular. Such access is required for web wallet clients, it can potentially increase the revenue for the node operator, since more transactions would go through the node.
   
 | your node is accessible | before the tutorial   | after this tutotial                |
-| ----------------------- | --------------------- | ---------------------------------- |
+| ----------------------- | :-------------------: | :--------------------------------: |
 | on the server itself    | localhost:16000       | localhost:16000                    |
 | local network           | *your_local_ip*:16000 | *your_local_ip*:16000              |
 | worldwide               | *global_ip*:16000     | *global_ip*:16000                  |
@@ -48,12 +49,15 @@ This tutorial aims to provide, step by step, the necessary actions required to a
 
 **This tutorial has been elaborated and tested on Ubuntu 22.04, and should also work on other Debian system**
 
-## Prerequisite
+## 2. Prerequisite
 
-### Conceal Guardian
+### a. Skills  
+You should be familiar with terminal command usage, navigation to folders and working with files.
+
+### b. Conceal Guardian
 should be already up and running. Before moving forward, in a web browser, make sure you can access, : `localhost:16000/getinfo`
 
-### Port Forwarding
+### c. Port Forwarding
 
 on your router you probably already have port 16000 forwarded, you now have to add 80 and 443.
 
@@ -72,14 +76,21 @@ on your router you probably already have port 16000 forwarded, you now have to a
 | ip      | *your_local_ip* |
 | TCP,UDP | Both            |
 
-### Firewall
+### d. Firewall
 
-For this tutorial, the Apache server will run on the same server as the node. If you use a firewall, you'll need to allow connections :
+For this tutorial, the Apache server will run on the same server as the node. If you use a firewall, and unless already allowed, you'll need to allow connections on port 80 and 443 :
 
 `sudo ufw allow in "Apache Full"`
 
+| some other ufw commands 	|      				|
+| -------------------------	| -----------------	|
+| install ufw				| `sudo apt update` |
+|							| `sudo apt install ufw` |
+| enable ufw				| `sudo ufw enable`	|
+| get status				| `sudo ufw status` |
+
   
-## Domain Name providers
+## 3. Domain Name providers
 
 Here is a list of domain name providers, note those who are including SSL certificate service. Pick one depending of your budget and/or location
 
@@ -99,9 +110,9 @@ After doing so, you'll be able to access your node with the following address:
 `conceal.your_domain.xyz:16000/getinfo`
 
  
-## From http to https
+## 3. From http to https
 
-### SSL certificate
+### a. SSL certificate
 First we'll configure a http server and then modify it to redirect to https, for which we'll need to implement SSL adding a certificate. Two options to get a SSL certificate :
 
 * provided by your Domain Name provider
@@ -118,7 +129,7 @@ Store them in a folder requiring superior privileges like:
 Note: you should be able to generate a certificate with a wildcard, ie  `*.your_domain.xyz`  
   
 
-### Reverse proxy with Apache
+### b. Reverse proxy with Apache
 
 The express nodejs server running on port 16000 doesn’t handle https connection, so we’ll use an Apache server to do it with a reverse proxy method.
 
@@ -132,7 +143,7 @@ sudo apt install apache2
 sudo a2enmod proxy proxy_http
 ```
 
-Restart your Apache service:
+* Restart your Apache service:
 ```
 systemctl restart apache2
 ```
@@ -145,12 +156,13 @@ go in following folder:
 cd /etc/apache2/sites-available
 ```
 
-create a file with your configuration:
+* create a file with your configuration: [^1]  
+[^1]: some default configuration are already there, you might consider delete them or disable them ie. `sudo a2dissite 000-default.conf`
 ```
 sudo nano conceal-your_domain-xyz.conf
 ```
 
-paste the following, and replace with your domain name:
+* paste the following, and replace with your domain name:
 ```
 <VirtualHost *:80>
 ServerName conceal.your_domain.xyz
@@ -166,15 +178,15 @@ CustomLog /var/log/apache2/access.log combined
 
 </VirtualHost>
 ```
-Important: make sure the name in the certificate match the ServerName  
+**Important:** make sure the name in the certificate match the ServerName  
   
 
-save and enable your config:
+* save and enable your config:
 ```
 sudo a2ensite conceal-your_domain-xyz.conf
 ```
 
-reload and restart the server with the following commands:
+* reload and restart the server with the following commands:
 ```
 sudo systemctl reload apache2
 sudo systemctl restart apache2
