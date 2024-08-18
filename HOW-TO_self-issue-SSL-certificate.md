@@ -1,4 +1,4 @@
-# Remote node over https
+# Self issued SSL certificate
 
 ## Table of Contents
 
@@ -6,20 +6,14 @@
 
 2. [Prerequisite](#2-prerequisite)  
 a. [skills](#a-skills)  
-b. [Domaine Name](#b-domain-name)  
+b. [Domain Name](#b-domain-name)  
 
-3. [Self issue SSL certificate](#3-self-issue-ssl-certificate)
-    * [Manage DNS Zone](#manage-dns-zone)
-4. [From http to https](#4-from-http-to-https)  
-a. [SSL Certificate](#a-ssl-certificate)  
-b. [Reverse proxy with Apache](#b-reverse-proxy-with-apache)  
-    - [Install Apache](#install-apache)  
-    - [Configure Virtual Host](#configure-virtual-host)  
-    - [Adding SSL module](#adding-ssl-module)  
-    - [Redirect http to https](#redirect-http-to-https)  
-
-5. [Broadcast](#5-broadcast)
-6. [Final Test](#6-final-test)
+3. [Self issue SSL certificate](#3-self-issue-ssl-certificate)  
+a. [Certbot Installation](#a-certbot-installation)  
+b. [Certbot Setup](#b-certbot-setup)  
+c. [Implement Certificate](#c-implement-certificate)  
+d. [Certificate Autorenewal](#d-certificate-autorenewal)
+4. [Notes](#4-notes)
 
 
   
@@ -27,10 +21,11 @@ b. [Reverse proxy with Apache](#b-reverse-proxy-with-apache)
 ## 1. Preamble
 
 This tutorial aims to provide guidance to self-issue SSL certifificate for your node being accessible via https. The general method to reverse proxy your node over https is provided in the [HOW-TO_HTTPS.md](./HOW-TO_HTTPS.md) tutorial.  
+
 Self-issuing certificate has some benefits:  
 * save some money (in case the domain name provider charge for this service)
 * allow automatisation of the renewal process 
-* generates .pem files mor commun nowadays than .key or .crt
+* generates .pem files more commun nowadays than .key or .crt
 
 **This tutorial has been elaborated and tested on Ubuntu 22.04, and should also work on other Debian system**
 
@@ -39,10 +34,22 @@ Self-issuing certificate has some benefits:
 ### a. Skills  
 You should be familiar with terminal command usage, navigation to folders and working with files.
 
-### b. Domain Name 
-you have acquired a domain name and opt to issue the SSL certificate on your own. So you would be at step 4.a. of [HOW-TO_HTTPS.md](./HOW-TO_HTTPS.md) tutorial. 
-   
-Let’s say you acquired *your_domain.xyz* and planning to use Apache to serve your virtualhost.
+### b. Domain Name  
+Let’s say you acquired *your_domain.xyz*  
+
+You have acquired a domain name and opt to issue the SSL certificate on your own. So you would be at step 4.a. of [HOW-TO_HTTPS.md](./HOW-TO_HTTPS.md) tutorial.
+Also you will need your Apache config file fully ready, therefore all 4.b. steps completed except testing and SSLCertificate lines commented with # :
+```
+# Certbot (automatique certification) or Letsencrypt from DomainName provider
+
+#SSLCertificateFile /etc/letsencrypt/live/conceal.your_domain.xyz/your_domain.xyz.crt
+#SSLCertificateKeyFile /etc/letsencrypt/live/conceal.your_domain.xyz/your_domain.xyz.key
+
+```  
+
+Certbot will extract informations from your config file to request the certificate.  
+
+
 
   
 ## 3. Self issue SSL certificate
@@ -65,301 +72,99 @@ sudo snap install --classic certbot
 ```
 sudo ln -s /snap/bin/certbot /usr/bin/certbot
 ```
-we'll use cerbot only to generate certificate but not to  intervene in our Apache config file:
+
+### b. Certbot Setup
+we'll use cerbot only to generate certificate but not to  intervene in our Apache [^1] config file:  
+[^1]: ngix users : `sudo certbot certonly --nginx` followed by `sudo certbot certonly --nginx`
 ```
-sudo certbot certonly --apache
+sudo certbot certonly --apache  
 ```
+* you'll be invited to enter your e-mail address
+
+>Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Enter email address (used for urgent renewal and security notices)  
+(Enter 'c' to cancel): `your-email@exemple.com`
+
+* then you are invited to agree to the Term of Service:  
+
+> Please read the Terms of Service at
+https://letsencrypt.org/documents/LE-SA-v1.4-April-3-2024.pdf. You must agree in
+order to register with the ACME server. Do you agree?  
+(Y)es/(N)o: Y
+
+* Then you'll be ask if you want to share your email:
+> Would you be willing, once your first certificate is successfully issued, to
+share your email address with the Electronic Frontier Foundation, a founding
+partner of the Let's Encrypt project and the non-profit organization that
+develops Certbot? We'd like to send you email about our work encrypting the web,
+EFF news, campaigns, and ways to support digital freedom.  
+(Y)es/(N)o: N
+
+* then certbot will ask which domain you want to activate HTTPS for:
+> Which names would you like to activate HTTPS for?
+We recommend selecting either all domains, or all domains in a VirtualHost/server block.  
+1: conceal.your_domain.xyz  
+Select the appropriate numbers separated by commas and/or spaces, or leave input
+blank to select all options shown (Enter 'c' to cancel): 1  
 
 
+The certificate files (4 in total with .pem extension) will be generated and located in:
+`/etc/letsencrypt/live/conceal.your_domain.xyz/`
 
-
-
-
-
-First we'll configure a http server and then modify it to redirect to https, for which we'll need to implement SSL adding a certificate. Two options to get a SSL certificate :
-
-* provided by your Domain Name provider  
-or
-* Generated by yourself, using `certbot`, `letsencrypt`  
-
-We will use the first option and download the certificate. You should end up with two files: [^1]  
-[^1]: if using *certbot* you would get 4 files with .pem extension.
-* your_domain.xyz.key  (or privkey.pem)
-* your_domain.xyz.crt  (or fullchain.pem)
-  
-(you should be able to generate a certificate with a wildcard, ie  `*.your_domain.xyz`)  
-  
-
-Store them in a folder requiring superior privileges like: [^2]  
-[^2]: letsencrypt or cerbot would locate those file at the mention path, so for consistency we placed our files in the same folder. Another place would be `/etc/Apache2/ssl/`  
-
-`/etc/letsencrypt/live/conceal.your_domain.xyz/`  
-
-:warning: the folder where the key is store should be owned by `root` and the .key file be in read and write only for `root`  
-- if needed  
-```
-sudo chmod 600 your_domain.xyz.key   
-sudo chown -R root:root conceal.your_domain.xyz/  
-```
- 
- 
-
-### b. Reverse proxy with Apache
-
-The express nodejs server running on port 16000 doesn’t handle https connection, so we’ll use an Apache server to do it with a reverse proxy method.
-
-#### Install Apache
-```
-sudo apt install apache2
-```
-
-* enable proxy modules :
-```
-sudo a2enmod proxy proxy_http
-```
-
-* Restart your Apache service:
-```
-systemctl restart apache2
-```
-
-  
-#### Configure Virtual Host
-
-go in following folder:
+### c. Implement Certificate
+in your config file, uncomment the two SSL certificate relative line and modify with your site information :
 ```
 cd /etc/apache2/sites-available
-```
-
-* create a file with your configuration: [^3]  
-[^3]: some default configuration are already there, you might consider delete them or disable them ie. `sudo a2dissite 000-default.conf`
-```
 sudo nano conceal-your_domain-xyz.conf
 ```
-
-* paste the following, and replace with your domain name:
+and modify and uncomment (remove #)
 ```
-<VirtualHost *:80>
-ServerName conceal.your_domain.xyz
-ServerAlias conceal.your_domain.xyz
-ServerAdmin your@email.com
-
-ProxyPreserveHost On
-ProxyPass / http://localhost:16000/
-ProxyPassReverse / http://localhost:16000/
-
-ErrorLog /var/log/apache2/error.log
-CustomLog /var/log/apache2/access.log combined
-
-</VirtualHost>
+SSLCertificateFile /etc/letsencrypt/live/conceal.your_domain.xyz/fullchain.pem
+SSLCertificateKeyFile /etc/letsencrypt/live/conceal.your_domain.xyz/privkey.pem
 ```
-**Important:** make sure the name in the certificate match the ServerName  
-  
-
-* save and enable your config:
-```
-sudo a2ensite conceal-your_domain-xyz.conf
-```
-
-* reload and restart the server with the following commands:
-```
+save and exit, reload and restart your server.
+ ```
 sudo systemctl reload apache2
 sudo systemctl restart apache2
+ ```
+
+
+### d. Certificate Autorenewal
+Let's Encrypt certificates are only valid for 90 days. Cerbot offers a nice feature which auto-renew the certificate, using a cron job.
+* To do a dry run:
 ```
+sudo certbot renew --dry-run
+```
+
+you should optain something like that:
+>Congratulations, all simulated renewals succeeded: 
+  /etc/letsencrypt/live/conceal.your_domain.xyz/fullchain.pem (success)  
   
-now you should be able to access your node from any web browser, using the url : `http://conceal.your_domain.xyz/`
-test it with `http://conceal.your_domain.xyz/getinfo`  
+* To reload after renewal:  
 
-#### Adding SSL module
-
-enable SSL on apache:
-
+After being renewed, you would need to restart Apache. Certbot can do that for you, append the file `conceal.your_domain.xyz.conf` located in `/etc/letsencrypt/renewal/` :
 ```
-sudo a2enmod ssl headers
+cd /etc/letsencrypt/renewal/
+sudo nano conceal.your_domain.xyz.conf
 ```
-  
-#### Redirect http to https
-Lets' modify our config file to redirect the http request to https and to include the certificate information:
-still within `/etc/apache2/sites-available`
+and add, at the end, the line:  
 ```
-sudo nano conceal-your_domain-xyz.conf
+renew_hook = systemctl reload apache2
 ```
-and modify the file to reflect the following changes (uncomment, removing #, if you want to change options):
+you can re-run the dry-run to make sure there are no error :
 ```
-<VirtualHost *:80>
+sudo certbot renew --dry-run
+```
 
-ServerName conceal.your_domain.xyz
-ServerAlias conceal.your_domain.xyz
-ServerAdmin your_mail@mail.com
+you should obtain again :
 
-Redirect permanent / https://conceal.your_domain.xyz
-
-ErrorLog /var/log/apache2/error.log
-CustomLog /var/log/apache2/access.log combined
-
-</VirtualHost>
-<VirtualHost *:443>
-
-ServerName conceal.your_domain.xyz
-ServerAlias conceal.your_domain.xyz
-ServerAdmin your_mail@mail.com
-
-ProxyPreserveHost On
-ProxyPass / http://localhost:16000/
-ProxyPassReverse / http://localhost:16000/
- 
-ServerSignature Off
-
-# SSL Engine Switch:
-# Enable/Disable SSL for this virtual host.
-SSLEngine on
-
-# Disable untrusted protocols (SSL v2, SSL v3)
-SSLProtocol All -SSLv3 -SSLv2
-
-# Disable unsecured encryption methods (using!)
-
-SSLCipherSuite ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RS>
-
-# We let the web-browser select the best choice
-SSLHonorCipherOrder on
-
-# Activation of HSTS (HTTP Strict Transport Security).
-Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains"
-
-# other Header settings for CORS
-Header always set Access-Control-Allow-Headers "*"
-Header always set Access-Control-Allow-Methods "GET,POST,OPTIONS" 
-
-# Certbot (automatique certification) or Letsencrypt from DomainName provider
-
-SSLCertificateFile /etc/letsencrypt/live/conceal.your_domain.xyz/your_domain.xyz.crt
-SSLCertificateKeyFile /etc/letsencrypt/live/conceal.your_domain.xyz/your_domain.xyz.key
+> Congratulations, all simulated renewals succeeded: 
+  /etc/letsencrypt/live/conceal.your_domain.xyz/fullchain.pem (success)  
 
   
-
-# SSL Engine Options:
-# Set various options for the SSL engine.
-# o FakeBasicAuth:
-# Translate the client X.509 into a Basic Authorisation. This means that
-# the standard Auth/DBMAuth methods can be used for access control. The
-# user name is the `one line' version of the client's X.509 certificate.
-# Note that no password is obtained from the user. Every entry in the user
-# file needs this password: `xxj31ZMTZzkVA'.
-# o ExportCertData:
-# This exports two additional environment variables: SSL_CLIENT_CERT and
-# SSL_SERVER_CERT. These contain the PEM-encoded certificates of the
-# server (always existing) and the client (only existing when client
-# authentication is used). This can be used to import the certificates
-# into CGI scripts.
-# o StdEnvVars:
-# This exports the standard SSL/TLS related `SSL_*' environment variables.
-# Per default this exportation is switched off for performance reasons,
-# because the extraction step is an expensive operation and is usually
-# useless for serving static content. So one usually enables the
-# exportation for CGI and SSI requests only.
-# o StrictRequire:
-# This denies access when "SSLRequireSSL" or "SSLRequire" applied even
-# under a "Satisfy any" situation, i.e. when it applies access is denied
-# and no other module can change it.
-# o OptRenegotiate:
-# This enables optimized SSL connection renegotiation handling when SSL
-# directives are used in per-directory context.
-#SSLOptions +FakeBasicAuth +ExportCertData +StrictRequire
-<FilesMatch "\.(cgi|shtml|phtml|php)$">
- SSLOptions +StdEnvVars
-</FilesMatch>
-<Directory /usr/lib/cgi-bin>
- SSLOptions +StdEnvVars
-</Directory>
-
-# SSL Protocol Adjustments:
-# The safe and default but still SSL/TLS standard compliant shutdown
-# approach is that mod_ssl sends the close notify alert but doesn't wait for
-# approach you can use one of the following variables:
-# o ssl-unclean-shutdown:
-# This forces an unclean shutdown when the connection is closed, i.e. no
-# SSL close notify alert is send or allowed to received. This violates
-# the SSL/TLS standard but is needed for some brain-dead browsers. Use
-# this when you receive I/O errors because of the standard approach where
-# mod_ssl sends the close notify alert.
-# o ssl-accurate-shutdown:
-# This forces an accurate shutdown when the connection is closed, i.e. a
-# SSL close notify alert is send and mod_ssl waits for the close notify
-# alert of the client. This is 100% SSL/TLS standard compliant, but in
-# practice often causes hanging connections with brain-dead browsers. Use
-# this only for browsers where you know that their SSL implementation
-# works correctly.
-# Notice: Most problems of broken clients are also related to the HTTP
-
-# keep-alive facility, so you usually additionally want to disable
-# keep-alive for those clients, too. Use variable "nokeepalive" for this.
-# Similarly, one has to force some clients to use HTTP/1.0 to workaround
-# their broken HTTP/1.1 implementation. Use variables "downgrade-1.0" and
-# "force-response-1.0" for this.
-BrowserMatch "MSIE [2-6]" \
-nokeepalive ssl-unclean-shutdown \
-downgrade-1.0 force-response-1.0
-# MSIE 7 and newer should be able to use keepalive
-BrowserMatch "MSIE [17-9]" ssl-unclean-shutdown
-
-ErrorLog /var/log/apache2/error.log
-CustomLog /var/log/apache2/access.log combined
-
-</VirtualHost>
-```
-
-save and check configuration :
-
-```
-sudo apache2ctl configtest
-```
-you may obtain the following output, which is fine:  
-`AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 127.0.1.1. Set the 'ServerName' directive globally to suppress this message
-Syntax OK`  
-
-reload and restart
-```
-sudo systemctl reload apache2
-sudo systemctl restart apache2
-```
+---
   
-you can test with:
-```
-https://conceal.your_domain.xyz/getinfo
-```
-  
-## 5. Broadcast
+from here you can refork to step 5 of [HOW-TO_HTTPS.md](./HOW-TO_HTTPS.md) tutorial.  
 
-Within **conceal-guardian** folder, modify your **config.json** file to include the following parameters :
-
-```
-"url": {
-"host": "conceal.your_domain.xyz",
-"port": ""
-}
-```
-  
-and restart Conceal-guardian. if you're using a service to launch, it should be something like :
-```
-sudo systemctl restart ccx-guardian.service
-```
-  
- 
-## 6. Final Test
-in a web wallet, go in **Settings** tab, toggle the switch **Use custom node** and fill with the url : `https://conceal.your_domain.xyz/`
-
-an other way to test, is to check if your node is listed in the [Conceal Network explorer page json file](https://explorer.conceal.network/pool/list?hasFeeAddr=true&isReachable=true&hasSSL=true)
-  
-  
-  
-
-this complete this tutorial.
-  
-### Notes:
- We decided to proceed in two steps, first create the http reverse proxy and then redirect it to https, for educational purpose and  also to allow intermediate testing.  
-
-Some circumpstances may increase the level of difficulty of this procedure and would need to be addressed, such as:
-* ISP does not provide a fix IP
-* self-issued cetificate
-* certificate renewal
+## 4. Notes
+ We decided to proceed with a conservative approach, you can also elect to have Cerbot intervene in your config file using `sudo certbot --apache` instead of `sudo certbot certonly --apache` command when doing the setup.
