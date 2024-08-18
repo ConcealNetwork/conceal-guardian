@@ -22,7 +22,7 @@ b. [Reverse proxy with Apache](#b-reverse-proxy-with-apache)
 
 5. [Broadcast](#5-broadcast)
 6. [Final Test](#6-final-test)
-
+7. [Acknowledgments](#7-acknowledgments)
 
   
 
@@ -389,7 +389,9 @@ in a web wallet, go in **Settings** tab, toggle the switch **Use custom node** a
 an other way to test, is to check if your node is listed in the [Conceal Network explorer page json file](https://explorer.conceal.network/pool/list?hasFeeAddr=true&isReachable=true&hasSSL=true)
   
   
-  
+## 7. Acknowledgments
+Thank you to the different members of Conceal Dev and Community teams who inspired this tutorial, those who tested it, and also M. CRISPIN providing code for SSL in the config file.
+
 
 this complete this tutorial.
   
