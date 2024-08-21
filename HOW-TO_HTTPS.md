@@ -20,6 +20,11 @@ b. [Reverse proxy with Apache](#b-reverse-proxy-with-apache)
 	- [Adding SSL module](#adding-ssl-module)  
 	- [Redirect http to https](#redirect-http-to-https)  
 
+	c. [Reverse proxy with Nginx](#c-reverse-proxy-with-nginx)  
+	- [Install Nginx](#install-nginx)  
+	- [Configure Virtual Host Nginx](#configure-virtual-host-nginx)  
+	- [Redirect to https with SSL](#redirect-to-https-with-ssl)
+
 5. [Broadcast](#5-broadcast)
 6. [Final Test](#6-final-test)
 7. [Acknowledgments](#7-acknowledgments)
@@ -80,7 +85,8 @@ on your router you probably already have port 16000 forwarded, you now have to a
 
 For this tutorial, the Apache server will run on the same server as the node. If you use a firewall, and unless already allowed, you'll need to allow connections on port 80 and 443 :
 
-`sudo ufw allow in "Apache Full"`
+`sudo ufw allow in "Apache Full"`  
+(if you are planning to use Nginx instead: `sudo ufw allow in "Nginx Full"` )  
 
 | some other ufw commands 	|      				|
 | -------------------------	| -----------------	|
@@ -147,6 +153,7 @@ The express nodejs server running on port 16000 doesn’t handle https connectio
 
 #### Install Apache
 ```
+sudo apt update
 sudo apt install apache2
 ```
 
@@ -365,7 +372,138 @@ you can test with:
 ```
 https://conceal.your_domain.xyz/getinfo
 ```
+
+
+### c. Reverse proxy with Nginx
+
+This sub-paragraph is for those of you, who prefers to use Nginx instead of Apache.  
+
+#### Install Nginx  
+
+```
+sudo apt update
+sudo apt install nginx
+```
+* make sure your firewall has Nginx allowed: 
+```
+sudo ufw status
+```
+if not, refer to [Firewall](#d-firewall)  
+* start Nginx service:
+```
+sudo systemctl start nginx  
+```
+* Check the status of Nginx:
+```
+sudo systemctl status nginx  
+```
+if statified, let's create the config file.  
+
+#### Configure Virtual Host Nginx
+```
+sudo nano /etc/nginx/sites-available/conceal-your_domain-xyz
+```
+paste the following, and replace with your domain name:  
+```
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name your_domain.xyz conceal.your_domain.xyz;
+        
+    location / {
+        proxy_pass http://localhost:16000;
+        include proxy_params;
+    }
+}
+```
+save and exit.
+* enable your configuration creating a link to site enabled folder:
+```
+sudo ln -s /etc/nginx/sites-available/conceal-your_domain-xyz /etc/nginx/sites-enabled/
+```
+* test your configuration:  
+```
+sudo nginx -t
+```
+you should obtain: 
+> nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful  
+
+restart Nginx:
+```
+sudo systemctl restart nginx
+```
+now you should be able to access your node from any web browser, using the url : `http://conceal.your_domain.xyz/`
+test it with `http://conceal.your_domain.xyz/getinfo`  
+
+#### Redirect to https with SSL
+
+Now let's setup https. Open the config file, 
+```
+sudo nano /etc/nginx/sites-available/conceal-your_domain-xyz
+```
+and modify with the following:  
+```
+server {
+    listen 80;
+    server_name your_domain.xyz conceal.your_domain.xyz;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name your_domain.xyz conceal.your_domain.xyz;
+
+    # SSL configuration
+    # Certbot (manual)
+    ssl_certificate /etc/letsencrypt/live/conceal.your_domain.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/conceal.your_domain.xyz/privkey.pem;
+    ssl on;
+    ssl_session_cache  builtin:1000  shared:SSL:10m;
+    ssl_protocols  TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers HIGH:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4;
+    ssl_prefer_server_ciphers on;
+
+    # Set the access log location
+
+    access_log            /var/log/nginx/conceal_node.access.log;
+
+    location / {
+        proxy_pass http://localhost:16000;
+        proxy_redirect http://localhost:16000 https://conceal.your_domain.xyz;
+
+    # proxy_param in proxy_params file
+        include proxy_params;
+
+    # Set the security Headers
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains>
+      add_header X-Frame-Options DENY; #Prevents clickjacking
+      add_header X-Content-Type-Options nosniff; #Prevents mime sniffing
+      add_header X-XSS-Protection "1; mode=block"; #Prevents cross-site scripti>
+      add_header Referrer-Policy "origin";
+    # Cors
+      add_header 'Access-Control-Allow-Origin' '*';
+      add_header 'Access-Control-Allow-Methods' 'GET, POST','OPTIONS';
+      add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-Wit>
+}
+}
+```
+save, exit and check your syntax:
+```
+sudo nginx -t
+```
+restart
+```
+sudo systemctl restart nginx
+```
   
+you can test with:
+```
+https://conceal.your_domain.xyz/getinfo
+```
+
+
+
 ## 5. Broadcast
 
 Within **conceal-guardian** folder, modify your **config.json** file to include the following parameters :
@@ -400,5 +538,5 @@ this complete this tutorial.
 
 Some circumpstances may increase the level of difficulty of this procedure and would need to be addressed, such as:
 * ISP does not provide a fix IP
-* self-issued cetificate
+* self-issued certificate
 * certificate renewal
