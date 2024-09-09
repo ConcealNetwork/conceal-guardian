@@ -85,16 +85,18 @@ on your router you probably already have port 16000 forwarded, you now have to a
 
 For this tutorial, the Apache server will run on the same server as the node. If you use a firewall, and unless already allowed, you'll need to allow connections on port 80 and 443 :
 
-`sudo ufw allow in "Apache Full"`  
+```
+sudo ufw allow in "Apache Full"
+```
 (if you are planning to use Nginx instead: `sudo ufw allow in "Nginx Full"` )  
-
+*please note those latter commands will work after Apache or Nginx installed.*  
 | some other ufw commands 	|      				|
 | -------------------------	| -----------------	|
 | install ufw				| `sudo apt update` |
 |							| `sudo apt install ufw` |
 | enable ufw				| `sudo ufw enable`	|
+| allow a port				| `sudo ufw allow 16000` |
 | get status				| `sudo ufw status` |
-
   
 ## 3. Domain Name providers
 
@@ -407,7 +409,7 @@ paste the following, and replace with your domain name:
 ```
 server {
     listen 80;
-    listen [::]:80;
+#ipv6    listen [::]:80;
 
     server_name your_domain.xyz conceal.your_domain.xyz;
         
@@ -446,7 +448,7 @@ sudo nano /etc/nginx/sites-available/conceal-your_domain-xyz
 and modify with the following:  
 ```
 server {
-    listen 80;
+    listen 80 default_server;
     server_name your_domain.xyz conceal.your_domain.xyz;
     return 301 https://$host$request_uri;
 }
@@ -458,7 +460,7 @@ server {
     # Certbot (manual)
     ssl_certificate /etc/letsencrypt/live/conceal.your_domain.xyz/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/conceal.your_domain.xyz/privkey.pem;
-    ssl on;
+    # ssl on;
     ssl_session_cache  builtin:1000  shared:SSL:10m;
     ssl_protocols  TLSv1 TLSv1.1 TLSv1.2;
     ssl_ciphers HIGH:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4;
@@ -476,15 +478,15 @@ server {
         include proxy_params;
 
     # Set the security Headers
-      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains>
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload";
       add_header X-Frame-Options DENY; #Prevents clickjacking
       add_header X-Content-Type-Options nosniff; #Prevents mime sniffing
       add_header X-XSS-Protection "1; mode=block"; #Prevents cross-site scripti>
       add_header Referrer-Policy "origin";
     # Cors
       add_header 'Access-Control-Allow-Origin' '*';
-      add_header 'Access-Control-Allow-Methods' 'GET, POST','OPTIONS';
-      add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-Wit>
+      add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+      add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
 }
 }
 ```

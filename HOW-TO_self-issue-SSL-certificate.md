@@ -75,7 +75,7 @@ sudo ln -s /snap/bin/certbot /usr/bin/certbot
 
 ### b. Certbot Setup
 we'll use cerbot only to generate certificate but not to  intervene in our Apache [^1] config file:  
-[^1]: ngix users : `sudo certbot certonly --nginx` followed by `sudo certbot certonly --nginx`
+[^1]: nginx users : `sudo certbot certonly --nginx` or consider `sudo certbot certonly --standalone` firt and then `sudo certbot certonly --nginx`
 ```
 sudo certbot certonly --apache  
 ```
@@ -135,6 +135,7 @@ Let's Encrypt certificates are only valid for 90 days. Cerbot offers a nice feat
 ```
 sudo certbot renew --dry-run
 ```
+*(you may have to stop the server to do the test `sudo systemctl stop nginx`)*  
 
 you should optain something like that:
 >Congratulations, all simulated renewals succeeded: 
