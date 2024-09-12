@@ -75,7 +75,7 @@ sudo ln -s /snap/bin/certbot /usr/bin/certbot
 
 ### b. Certbot Setup
 we'll use cerbot only to generate certificate but not to  intervene in our Apache [^1] config file:  
-[^1]: nginx users : `sudo certbot certonly --nginx` or consider `sudo certbot certonly --standalone` firt and then `sudo certbot certonly --nginx`
+[^1]: nginx users : `sudo certbot certonly --nginx` or consider `sudo certbot certonly --standalone` or even `sudo certbot --nginx` for full certbot intervention.
 ```
 sudo certbot certonly --apache  
 ```

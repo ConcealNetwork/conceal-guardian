@@ -409,9 +409,9 @@ paste the following, and replace with your domain name:
 ```
 server {
     listen 80;
-#ipv6    listen [::]:80;
+#    listen [::]:80; #ipv6
 
-    server_name your_domain.xyz conceal.your_domain.xyz;
+    server_name conceal.your_domain.xyz;
         
     location / {
         proxy_pass http://localhost:16000;
@@ -436,8 +436,10 @@ restart Nginx:
 ```
 sudo systemctl restart nginx
 ```
-now you should be able to access your node from any web browser, using the url : `http://conceal.your_domain.xyz/`
+Now you should be able to access your node from any web browser, using the url : `http://conceal.your_domain.xyz/`
 test it with `http://conceal.your_domain.xyz/getinfo`  
+  
+  Note: *now would be the time to run `sudo certbot --nginx` if you elect to generate your certificate yourself with full integration.*  
 
 #### Redirect to https with SSL
 
@@ -448,13 +450,16 @@ sudo nano /etc/nginx/sites-available/conceal-your_domain-xyz
 and modify with the following:  
 ```
 server {
-    listen 80 default_server;
-    server_name your_domain.xyz conceal.your_domain.xyz;
+    if ($host = conceal.your_domain.xyz) {
     return 301 https://$host$request_uri;
+    }
+    listen 80 default_server;
+    server_name conceal.your_domain.xyz;
+    return 404;
 }
 server {
     listen 443 ssl;
-    server_name your_domain.xyz conceal.your_domain.xyz;
+    server_name conceal.your_domain.xyz;
 
     # SSL configuration
     # Certbot (manual)
@@ -462,9 +467,10 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/conceal.your_domain.xyz/privkey.pem;
     # ssl on;
     ssl_session_cache  builtin:1000  shared:SSL:10m;
-    ssl_protocols  TLSv1 TLSv1.1 TLSv1.2;
-    ssl_ciphers HIGH:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4;
-    ssl_prefer_server_ciphers on;
+    ssl_protocols  TLSv1 TLSv1.1 TLSv1.2 TSLv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_ciphers "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384";
+
 
     # Set the access log location
 
@@ -484,9 +490,9 @@ server {
       add_header X-XSS-Protection "1; mode=block"; #Prevents cross-site scripti>
       add_header Referrer-Policy "origin";
     # Cors
-      add_header 'Access-Control-Allow-Origin' '*';
+      add_header 'Access-Control-Allow-Headers' '*';
+      # add_header 'Access-Control-Allow-Origin' '*'; #self-implied
       add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-      add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
 }
 }
 ```
@@ -494,9 +500,9 @@ save, exit and check your syntax:
 ```
 sudo nginx -t
 ```
-restart
+reload
 ```
-sudo systemctl restart nginx
+sudo systemctl reload nginx
 ```
   
 you can test with:
