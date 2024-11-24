@@ -27,7 +27,7 @@
   "homepage": "https://github.com/ConcealNetwork/conceal-guardian#readme",
   "dependencies": {
     "axios": "^1.6.7",
-    "command-line-args": "^5.2.1",
+    "command-line-args": "^6.0.0",
     "command-line-usage": "^7.0.1",
     "conceal-api": "^0.8.6",
     "download-github-release": "^0.3.2",
