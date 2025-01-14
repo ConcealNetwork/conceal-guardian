@@ -36,7 +36,7 @@
     "express-rate-limit": "^7.1.5",
     "extract-zip": "^2.0.1",
     "geoip2-api": "^1.0.2",
-    "inquirer": "^11.0.2",
+    "inquirer": "^12.3.2",
     "linux-os-info": "^2.0.0",
     "moment": "^2.29.4",
     "nodemailer": "^6.8.0",
