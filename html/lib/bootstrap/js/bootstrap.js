@@ -123,8 +123,8 @@ var Util = function ($$$1) {
   function escapeId(selector) {
     // We escape IDs in case of special selectors (selector = '#myId:something')
     // $.escapeSelector does not exist in jQuery < 3
-    selector = typeof $$$1.escapeSelector === 'function' ? $$$1.escapeSelector(selector).substr(1) : selector.replace(/(:|\.|\[|\]|,|=|@)/g, '\\$1');
-    return selector;
+    selector = typeof $$$1.escapeSelector === 'function' ? $$$1.escapeSelector(selector).substr(1) : selector.replace(/([:\\.\\[\\]\\,\\=\\@\\])/g, '\\$1');
+    return selector.replace(/\\/g, '\\\\');
   }
   /**
    * --------------------------------------------------------------------------
