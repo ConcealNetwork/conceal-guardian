@@ -3447,7 +3447,7 @@ var ScrollSpy = function ($$$1) {
 
         config.target = "#" + id;
       } else {
-        config.target = $$$1.find(config.target);
+        config.target = $$$1.find(config.target).selector;
       }
 
       Util.typeCheckConfig(NAME, config, DefaultType);
