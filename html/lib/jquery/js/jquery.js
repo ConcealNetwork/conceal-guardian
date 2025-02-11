@@ -12,6 +12,8 @@
  * Date: 2015-04-28T16:01Z
  */
 
+import DOMPurify from 'dompurify';
+
 (function( global, factory ) {
 
 	if ( typeof module === "object" && typeof module.exports === "object" ) {
@@ -5310,7 +5312,7 @@ jQuery.fn.extend({
 			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
 				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
 
-				value = value.replace( rxhtmlTag, "<$1></$2>" );
+				value = DOMPurify.sanitize(value).replace( rxhtmlTag, "<$1></$2>" );
 
 				try {
 					for ( ; i < l; i++ ) {
