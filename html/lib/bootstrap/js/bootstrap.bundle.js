@@ -5830,7 +5830,7 @@ var ScrollSpy = function ($$$1) {
         var targetSelector = Util.getSelectorFromElement(element);
 
         if (targetSelector) {
-          target = $$$1(targetSelector)[0];
+          target = $$$1.find(targetSelector)[0];
         }
 
         if (target) {
@@ -5872,7 +5872,7 @@ var ScrollSpy = function ($$$1) {
       config = _extends({}, Default, config);
 
       if (typeof config.target !== 'string') {
-        var id = $$$1(config.target).attr('id');
+        var id = $$$1.find(config.target).attr('id');
 
         if (!id) {
           id = Util.getUID(NAME);
