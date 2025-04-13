@@ -12,6 +12,41 @@
  * Date: 2015-04-28T16:01Z
  */
 
+function sanitizeHtml(html) {
+  if (typeof html !== 'string') return html;
+
+  let previous;
+  do {
+    previous = html;
+    
+    // Remove script tags and their contents
+    html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    
+    // Remove event handlers (on* attributes)
+    html = html.replace(/on\w+="[^"]*"/g, '')
+               .replace(/on\w+='[^']*'/g, '');
+    
+    // Remove dangerous protocols
+    html = html.replace(/(javascript|data|vbscript):/gi, '');
+    
+    // Remove potentially dangerous attributes
+    html = html.replace(/\s+(?:href|src|style|class|id)\s*=\s*["']?[^"'>]+["']?/gi, '');
+    
+    // Remove HTML comments
+    html = html.replace(/<!--[\s\S]*?-->/g, '');
+    
+    // Handle self-closing tags properly
+    const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+    voidElements.forEach(tag => {
+      const regex = new RegExp(`<${tag}\\b([^>]*?)(?<!/)>`, 'gi');
+      html = html.replace(regex, `<${tag}$1/>`);
+    });
+    
+  } while (html !== previous);
+
+  return html;
+}
+
 (function( global, factory ) {
 
 	if ( typeof module === "object" && typeof module.exports === "object" ) {
@@ -4356,6 +4391,7 @@ jQuery.event = {
 				event.result = handle.apply( cur, data );
 				if ( event.result === false ) {
 					event.preventDefault();
+					event.stopPropagation();
 				}
 			}
 		}
@@ -5309,14 +5345,7 @@ jQuery.fn.extend({
 			// See if we can take a shortcut and just use innerHTML
 			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
 				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
-				// Simple sanitization - allow common HTML tags but remove script tags and event handlers
-				value = value
-					.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-					.replace(/on\w+="[^"]*"/g, '')
-					.replace(/on\w+='[^']*'/g, '')
-					.replace(/javascript:/gi, '')
-					.replace( rxhtmlTag, "<$1></$2>" );
-				
+				value = sanitizeHtml(value);
 				try {
 					for ( ; i < l; i++ ) {
 						elem = this[ i ] || {};
@@ -6002,7 +6031,7 @@ jQuery.extend({
 			}
 
 		} else {
-			// If a hook was provided get the non-computed value from there
+			// If a hook was provided get the computed value from there
 			if ( hooks && "get" in hooks && (ret = hooks.get( elem, false, extra )) !== undefined ) {
 				return ret;
 			}
