@@ -12,8 +12,6 @@
  * Date: 2015-04-28T16:01Z
  */
 
-import DOMPurify from 'dompurify';
-
 (function( global, factory ) {
 
 	if ( typeof module === "object" && typeof module.exports === "object" ) {
@@ -5311,9 +5309,14 @@ jQuery.fn.extend({
 			// See if we can take a shortcut and just use innerHTML
 			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
 				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
-
-				value = DOMPurify.sanitize(value).replace( rxhtmlTag, "<$1></$2>" );
-
+				// Simple sanitization - allow common HTML tags but remove script tags and event handlers
+				value = value
+					.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+					.replace(/on\w+="[^"]*"/g, '')
+					.replace(/on\w+='[^']*'/g, '')
+					.replace(/javascript:/gi, '')
+					.replace( rxhtmlTag, "<$1></$2>" );
+				
 				try {
 					for ( ; i < l; i++ ) {
 						elem = this[ i ] || {};
@@ -7441,7 +7444,7 @@ jQuery.extend({
 
 				while ( i-- ) {
 					option = options[ i ];
-					if ( (option.selected = jQuery.inArray( option.value, values ) >= 0) ) {
+					if ( (option.selected = jQuery.inArray( jQuery(option).val(), values ) >= 0) ) {
 						optionSet = true;
 					}
 				}

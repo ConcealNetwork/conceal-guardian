@@ -47,8 +47,7 @@
     "string-template": "^1.0.0",
     "tar": "^7.0.0",
     "username": "^7.0.0",
-    "xmlbuilder": "^15.1.1",
-    "dompurify": "^3.2.4"
+    "xmlbuilder": "^15.1.1"
   },
   "jshintConfig": {
     "expr": true,
