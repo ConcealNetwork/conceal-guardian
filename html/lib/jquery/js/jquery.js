@@ -23,23 +23,26 @@ function sanitizeHtml(html) {
     html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
     
     // Remove event handlers (on* attributes) - more specific pattern
-    html = html.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '')
-               .replace(/\s+on\w+\s*=\s*[^"'\s>]+/gi, '');
+    html = html.replace(/\s+on[a-zA-Z]+\s*=\s*["'][^"']*["']/gi, '')
+               .replace(/\s+on[a-zA-Z]+\s*=\s*[^"'\s>]+/gi, '')
+               .replace(/\s+on[a-zA-Z]+\s*=\s*[^"'\s>]*/gi, '');
     
     // Remove dangerous protocols
     html = html.replace(/(javascript|data|vbscript):/gi, '');
     
     // Remove potentially dangerous attributes
-    html = html.replace(/\s+(?:href|src|style|class|id)\s*=\s*["']?[^"'>]+["']?/gi, '');
+    html = html.replace(/\s+(?:href|src|style|class|id|formaction|xlink:href)\s*=\s*["']?[^"'>]+["']?/gi, '');
     
-    // Remove HTML comments iteratively
-    let commentPrevious;
-    do {
-      commentPrevious = html;
-      html = html.replace(/<!--[\s\S]*?-->/g, '')
-                 .replace(/<!--.*$/g, '')  // Handle unclosed comments
-                 .replace(/^.*-->/g, '');  // Handle orphaned comment closers
-    } while (html !== commentPrevious);
+     // Remove HTML comments iteratively
+	 let commentPrevious;
+	 do {
+	   commentPrevious = html;
+	   // First remove complete comments
+	   html = html.replace(/<!--[\s\S]*?-->/g, '');
+	   // Then remove any remaining comment markers
+	   html = html.replace(/<!--/g, '')
+				  .replace(/-->/g, '');
+	 } while (html !== commentPrevious);
     
     // Handle self-closing tags properly
     const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
