@@ -22,9 +22,9 @@ function sanitizeHtml(html) {
     // Remove script tags and their contents
     html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
     
-    // Remove event handlers (on* attributes)
-    html = html.replace(/on\w+="[^"]*"/g, '')
-               .replace(/on\w+='[^']*'/g, '');
+    // Remove event handlers (on* attributes) - more specific pattern
+    html = html.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '')
+               .replace(/\s+on\w+\s*=\s*[^"'\s>]+/gi, '');
     
     // Remove dangerous protocols
     html = html.replace(/(javascript|data|vbscript):/gi, '');
@@ -32,8 +32,14 @@ function sanitizeHtml(html) {
     // Remove potentially dangerous attributes
     html = html.replace(/\s+(?:href|src|style|class|id)\s*=\s*["']?[^"'>]+["']?/gi, '');
     
-    // Remove HTML comments
-    html = html.replace(/<!--[\s\S]*?-->/g, '');
+    // Remove HTML comments iteratively
+    let commentPrevious;
+    do {
+      commentPrevious = html;
+      html = html.replace(/<!--[\s\S]*?-->/g, '')
+                 .replace(/<!--.*$/g, '')  // Handle unclosed comments
+                 .replace(/^.*-->/g, '');  // Handle orphaned comment closers
+    } while (html !== commentPrevious);
     
     // Handle self-closing tags properly
     const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
