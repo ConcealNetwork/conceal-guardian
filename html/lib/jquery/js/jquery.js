@@ -12,53 +12,6 @@
  * Date: 2015-04-28T16:01Z
  */
 
-function sanitizeHtml(html) {
-  if (typeof html !== 'string') return html;
-
-  let previous;
-  do {
-    previous = html;
-    
-    // Remove script tags and their contents
-    html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    
-    // Remove event handlers (on* attributes) - more specific pattern
-    html = html.replace(/\s+on[a-zA-Z]+\s*=\s*["'][^"']*["']/gi, '')
-               .replace(/\s+on[a-zA-Z]+\s*=\s*[^"'\s>]+/gi, '')
-               .replace(/\s+on[a-zA-Z]+\s*=\s*[^"'\s>]*/gi, '');
-    // Event handler whitelist approach - more precise
-	const eventHandlerRegex = /\s+on(?:abort|blur|change|click|dblclick|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|reset|resize|scroll|select|submit|unload|contextmenu|dragstart|drag|dragend|drop)[a-zA-Z]*\s*=\s*["']?[^"'>]*["']?/gi;
-	html = html.replace(eventHandlerRegex, '');
-	
-    // Remove dangerous protocols
-    html = html.replace(/(javascript|data|vbscript):/gi, '');
-    
-    // Remove potentially dangerous attributes
-    html = html.replace(/\s+(?:href|src|style|class|id|formaction|xlink:href)\s*=\s*["']?[^"'>]+["']?/gi, '');
-    
-     // Remove HTML comments iteratively
-	 let commentPrevious;
-	 do {
-	   commentPrevious = html;
-	   // First remove complete comments
-	   html = html.replace(/<!--[\s\S]*?-->/g, '');
-	   // Then remove any remaining comment markers
-	   html = html.replace(/<!--/g, '')
-				  .replace(/-->/g, '');
-	 } while (html !== commentPrevious);
-    
-    // Handle self-closing tags properly
-    const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
-    voidElements.forEach(tag => {
-      const regex = new RegExp(`<${tag}\\b([^>]*?)(?<!/)>`, 'gi');
-      html = html.replace(regex, `<${tag}$1/>`);
-    });
-    
-  } while (html !== previous);
-
-  return html;
-}
-
 
 (function( global, factory ) {
 
@@ -4960,7 +4913,7 @@ jQuery.fn.extend({
 
 
 var
-	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
+	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)(?:\s+[^>]*)?)\s*\/>/gi,
 	rtagName = /<([\w:]+)/,
 	rhtml = /<|&#?\w+;/,
 	rnoInnerhtml = /<(?:script|style|link)/i,
@@ -5358,7 +5311,17 @@ jQuery.fn.extend({
 			// See if we can take a shortcut and just use innerHTML
 			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
 				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
-				value = sanitizeHtml(value);
+					
+						console.log("Using DOMPurify for sanitization");
+						const config = {
+							ADD_TAGS: ['pre', 'code'],
+							ADD_ATTR: ['data-src', 'class', 'id'],
+							ALLOW_DATA_ATTR: true,
+							FORCE_BODY: false
+						};
+
+						value = window.DOMPurify.sanitize(value, config);
+
 
 				try {
 					for ( ; i < l; i++ ) {
