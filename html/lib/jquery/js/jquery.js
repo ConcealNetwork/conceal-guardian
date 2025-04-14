@@ -26,7 +26,10 @@ function sanitizeHtml(html) {
     html = html.replace(/\s+on[a-zA-Z]+\s*=\s*["'][^"']*["']/gi, '')
                .replace(/\s+on[a-zA-Z]+\s*=\s*[^"'\s>]+/gi, '')
                .replace(/\s+on[a-zA-Z]+\s*=\s*[^"'\s>]*/gi, '');
-    
+    // Event handler whitelist approach - more precise
+	const eventHandlerRegex = /\s+on(?:abort|blur|change|click|dblclick|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|reset|resize|scroll|select|submit|unload|contextmenu|dragstart|drag|dragend|drop)[a-zA-Z]*\s*=\s*["']?[^"'>]*["']?/gi;
+	html = html.replace(eventHandlerRegex, '');
+	
     // Remove dangerous protocols
     html = html.replace(/(javascript|data|vbscript):/gi, '');
     
@@ -55,6 +58,7 @@ function sanitizeHtml(html) {
 
   return html;
 }
+
 
 (function( global, factory ) {
 
@@ -5355,6 +5359,7 @@ jQuery.fn.extend({
 			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
 				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
 				value = sanitizeHtml(value);
+
 				try {
 					for ( ; i < l; i++ ) {
 						elem = this[ i ] || {};
