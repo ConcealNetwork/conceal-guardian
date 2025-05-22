@@ -87,14 +87,15 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
     }
 
     if (nodeProcess) {
-      if (nodeProcess) {
-        logMessage("Sending SIGTERM to daemon process", "info", false);
+      logMessage("Sending SIGTERM to daemon process", "info", false);
 
-        isStoping = true;
-        nodeProcess.kill('SIGTERM', {
-          forceKillAfterTimeout: (configOpts.restart.terminateTimeout || 120) * 1000
-        });
-      }
+      isStoping = true;
+      nodeProcess.kill('SIGTERM');
+      killTimeout = setTimeout(() => {
+        if (nodeProcess) {
+          nodeProcess.kill('SIGKILL');
+        }
+      }, (configOpts.restart.terminateTimeout || 120) * 1000);
     }
   };
 
