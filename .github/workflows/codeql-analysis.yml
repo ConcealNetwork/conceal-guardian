@@ -70,26 +70,3 @@ jobs:
       with:
         category: "/language:${{ matrix.language }}"
         upload: true
-        output: ./codeql-results.sarif
-
-    # Validate SARIF file before upload
-    - name: Validate SARIF file
-      run: |
-        if [ ! -f ./codeql-results.sarif ]; then
-          echo "SARIF file not found"
-          exit 1
-        fi
-        if [ $(stat -f%z ./codeql-results.sarif) -gt 10485760 ]; then
-          echo "SARIF file exceeds 10MB limit"
-          exit 1
-        fi
-        # Basic JSON validation
-        jq '.' ./codeql-results.sarif > /dev/null || (echo "Invalid SARIF format" && exit 1)
-
-    # Upload SARIF results
-    - name: Upload SARIF results
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: ./codeql-results.sarif
-        category: "/language:${{ matrix.language }}"
-        wait-for-processing: true
