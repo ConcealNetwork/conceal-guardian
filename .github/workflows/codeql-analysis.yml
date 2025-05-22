@@ -13,9 +13,9 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ master ]
+    branches: [ '*' ]  # Run on all branches
   pull_request:
-    branches: [ master ]
+    branches: [ '*' ]  # Run on all branches
   schedule:
     - cron: '29 1 * * 4'
   workflow_dispatch:  # Allow manual triggering
