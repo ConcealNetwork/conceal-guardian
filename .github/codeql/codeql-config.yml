@@ -10,4 +10,9 @@ paths:
 paths-ignore:
   - '**/node_modules'
   - '**/dist'
-  - '**/build' 
+  - '**/build'
+
+query-filters:
+  - include:
+      tags contain: security
+      tags contain: external/cwe/cwe-116 
