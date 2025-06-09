@@ -5312,7 +5312,7 @@ jQuery.fn.extend({
 			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
 				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
 
-				value = DOMPurify.sanitize(value).replace( rxhtmlTag, "<$1></$2>" );
+				value = DOMPurify.sanitize(value);
 
 				try {
 					for ( ; i < l; i++ ) {
