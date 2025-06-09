@@ -6,10 +6,11 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('jquery')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'jquery'], factory) :
-	(factory((global.bootstrap = {}),global.jQuery));
-}(this, (function (exports,$) { 'use strict';
+	(factory((global.bootstrap = {}),global.jQuery,global.DOMPurify));
+}(this, (function (exports,$,DOMPurify) { 'use strict';
 
 $ = $ && $.hasOwnProperty('default') ? $['default'] : $;
+DOMPurify = DOMPurify && DOMPurify.hasOwnProperty('default') ? DOMPurify['default'] : DOMPurify;
 
 function _defineProperties(target, props) {
   for (var i = 0; i < props.length; i++) {
@@ -155,6 +156,7 @@ var Util = function ($$$1) {
       }
 
       try {
+        selector = DOMPurify.sanitize(selector);
         var $selector = $$$1(document).find(selector);
         return $selector.length > 0 ? selector : null;
       } catch (err) {
