@@ -12,7 +12,6 @@
  * Date: 2015-04-28T16:01Z
  */
 
-import DOMPurify from 'dompurify';
 
 (function( global, factory ) {
 
@@ -4358,6 +4357,7 @@ jQuery.event = {
 				event.result = handle.apply( cur, data );
 				if ( event.result === false ) {
 					event.preventDefault();
+					event.stopPropagation();
 				}
 			}
 		}
@@ -4913,7 +4913,7 @@ jQuery.fn.extend({
 
 
 var
-	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi,
+	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)(?:\s+[^>]*)?)\s*\/>/gi,
 	rtagName = /<([\w:]+)/,
 	rhtml = /<|&#?\w+;/,
 	rnoInnerhtml = /<(?:script|style|link)/i,
@@ -5311,9 +5311,17 @@ jQuery.fn.extend({
 			// See if we can take a shortcut and just use innerHTML
 			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
 				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
+					
+						console.log("Using DOMPurify for sanitization");
+						const config = {
+							ADD_TAGS: ['pre', 'code'],
+							ADD_ATTR: ['data-src', 'class', 'id'],
+							ALLOW_DATA_ATTR: true,
+							FORCE_BODY: false
+						};
 
-				value = DOMPurify.sanitize(value).replace( rxhtmlTag, "<$1></$2>" );
-
+						value = window.DOMPurify.sanitize(value, config);
+    				value = DOMPurify.sanitize(value);
 				try {
 					for ( ; i < l; i++ ) {
 						elem = this[ i ] || {};
@@ -5999,7 +6007,7 @@ jQuery.extend({
 			}
 
 		} else {
-			// If a hook was provided get the non-computed value from there
+			// If a hook was provided get the computed value from there
 			if ( hooks && "get" in hooks && (ret = hooks.get( elem, false, extra )) !== undefined ) {
 				return ret;
 			}
@@ -7441,7 +7449,7 @@ jQuery.extend({
 
 				while ( i-- ) {
 					option = options[ i ];
-					if ( (option.selected = jQuery.inArray( option.value, values ) >= 0) ) {
+					if ( (option.selected = jQuery.inArray( jQuery(option).val(), values ) >= 0) ) {
 						optionSet = true;
 					}
 				}
