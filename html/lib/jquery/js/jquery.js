@@ -5321,8 +5321,7 @@ jQuery.fn.extend({
 						};
 
 						value = window.DOMPurify.sanitize(value, config);
-
-
+    				value = DOMPurify.sanitize(value);
 				try {
 					for ( ; i < l; i++ ) {
 						elem = this[ i ] || {};
