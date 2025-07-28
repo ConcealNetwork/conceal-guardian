@@ -77,8 +77,8 @@ export function createServer(config, nodeDirectory, onDataCallback) {
               // Define APIs to try in order
               const apis = [
                 { name: 'geoip2-api', fn: async () => await geoip.get(peerIP) },
-                { name: 'ipapi.co', fn: async () => await axios.get(`https://ipapi.co/${peerIP}/json/`, { timeout: 5000 }) },
-                { name: 'ipinfo.io', fn: async () => await axios.get(`https://ipinfo.io/${peerIP}/json`, { timeout: 5000 }) }
+                { name: 'ipinfo.io', fn: async () => await axios.get(`https://ipinfo.io/${peerIP}/json`, { timeout: 5000 }) },
+                { name: 'ipapi.co', fn: async () => await axios.get(`https://ipapi.co/${peerIP}/json/`, { timeout: 5000 }) }
               ];
               
               // Try each API in sequence

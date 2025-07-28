@@ -79,7 +79,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           externalIP = ipResponse.data.trim();
         }
         
-        logMessage("External IP detected", "info", false);
+        logMessage("Detecting geolocalization data", "info", false);
         
         // Get geo data
         let geoResponse = await axios.get(geoApi.replace('{ip}', externalIP), { timeout: retryDelay });
@@ -319,7 +319,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
               'Content-Type': 'application/json'
             }
           }).then(response => {
-            // do nothing
+            //logMessage(`Pool notification successful: ${response.status}`, "info", false);
           }).catch(err => {
             logMessage(`Pool notification failed: ${err.message}`, "error", false);
           });
