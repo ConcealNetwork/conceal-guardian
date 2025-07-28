@@ -26,24 +26,23 @@
   },
   "homepage": "https://github.com/ConcealNetwork/conceal-guardian#readme",
   "dependencies": {
-    "axios": "^1.6.7",
+    "axios": "^1.11.0",
     "command-line-args": "^6.0.0",
     "command-line-usage": "^7.0.1",
     "conceal-api": "^0.8.6",
     "download-github-release": "^0.3.2",
-    "execa": "^9.2.0",
+    "execa": "^9.6.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.0.1",
     "extract-zip": "^2.0.1",
-    "geoip2-api": "^1.0.2",
-    "inquirer": "^12.4.1",
+    "geoip2-api": "^1.1.2",
+    "inquirer": "^12.8.2",
     "linux-os-info": "^2.0.0",
     "moment": "^2.29.4",
     "nodemailer": "^7.0.5",
     "object-path": "^0.11.8",
     "pure-uuid": "^1.6.2",
     "read-last-lines": "^1.8.0",
-    "request": "^2.88.2",
     "string-template": "^1.0.0",
     "tar": "^7.0.0",
     "username": "^7.0.0",
@@ -55,6 +54,6 @@
   },
   "devDependencies": {
     "@babel/plugin-syntax-top-level-await": "^7.14.5",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.8"
   }
 }

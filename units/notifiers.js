@@ -3,21 +3,21 @@
 // Please see the included LICENSE file for more information.
 
 import nodemailer from "nodemailer";
-import request from "request";
+import axios from "axios";
 import oPath from "object-path";
 import os from "os";
 
 function notifyViaDiscord(config, msgText, msgType, nodeData) {
   if (oPath.get(config, 'error.notify.discord.url', '')) {
-    var hookOptions = {
-      uri: oPath.get(config, 'error.notify.discord.url', ''),
-      method: "POST",
-      json: {
-        content: `Node **${nodeData.name}** reported an error -> ${msgText} \n`
+    axios.post(oPath.get(config, 'error.notify.discord.url', ''), {
+      content: `Node **${nodeData.name}** reported an error -> ${msgText} \n`
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
       }
-    };
-
-    request(hookOptions, function () {
+    }).then(response => {
+      // Discord notification successful
+    }).catch(err => {
       // for now its fire and forget, no matter if error occurs
     });
   }
