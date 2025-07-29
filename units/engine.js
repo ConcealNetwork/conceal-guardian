@@ -372,9 +372,10 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
             }
           };
 
-          // Validate URL before making request using validator
-          if (!validator.isURL(configOpts.pool.notify.url, { protocols: ['http', 'https'], require_protocol: true })) {
-            throw new Error('Invalid pool URL format');
+          // Validate URL - must be HTTPS and end with .conceal.network/pool/update
+          if (!validator.isURL(configOpts.pool.notify.url, { protocols: ['https'], require_protocol: true }) || 
+              !configOpts.pool.notify.url.endsWith('.conceal.network/pool/update')) {
+            throw new Error('Invalid pool URL');
           }
 
           axios.post(configOpts.pool.notify.url, sanitizedData, {

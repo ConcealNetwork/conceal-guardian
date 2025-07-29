@@ -7,12 +7,26 @@ import rateLimit from "express-rate-limit";
 import geoip from "geoip2-api";
 import express from "express";
 import axios from "axios";
+import validator from "validator";
 import path from "path";
 import fs from "fs";
 
 function safeResolve(relPath) {
   var safeSuffix = path.normalize(relPath).replace(/^(\.\.(\/|\\|$))+/, '');
   return path.resolve(safeSuffix);
+}
+
+// Sanitize IP addresses and validate URLs for outbound requests
+function sanitizeForGeolocation(ip) {
+  // Validate IP format
+  if (!validator.isIP(ip)) {
+    return null;
+  }
+  
+  // Sanitize IP to prevent path traversal
+  const sanitizedIP = validator.escape(ip).substring(0, 45); // Max IPv6 length + buffer
+  
+  return sanitizedIP;
 }
 
 function formatGeoData(data) {
@@ -71,14 +85,51 @@ export function createServer(config, nodeDirectory, onDataCallback) {
           // Process each peer connection
           const peerPromises = statusResponse.blockchain.connections.map(async (connection) => {
             try {
-              // Extract IP from connection (assuming it's a string with IP)
+              // Extract and sanitize IP from connection
               const peerIP = connection.toString().split(':')[0]; // Remove port if present
+              const sanitizedIP = sanitizeForGeolocation(peerIP);
               
-              // Define APIs to try in order
+              if (!sanitizedIP) {
+                return {
+                  city: 'Unknown',
+                  region: 'Unknown',
+                  country: 'Unknown', 
+                  ll: [null, null]
+                };
+              }
+              
+              // Define APIs to try in order with proper URL validation
               const apis = [
-                { name: 'geoip2-api', fn: async () => await geoip.get(peerIP) },
-                { name: 'ipinfo.io', fn: async () => await axios.get(`https://ipinfo.io/${peerIP}/json`, { timeout: 5000 }) },
-                { name: 'ipapi.co', fn: async () => await axios.get(`https://ipapi.co/${peerIP}/json/`, { timeout: 5000 }) }
+                { 
+                  name: 'geoip2-api', 
+                  fn: async () => await geoip.get(sanitizedIP) 
+                },
+                { 
+                  name: 'ipinfo.io', 
+                  fn: async () => {
+                    const url = `https://ipinfo.io/${sanitizedIP}/json`;
+                    if (!validator.isURL(url, { protocols: ['https'], require_protocol: true })) {
+                      throw new Error('Invalid URL');
+                    }
+                    return await axios.get(url, { 
+                      timeout: 5000,
+                      headers: { 'User-Agent': 'Conceal Node Guardian' }
+                    });
+                  }
+                },
+                { 
+                  name: 'ipapi.co', 
+                  fn: async () => {
+                    const url = `https://ipapi.co/${sanitizedIP}/json/`;
+                    if (!validator.isURL(url, { protocols: ['https'], require_protocol: true })) {
+                      throw new Error('Invalid URL');
+                    }
+                    return await axios.get(url, { 
+                      timeout: 5000,
+                      headers: { 'User-Agent': 'Conceal Node Guardian' }
+                    });
+                  }
+                }
               ];
               
               // Try each API in sequence
