@@ -265,7 +265,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
         url: configOpts.url,
         status: {
           errors: errorCount,
-          startTime: startupTime,
+          startTime: startupTime.toISOString(),
           initialized: initialized
         },
         blockchain: rpcComms ? rpcComms.getData() : null,
@@ -288,7 +288,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
         url: configOpts.url,
         status: {
           errors: errorCount,
-          startTime: startupTime,
+          startTime: startupTime.toISOString(),
           initialized: initialized
         },
         blockchain: rpcComms ? rpcComms.getData() : null,
@@ -344,33 +344,54 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
         try {
           const nodeData = await getNodeInfoData();
           
-          // Validate and sanitize data before sending using validator library
-          const sanitizedData = {
-            id: validator.escape(String(nodeData.id || '')).substring(0, 100),
-            os: validator.escape(String(nodeData.os || '')).substring(0, 50),
-            name: validator.escape(String(nodeData.name || '')).substring(0, 100),
-            version: validator.escape(String(nodeData.version || '')).substring(0, 50),
-            nodeHost: validator.escape(String(nodeData.nodeHost || '')).substring(0, 100),
-            nodePort: Number(nodeData.nodePort) || 0,
-            status: {
-              errors: Number(nodeData.status?.errors) || 0,
-              startTime: validator.escape(String(nodeData.status?.startTime || '')),
-              initialized: Boolean(nodeData.status?.initialized)
-            },
-            blockchain: nodeData.blockchain ? {
-              connections: Number(nodeData.blockchain.connections) || 0,
-              height: Number(nodeData.blockchain.height) || 0
-            } : null,
-            location: {
-              ip: validator.escape(String(nodeData.location?.ip || '')).substring(0, 100),
-              data: nodeData.location?.data ? {
-                country: validator.escape(String(nodeData.location.data.country || '')).substring(0, 100),
-                city: validator.escape(String(nodeData.location.data.city || '')).substring(0, 100),
-                latitude: Number(nodeData.location.data.latitude) || null,
-                longitude: Number(nodeData.location.data.longitude) || null
-              } : null
+          // Recursive sanitization function that preserves all data types using validator
+          function sanitizeData(data, maxDepth = 3, currentDepth = 0) {
+            if (currentDepth > maxDepth) return null;
+            
+            if (data === null || data === undefined) {
+              return null;
             }
-          };
+            
+            if (typeof data === 'string') {
+              // Use validator's safe string sanitization
+              return validator.escape(data.substring(0, 1000));
+            }
+            
+            if (typeof data === 'number') {
+              // Numbers don't need escaping, just ensure they're valid
+              return isFinite(data) ? data : 0;
+            }
+            
+            if (typeof data === 'boolean') {
+              return data;
+            }
+            
+            if (data instanceof Date) {
+              return data.toISOString();
+            }
+            
+            if (Array.isArray(data)) {
+              return data.slice(0, 100).map(item => sanitizeData(item, maxDepth, currentDepth + 1));
+            }
+            
+            if (typeof data === 'object') {
+              const sanitized = {};
+              for (const [key, value] of Object.entries(data)) {
+                if (typeof key === 'string' && key.length <= 100) {
+                  // Sanitize object keys
+                  const sanitizedKey = validator.escape(key);
+                  sanitized[sanitizedKey] = sanitizeData(value, maxDepth, currentDepth + 1);
+                }
+              }
+              return sanitized;
+            }
+            
+            // Fallback for unknown types - convert to string first
+            return validator.escape(String(data).substring(0, 1000));
+          }
+          
+          // Sanitize the entire node data recursively
+          const sanitizedData = sanitizeData(nodeData);
 
           // Validate URL - must be HTTPS and end with .conceal.network/pool/update
           if (!validator.isURL(configOpts.pool.notify.url, { 
@@ -384,10 +405,9 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
             throw new Error('Invalid pool URL');
           } 
           
-          // Use the validated URL
-          const sanitizedPoolNotifyUrl = configOpts.pool.notify.url;
+          const poolNotifyUrl = configOpts.pool.notify.url;
           
-          axios.post(sanitizedPoolNotifyUrl, sanitizedData, {
+          axios.post(poolNotifyUrl, sanitizedData, {
             timeout: 10000,
             headers: {
               'Content-Type': 'application/json',
