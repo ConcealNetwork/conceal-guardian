@@ -1,70 +1,60 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
-#
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
-#
-# ******** NOTE ********
-# We have attempted to detect the languages in your repository. Please check
-# the `language` matrix defined below to confirm you have the correct set of
-# supported CodeQL languages.
-#
-name: "CodeQL"
+name: "CodeQL Manual SARIF Upload"
 
 on:
   push:
-    branches: [ 'master' ]  # Run on all branches
+    branches: [ 'master' ]
   pull_request:
-    branches: [ 'master' ]  # Run on all branches
-  schedule:
-    - cron: '29 1 * * 4'
-
+    branches: [ 'master' ]
+  workflow_dispatch:
 
 jobs:
   analyze:
-    name: Analyze
+    name: Analyze (No Upload by Default)
     runs-on: ubuntu-latest
+    env:
+      DISABLE_CODEQL_UPLOAD: "true"   # disable automatic upload by default
     permissions:
       actions: read
       contents: read
       security-events: write
-
     strategy:
-      fail-fast: false
       matrix:
-        language: [ 'javascript' ]
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
-        # Learn more:
-        # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
-
+        language: [ 'javascript' ]  # adjust languages as needed
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-
-    # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
-
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
     - name: Autobuild
       uses: github/codeql-action/autobuild@v3
-
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 https://git.io/JvXDl
-
-    # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-    #    and modify them (or add more) to build your code if your project
-    #    uses a compiled language
-
-    #- run: |
-    #   make bootstrap
-    #   make release
-
     - name: Perform CodeQL Analysis
+      id: analyze
       uses: github/codeql-action/analyze@v3
       with:
-        category: "/language:${{ matrix.language }}"
-        upload: true
+        upload: ${{ !env.DISABLE_CODEQL_UPLOAD }}
+    - name: Save SARIF file locally
+      if: always()
+      run: |
+        SARIF_PATH="${{ steps.analyze.outputs.sarif-output }}"
+        echo "Looking for SARIF file at $SARIF_PATH..."
+        if [ -f "$SARIF_PATH" ]; then
+          cp "$SARIF_PATH" ./codeql-results.sarif
+          echo "SARIF saved to ./codeql-results.sarif"
+        else
+          echo "SARIF not found at $SARIF_PATH"
+        fi
+
+  upload-sarif:
+    name: Upload SARIF Manually (optional)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'codeql-results.sarif'  # customize path if SARIF files are committed or placed in repo

@@ -253,20 +253,87 @@ if (cmdOptions.help) {
       process.on('uncaughtException', function (err) {
         guardInstance.logError(err);
       });
-
+      // Handle SIGINT (Ctrl+C)
       process.on('SIGINT', function() {
-        console.log("Stopping the guardian....");
+        console.log("Received SIGINT, stopping the guardian....");
+        
+        // Prevent signal propagation to child processes
+        process.removeAllListeners('SIGINT');
+        process.removeAllListeners('SIGTERM');
+        process.removeAllListeners('SIGHUP');
 
-        if (guardInstance.getProcess()) {
+        if (guardInstance && guardInstance.getProcess()) {
+          // Set up exit listener BEFORE calling stop
           guardInstance.getProcess().on("exit", function (code, signal) {
-            console.log("Daemon stopped, exiting....");
-            process.exit();
+            console.log(`Daemon stopped with code ${code}, signal ${signal}`);
+            console.log("Exiting guardian....");
+            process.exit(0);
           });
 
-          // stop the daemon process
+          // stop the process
           guardInstance.stop(false);
         } else {
-          process.exit();
+          console.log("No daemon process found, exiting....");
+          process.exit(0);
+        }
+      });
+
+      // Also handle SIGTERM for system service shutdowns
+      process.on('SIGTERM', function() {
+        console.log("Received SIGTERM, stopping the guardian....");
+        
+        // Prevent signal propagation to child processes
+        process.removeAllListeners('SIGINT');
+        process.removeAllListeners('SIGTERM');
+        process.removeAllListeners('SIGHUP');
+
+        if (guardInstance && guardInstance.getProcess()) {
+          // Set up exit listener BEFORE calling stop
+          guardInstance.getProcess().on("exit", function (code, signal) {
+            console.log(`Daemon stopped with code ${code}, signal ${signal}`);
+            console.log("Exiting guardian....");
+            process.exit(0);
+          });
+
+          // stop the process
+          guardInstance.stop(false);
+        } else {
+          console.log("No daemon process found, exiting....");
+          process.exit(0);
+        }
+      });
+
+      // Handle SIGHUP (terminal window closed)
+      process.on('SIGHUP', function() {
+        console.log("Received SIGHUP (terminal closed), stopping the guardian....");
+        
+        // Prevent signal propagation to child processes
+        process.removeAllListeners('SIGINT');
+        process.removeAllListeners('SIGTERM');
+        process.removeAllListeners('SIGHUP');
+
+        if (guardInstance && guardInstance.getProcess()) {
+          // Set up exit listener BEFORE calling stop
+          guardInstance.getProcess().on("exit", function (code, signal) {
+            console.log(`Daemon stopped with code ${code}, signal ${signal}`);
+            console.log("Exiting guardian....");
+            process.exit(0);
+          });
+
+          // stop the process
+          guardInstance.stop(false);
+        } else {
+          console.log("No daemon process found, exiting....");
+          process.exit(0);
+        }
+      });
+
+      // Handle process exit to ensure cleanup
+      process.on('exit', function(code) {
+        console.log(`Guardian process exiting with code ${code}`);
+        if (guardInstance && guardInstance.getProcess()) {
+          console.log("Ensuring daemon is stopped...");
+          guardInstance.stop(false);
         }
       });      
     }
