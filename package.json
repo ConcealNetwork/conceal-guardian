@@ -46,6 +46,7 @@
     "string-template": "^1.0.0",
     "tar": "^7.0.0",
     "username": "^7.0.0",
+    "validator": "^13.15.15",
     "xmlbuilder": "^15.1.1"
   },
   "jshintConfig": {

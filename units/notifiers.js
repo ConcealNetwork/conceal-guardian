@@ -6,12 +6,13 @@ import nodemailer from "nodemailer";
 import axios from "axios";
 import oPath from "object-path";
 import os from "os";
+import validator from "validator";
 
 function notifyViaDiscord(config, msgText, msgType, nodeData) {
   if (oPath.get(config, 'error.notify.discord.url', '')) {
     // Validate and sanitize data before sending
-    const sanitizedNodeName = String(nodeData?.name || 'Unknown').substring(0, 100);
-    const sanitizedMsgText = String(msgText || '').substring(0, 1000);
+    const sanitizedNodeName = validator.escape(String(nodeData?.name || 'Unknown')).substring(0, 100);
+    const sanitizedMsgText = validator.escape(String(msgText || '')).substring(0, 1000);
     
     // Validate URL before making request
     const discordUrl = oPath.get(config, 'error.notify.discord.url', '');
@@ -19,14 +20,19 @@ function notifyViaDiscord(config, msgText, msgType, nodeData) {
       return; // Skip if no valid URL
     }
     
+    // Use validator library for proper URL validation
+    if (!validator.isURL(discordUrl, { protocols: ['https'], require_protocol: true })) {
+      return; // Skip if not a valid HTTPS URL
+    }
+    
     try {
       const url = new URL(discordUrl);
-      if (!['https:'].includes(url.protocol)) {
-        return; // Skip if not HTTPS
-      }
       
-      // Validate Discord webhook URL format
-      if (!url.hostname.includes('discord.com') || !url.pathname.includes('/api/webhooks/')) {
+      // Define allowed Discord webhook hostnames
+      const allowedDiscordHostnames = ['discord.com', 'discordapp.com'];
+      
+      // Validate Discord webhook URL format with strict hostname checking
+      if (!allowedDiscordHostnames.includes(url.hostname) || !url.pathname.includes('/api/webhooks/')) {
         return; // Skip if not a valid Discord webhook URL
       }
     } catch (err) {
@@ -72,12 +78,12 @@ function notifyViaEmail(config, msgText, msgType, nodeData) {
     }
   });
 
-  // Sanitize data before using in email content
-  const sanitizedNodeName = String(nodeData?.name || 'Unknown').substring(0, 100);
-  const sanitizedMsgText = String(msgText || '').substring(0, 1000);
-  const sanitizedSubject = String(oPath.get(config, 'error.notify.email.message.subject', 'Conceal Guardian Error')).substring(0, 200);
-  const sanitizedFrom = String(oPath.get(config, 'error.notify.email.message.from', '')).substring(0, 200);
-  const sanitizedTo = String(oPath.get(config, 'error.notify.email.message.to', '')).substring(0, 200);
+  // Sanitize data before using in email content using validator library
+  const sanitizedNodeName = validator.escape(String(nodeData?.name || 'Unknown')).substring(0, 100);
+  const sanitizedMsgText = validator.escape(String(msgText || '')).substring(0, 1000);
+  const sanitizedSubject = validator.escape(String(oPath.get(config, 'error.notify.email.message.subject', 'Conceal Guardian Error'))).substring(0, 200);
+  const sanitizedFrom = validator.escape(String(oPath.get(config, 'error.notify.email.message.from', ''))).substring(0, 200);
+  const sanitizedTo = validator.escape(String(oPath.get(config, 'error.notify.email.message.to', ''))).substring(0, 200);
 
   // HTML and plain bodies for the notification mail
   const bodyContentHTML = `Node <B>${sanitizedNodeName}</B> reported an error -> ${sanitizedMsgText}`;

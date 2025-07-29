@@ -15,6 +15,7 @@ import moment from "moment";
 import path from "path";
 import fs from "fs";
 import os from "os";
+import validator from "validator";
 import { 
   ensureNodeUniqueId, 
   ensureUserDataDir, 
@@ -343,17 +344,17 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
         try {
           const nodeData = await getNodeInfoData();
           
-          // Validate and sanitize data before sending
+          // Validate and sanitize data before sending using validator library
           const sanitizedData = {
-            id: String(nodeData.id || '').substring(0, 100),
-            os: String(nodeData.os || '').substring(0, 50),
-            name: String(nodeData.name || '').substring(0, 100),
-            version: String(nodeData.version || '').substring(0, 50),
-            nodeHost: String(nodeData.nodeHost || '').substring(0, 100),
+            id: validator.escape(String(nodeData.id || '')).substring(0, 100),
+            os: validator.escape(String(nodeData.os || '')).substring(0, 50),
+            name: validator.escape(String(nodeData.name || '')).substring(0, 100),
+            version: validator.escape(String(nodeData.version || '')).substring(0, 50),
+            nodeHost: validator.escape(String(nodeData.nodeHost || '')).substring(0, 100),
             nodePort: Number(nodeData.nodePort) || 0,
             status: {
               errors: Number(nodeData.status?.errors) || 0,
-              startTime: String(nodeData.status?.startTime || ''),
+              startTime: validator.escape(String(nodeData.status?.startTime || '')),
               initialized: Boolean(nodeData.status?.initialized)
             },
             blockchain: nodeData.blockchain ? {
@@ -361,26 +362,26 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
               height: Number(nodeData.blockchain.height) || 0
             } : null,
             location: {
-              ip: String(nodeData.location?.ip || '').substring(0, 100),
+              ip: validator.escape(String(nodeData.location?.ip || '')).substring(0, 100),
               data: nodeData.location?.data ? {
-                country: String(nodeData.location.data.country || '').substring(0, 100),
-                city: String(nodeData.location.data.city || '').substring(0, 100),
+                country: validator.escape(String(nodeData.location.data.country || '')).substring(0, 100),
+                city: validator.escape(String(nodeData.location.data.city || '')).substring(0, 100),
                 latitude: Number(nodeData.location.data.latitude) || null,
                 longitude: Number(nodeData.location.data.longitude) || null
               } : null
             }
           };
 
-          // Validate URL before making request
-          const url = new URL(configOpts.pool.notify.url);
-          if (!['http:', 'https:'].includes(url.protocol)) {
-            throw new Error('Invalid protocol in pool URL');
+          // Validate URL before making request using validator
+          if (!validator.isURL(configOpts.pool.notify.url, { protocols: ['http', 'https'], require_protocol: true })) {
+            throw new Error('Invalid pool URL format');
           }
 
           axios.post(configOpts.pool.notify.url, sanitizedData, {
             timeout: 10000,
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'User-Agent': 'Conceal Node Guardian'
             }
           }).then(response => {
             //logMessage(`Pool notification successful: ${response.status}`, "info", false);
@@ -414,8 +415,13 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           return;
         }
 
-        // Construct and validate URL
+        // Construct and validate URL using validator
         const localUrl = `http://127.0.0.1:${port}/getinfo`;
+        
+        if (!validator.isURL(localUrl, { protocols: ['http'], require_protocol: true })) {
+          logMessage("Invalid local URL format", "error", false);
+          return;
+        }
         
         axios.get(localUrl, {
           headers: { 'User-Agent': 'Conceal Node Guardian' },
