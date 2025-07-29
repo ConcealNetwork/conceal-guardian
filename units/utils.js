@@ -21,10 +21,12 @@ export function ensureNodeUniqueId() {
   var nodeDataFile = path.join(ensureUserDataDir(), "nodedata.json");
   var nodeData = null;
 
-  if (fs.existsSync(nodeDataFile)) {
+  // Try to read existing file first
+  try {
     nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
     return nodeData.id;
-  } else {
+  } catch (e) {
+    // File doesn't exist, create it atomically
     nodeData = {
       id: new UUID(4).format()
     };
@@ -35,7 +37,7 @@ export function ensureNodeUniqueId() {
       fs.writeFileSync(fd, JSON.stringify(nodeData), "utf8");
       fs.closeSync(fd);
     } catch (e) {
-      // File was created by another process between check and write
+      // File was created by another process between read and write
       // Read the existing file instead
       nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
     }
