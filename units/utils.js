@@ -28,7 +28,18 @@ export function ensureNodeUniqueId() {
     nodeData = {
       id: new UUID(4).format()
     };
-    fs.writeFileSync(nodeDataFile, JSON.stringify(nodeData), "utf8");
+    
+    // Use file descriptor to avoid race condition
+    try {
+      const fd = fs.openSync(nodeDataFile, fs.O_CREAT | fs.O_EXCL | fs.O_WRONLY, 0o600);
+      fs.writeFileSync(fd, JSON.stringify(nodeData), "utf8");
+      fs.closeSync(fd);
+    } catch (e) {
+      // File was created by another process between check and write
+      // Read the existing file instead
+      nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
+    }
+    
     return nodeData.id;
   }
 };
