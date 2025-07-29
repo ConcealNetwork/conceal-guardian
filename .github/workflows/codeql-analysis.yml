@@ -1,60 +1,42 @@
-name: "CodeQL Manual SARIF Upload"
+name: "CodeQL Analyze and Upload"
 
 on:
   push:
-    branches: [ 'master' ]
+    branches:
+      - master
+      - ack/fix          # add your active branches here
   pull_request:
-    branches: [ 'master' ]
+    branches:
+      - master
+      - ack/fix          # add your active branches here
   workflow_dispatch:
 
 jobs:
-  analyze:
-    name: Analyze (No Upload by Default)
+  analyze-upload:
+    name: Analyze and Upload SARIF Results
     runs-on: ubuntu-latest
-    env:
-      DISABLE_CODEQL_UPLOAD: "true"   # disable automatic upload by default
     permissions:
       actions: read
       contents: read
-      security-events: write
+      security-events: write    # needed for SARIF upload permissions
+
     strategy:
       matrix:
-        language: [ 'javascript' ]  # adjust languages as needed
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
-    - name: Perform CodeQL Analysis
-      id: analyze
-      uses: github/codeql-action/analyze@v3
-      with:
-        upload: ${{ !env.DISABLE_CODEQL_UPLOAD }}
-    - name: Save SARIF file locally
-      if: always()
-      run: |
-        SARIF_PATH="${{ steps.analyze.outputs.sarif-output }}"
-        echo "Looking for SARIF file at $SARIF_PATH..."
-        if [ -f "$SARIF_PATH" ]; then
-          cp "$SARIF_PATH" ./codeql-results.sarif
-          echo "SARIF saved to ./codeql-results.sarif"
-        else
-          echo "SARIF not found at $SARIF_PATH"
-        fi
+        language: [ 'javascript' ]   # add languages you want to scan here
 
-  upload-sarif:
-    name: Upload SARIF Manually (optional)
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Upload SARIF file
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: 'codeql-results.sarif'  # customize path if SARIF files are committed or placed in repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis and Upload
+        uses: github/codeql-action/analyze@v3
+        with:
+          upload: true  # this is the default behavior, just to emphasize upload is enabled
