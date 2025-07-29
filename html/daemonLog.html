@@ -18,6 +18,11 @@
     </div>
   </div>
 </div>
+<script>
+  // Disable Prism.js worker message handler for security
+  window.Prism = window.Prism || {};
+  window.Prism.disableWorkerMessageHandler = true;
+</script>
 <script src="js/prism.js"></script>
 <script>
   var daemonLogIndicator = null;

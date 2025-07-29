@@ -376,9 +376,11 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           if (!validator.isURL(configOpts.pool.notify.url, { protocols: ['https'], require_protocol: true }) || 
               !configOpts.pool.notify.url.endsWith('.conceal.network/pool/update')) {
             throw new Error('Invalid pool URL');
-          }
-
-          axios.post(configOpts.pool.notify.url, sanitizedData, {
+          } 
+            
+          const sanitizedPoolNotifyUrl = validator.escape(configOpts.pool.notify.url);
+          
+          axios.post(sanitizedPoolNotifyUrl, sanitizedData, {
             timeout: 10000,
             headers: {
               'Content-Type': 'application/json',
