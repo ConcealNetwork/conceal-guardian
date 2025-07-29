@@ -353,6 +353,24 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
             }
             
             if (typeof data === 'string') {
+              // Smart sanitization for paths containing "/daemon/"
+              if (data.includes('/daemon/')) {
+                const parts = data.split('/daemon/');
+                if (parts.length === 2) {
+                  // Sanitize parts before and after "/daemon/"
+                  const before = validator.escape(parts[0]).substring(0, 500);
+                  const after = validator.escape(parts[1]).substring(0, 500);
+                  return before + '/daemon/' + after;
+                } else if (parts.length > 2) {
+                  // Multiple "/daemon/" occurrences - suspicious, sanitize everything
+                  return validator.escape(data.substring(0, 1000));
+                } else {
+                  // "/daemon/" at the beginning or end
+                  const before = parts[0] ? validator.escape(parts[0]).substring(0, 500) : '';
+                  const after = parts[1] ? validator.escape(parts[1]).substring(0, 500) : '';
+                  return before + '/daemon/' + after;
+                }
+              }
               // Use validator's safe string sanitization
               return validator.escape(data.substring(0, 1000));
             }
