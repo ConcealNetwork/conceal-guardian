@@ -184,7 +184,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
 
     if (nodeProcess) {
       isStoping = true;
-      
+      const killingGracePeriod = 20; // Wait 20 seconds for clean exit
       // First, try to send 'exit' command for clean shutdown
       try {
         if (nodeProcess.stdin && !nodeProcess.stdin.destroyed) {
@@ -205,10 +205,10 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           // Give the daemon some time to process the exit command
           setTimeout(() => {
             if (nodeProcess && !nodeProcess.killed) {
-              logMessage("Daemon still running after 10 seconds, sending SIGTERM", "info", false);
+              logMessage(`Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`, "info", false);
               nodeProcess.kill('SIGTERM');
             }
-          }, 10000); // Wait 10 seconds for clean exit
+          }, killingGracePeriod * 1000); 
         } else {
           logMessage("Stdin not available, sending SIGTERM to daemon process", "info", false);
           nodeProcess.kill('SIGTERM');
@@ -373,12 +373,19 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           };
 
           // Validate URL - must be HTTPS and end with .conceal.network/pool/update
-          if (!validator.isURL(configOpts.pool.notify.url, { protocols: ['https'], require_protocol: true }) || 
-              !configOpts.pool.notify.url.endsWith('.conceal.network/pool/update')) {
+          if (!validator.isURL(configOpts.pool.notify.url, { 
+            protocols: ['https'], 
+            require_protocol: true,
+            require_valid_protocol: true,
+            allow_underscores: false,
+            allow_trailing_dot: false,
+            allow_protocol_relative_urls: false
+          }) || !configOpts.pool.notify.url.endsWith('.conceal.network/pool/update')) {
             throw new Error('Invalid pool URL');
           } 
-            
-          const sanitizedPoolNotifyUrl = validator.escape(configOpts.pool.notify.url);
+          
+          // Use the validated URL
+          const sanitizedPoolNotifyUrl = configOpts.pool.notify.url;
           
           axios.post(sanitizedPoolNotifyUrl, sanitizedData, {
             timeout: 10000,
