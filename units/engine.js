@@ -68,7 +68,15 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
         }
         
         // Get external IP
-        let ipResponse = await axios.get(ipApi, { timeout: retryDelay });
+        let ipResponse = await axios.get(ipApi, { 
+          timeout: retryDelay,
+          headers: { 'User-Agent': 'Conceal Node Guardian' }
+        });
+        
+        // Validate IP response
+        if (!ipResponse.data || typeof ipResponse.data !== 'string') {
+          throw new Error('Invalid IP response format');
+        }
         
         // Handle different IP API response formats
         if (attempt > 5) {
@@ -79,10 +87,31 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           externalIP = ipResponse.data.trim();
         }
         
+        // Validate IP format
+        const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        if (!ipRegex.test(externalIP)) {
+          throw new Error('Invalid IP address format received');
+        }
+        
         logMessage("Detecting geolocalization data", "info", false);
         
+        // Validate and construct geo API URL
+        const geoApiUrl = geoApi.replace('{ip}', externalIP);
+        if (!geoApiUrl.startsWith('https://')) {
+          throw new Error('Invalid geo API URL');
+        }
+        
         // Get geo data
-        let geoResponse = await axios.get(geoApi.replace('{ip}', externalIP), { timeout: retryDelay });
+        let geoResponse = await axios.get(geoApiUrl, { 
+          timeout: retryDelay,
+          headers: { 'User-Agent': 'Conceal Node Guardian' }
+        });
+        
+        // Validate geo response
+        if (!geoResponse.data || typeof geoResponse.data !== 'object') {
+          throw new Error('Invalid geo response format');
+        }
+        
         let geoData = geoResponse.data;
         
         // Handle different response formats
@@ -313,7 +342,42 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
       poolNotifyInterval = setInterval(async function () {
         try {
           const nodeData = await getNodeInfoData();
-          axios.post(configOpts.pool.notify.url, nodeData, {
+          
+          // Validate and sanitize data before sending
+          const sanitizedData = {
+            id: String(nodeData.id || '').substring(0, 100),
+            os: String(nodeData.os || '').substring(0, 50),
+            name: String(nodeData.name || '').substring(0, 100),
+            version: String(nodeData.version || '').substring(0, 50),
+            nodeHost: String(nodeData.nodeHost || '').substring(0, 100),
+            nodePort: Number(nodeData.nodePort) || 0,
+            status: {
+              errors: Number(nodeData.status?.errors) || 0,
+              startTime: String(nodeData.status?.startTime || ''),
+              initialized: Boolean(nodeData.status?.initialized)
+            },
+            blockchain: nodeData.blockchain ? {
+              connections: Number(nodeData.blockchain.connections) || 0,
+              height: Number(nodeData.blockchain.height) || 0
+            } : null,
+            location: {
+              ip: String(nodeData.location?.ip || '').substring(0, 100),
+              data: nodeData.location?.data ? {
+                country: String(nodeData.location.data.country || '').substring(0, 100),
+                city: String(nodeData.location.data.city || '').substring(0, 100),
+                latitude: Number(nodeData.location.data.latitude) || null,
+                longitude: Number(nodeData.location.data.longitude) || null
+              } : null
+            }
+          };
+
+          // Validate URL before making request
+          const url = new URL(configOpts.pool.notify.url);
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Invalid protocol in pool URL');
+          }
+
+          axios.post(configOpts.pool.notify.url, sanitizedData, {
             timeout: 10000,
             headers: {
               'Content-Type': 'application/json'
@@ -343,11 +407,22 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           await restartDaemonProcess("Initialization is taking to long, restarting", true);
         })();
       } else {
-        axios.get(`http://127.0.0.1:${configOpts.node.port}/getinfo`, {
+        // Validate port number before making request
+        const port = Number(configOpts.node.port);
+        if (isNaN(port) || port < 1 || port > 65535) {
+          logMessage("Invalid port number in configuration", "error", false);
+          return;
+        }
+
+        // Construct and validate URL
+        const localUrl = `http://127.0.0.1:${port}/getinfo`;
+        
+        axios.get(localUrl, {
           headers: { 'User-Agent': 'Conceal Node Guardian' },
           timeout: 5000
         }).then(response => {
-          if (response.data.status === "OK") {
+          // Validate response data
+          if (response.data && typeof response.data === 'object' && response.data.status === "OK") {
             logMessage("Core is initialized, starting the periodic checking...", "info", false);
             clearInterval(initInterval);
             initialized = true;

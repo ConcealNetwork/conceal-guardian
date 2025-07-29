@@ -9,11 +9,39 @@ import os from "os";
 
 function notifyViaDiscord(config, msgText, msgType, nodeData) {
   if (oPath.get(config, 'error.notify.discord.url', '')) {
-    axios.post(oPath.get(config, 'error.notify.discord.url', ''), {
-      content: `Node **${nodeData.name}** reported an error -> ${msgText} \n`
-    }, {
+    // Validate and sanitize data before sending
+    const sanitizedNodeName = String(nodeData?.name || 'Unknown').substring(0, 100);
+    const sanitizedMsgText = String(msgText || '').substring(0, 1000);
+    
+    // Validate URL before making request
+    const discordUrl = oPath.get(config, 'error.notify.discord.url', '');
+    if (!discordUrl || typeof discordUrl !== 'string') {
+      return; // Skip if no valid URL
+    }
+    
+    try {
+      const url = new URL(discordUrl);
+      if (!['https:'].includes(url.protocol)) {
+        return; // Skip if not HTTPS
+      }
+      
+      // Validate Discord webhook URL format
+      if (!url.hostname.includes('discord.com') || !url.pathname.includes('/api/webhooks/')) {
+        return; // Skip if not a valid Discord webhook URL
+      }
+    } catch (err) {
+      return; // Skip if invalid URL format
+    }
+    
+    const discordPayload = {
+      content: `Node **${sanitizedNodeName}** reported an error -> ${sanitizedMsgText} \n`
+    };
+    
+    axios.post(discordUrl, discordPayload, {
+      timeout: 10000,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Conceal Node Guardian'
       }
     }).then(response => {
       // Discord notification successful
@@ -44,15 +72,22 @@ function notifyViaEmail(config, msgText, msgType, nodeData) {
     }
   });
 
+  // Sanitize data before using in email content
+  const sanitizedNodeName = String(nodeData?.name || 'Unknown').substring(0, 100);
+  const sanitizedMsgText = String(msgText || '').substring(0, 1000);
+  const sanitizedSubject = String(oPath.get(config, 'error.notify.email.message.subject', 'Conceal Guardian Error')).substring(0, 200);
+  const sanitizedFrom = String(oPath.get(config, 'error.notify.email.message.from', '')).substring(0, 200);
+  const sanitizedTo = String(oPath.get(config, 'error.notify.email.message.to', '')).substring(0, 200);
+
   // HTML and plain bodies for the notification mail
-  const bodyContentHTML = `Node <B>${nodeData.name}</B> reported an error -> ${msgText}`;
-  const bodyContentPlain = `Node **${nodeData.name}** reported an error -> ${msgText}`;
+  const bodyContentHTML = `Node <B>${sanitizedNodeName}</B> reported an error -> ${sanitizedMsgText}`;
+  const bodyContentPlain = `Node **${sanitizedNodeName}** reported an error -> ${sanitizedMsgText}`;
 
   // setup email data with unicode symbols
   const mailOptions = {
-    from: oPath.get(config, 'error.notify.email.message.from', ''),
-    to: oPath.get(config, 'error.notify.email.message.to', ''),
-    subject: oPath.get(config, 'error.notify.email.message.subject', 'Conceal Guardian Error'),
+    from: sanitizedFrom,
+    to: sanitizedTo,
+    subject: sanitizedSubject,
     text: bodyContentPlain, // plain text body
     html: bodyContentHTML  // html body
   };
