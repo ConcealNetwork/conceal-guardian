@@ -18,7 +18,3 @@ codeql-db/
 # Ignore SARIF files generated locally
 *.sarif
 
-# Ignore SARIF submission script (contains tokens)
-submit-sarif.sh
-upload.json
-
