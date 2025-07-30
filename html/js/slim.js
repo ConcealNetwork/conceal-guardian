@@ -75,12 +75,17 @@ $(function () {
   // set skin to header
   $('body').on('click', '.header-skin', function () {
     var val = $(this).val();
-    if (val !== 'default') {
-      $.cookie('header-skin', val);
-      $('#headerSkin').attr('href', '../css/slim.' + val + '.css');
+    var allowedValues = ['default', 'dark', 'light', 'transparent'];
+    if (allowedValues.includes(val)) {
+      if (val !== 'default') {
+        $.cookie('header-skin', val);
+        $('#headerSkin').attr('href', '../css/slim.' + val + '.css');
+      } else {
+        $.removeCookie('header-skin');
+        $('#headerSkin').attr('href', '');
+      }
     } else {
-      $.removeCookie('header-skin');
-      $('#headerSkin').attr('href', '');
+      console.warn('Invalid header skin value:', val);
     }
   });
 
