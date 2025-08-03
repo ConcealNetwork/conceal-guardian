@@ -4,7 +4,7 @@ del .\bin\win\*.* /F /Q
 del .\dist\*.* /F /Q
 for /D %%p in (".\bin\win\*.*") do rmdir "%%p" /s /q
 call npm run package
-call nexe index.js --build -o .\bin\win\guardian-win64.exe
+call nexe index.js --build --target=22.18.0 -o .\bin\win\guardian-win64.exe
 copy .\tools\cgservice.exe .\bin\win
 xcopy /s /q /i html bin\win\html
 xcopy /s /q /i dist\index.js bin\win\index.js*
