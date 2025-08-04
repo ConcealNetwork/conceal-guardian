@@ -3,7 +3,7 @@ rm -rf ./dist/*
 rm -rf ./bin/linux/*
 mkdir -p ./bin/linux
 npm run package
-nexe index.js --build -o ./bin/linux/guardian-linux64
+nexe index.js --build --target=22.18.0 --python=$(which python3) -o ./bin/linux/guardian-linux64
 cp -R ./html ./bin/linux/html
 cp ./exclude.txt ./bin/linux/exclude.txt
 cp ./package.json ./bin/linux/package.json
