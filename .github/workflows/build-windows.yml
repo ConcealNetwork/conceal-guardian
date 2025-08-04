@@ -51,7 +51,7 @@ jobs:
         if not exist ".\dist" mkdir ".\dist"
         
         # Run the build
-        call npm run package
+        call ncc build index.js --minify --source-map --target es2022 -o dist
         call npx nexe index.js --build --target=22.18.0 -o .\bin\win64\guardian-win64.exe
         
         # Copy files
@@ -79,5 +79,4 @@ jobs:
         path: |
           bin/win64/guardian-win64.zip
           bin/win64/guardian-win64.zip.sha256
-          bin/win64/
         retention-days: 3
