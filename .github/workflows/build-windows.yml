@@ -51,8 +51,11 @@ jobs:
         if not exist ".\dist" mkdir ".\dist"
         
         # Run the build
-        call ncc build index.js --minify --source-map --target es2022 -o dist
-        call npx nexe index.js --build --target=22.18.0 -o .\bin\win64\guardian-win64.exe
+        call ncc build index.js --minify --source-map --external command-line-usage --external command-line-args -o dist
+        call nexe dist/index.js --build --target=22.18.0 --bundle --resources="node_modules/command-line-usage/**/*" --resources="node_modules/command-line-args/**/*" -o .\bin\win64\guardian-win64.exe
+        
+        # Test the bundled version
+        node dist/index.js --version
         
         # Copy files
         copy .\tools\cgservice.exe .\bin\win64
