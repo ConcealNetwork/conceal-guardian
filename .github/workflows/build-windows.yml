@@ -42,6 +42,7 @@ jobs:
         choco install nasm 7zip -y
         
     - name: Run build script
+      shell: cmd
       run: |
         # Clean and create directories
         if exist ".\bin\win64" del .\bin\win64\*.* /F /Q 2>nul
