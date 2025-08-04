@@ -24,7 +24,7 @@ jobs:
       
     - name: Install global tools
       run: |
-        npm install -g @vercel/ncc nexe
+        npm install -g @vercel/ncc nexe@4.0.0-rc.7
         
     - name: Setup Visual Studio Build Tools
       uses: microsoft/setup-msbuild@v1.1
@@ -44,21 +44,21 @@ jobs:
     - name: Run build script
       shell: cmd
       run: |
-        # Clean and create directories
+        REM Clean and create directories
         if exist ".\bin\win64" del .\bin\win64\*.* /F /Q 2>nul
         if exist ".\dist" del .\dist\*.* /F /Q 2>nul
         if not exist ".\bin\win64" mkdir ".\bin\win64"
         if not exist ".\dist" mkdir ".\dist"
         
-        # Run the build
+        REM Run the build
         call npm run package
         xcopy /s /q /i dist .\bin\win64
-        call nexe .\bin\win64\index.js --build --target=22.18.0 --bundle -o .\bin\win64\guardian-win64.exe
+        call npx nexe .\bin\win64\index.js --build --target=22.18.0 --bundle -o .\bin\win64\guardian-win64.exe
         
-        # Test the bundled version
-        node dist/index.js --version
+        REM Test the bundled version
+        node .\bin\win64\index.js --version
         
-        # Copy files
+        REM Copy files
         copy .\tools\cgservice.exe .\bin\win64
         xcopy /s /q /i html bin\win64\html
         copy .\commands\win\*.* .\bin\win64
@@ -66,7 +66,7 @@ jobs:
         copy package.json .\bin\win64\package.json
         copy config.json.sample .\bin\win64\config.json
         
-        # Create archive
+        REM Create archive
         .\tools\7z.exe a -r .\bin\win64\guardian-win64.zip .\bin\win64\*.*
         
     - name: Generate SHA-256 hash
