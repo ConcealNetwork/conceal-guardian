@@ -3,6 +3,9 @@ name: Build Windows Executable
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -15,7 +18,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '22.18.0'
-        cache: 'npm'
         
     - name: Install dependencies
       run: npm install
