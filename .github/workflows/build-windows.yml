@@ -1,0 +1,80 @@
+name: Build Windows Executable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.18.0'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install global tools
+      run: |
+        npm install -g @vercel/ncc nexe
+        
+    - name: Setup Visual Studio Build Tools
+      uses: microsoft/setup-msbuild@v1.1
+      
+    - name: Install Missing Prerequisites
+      run: |
+        # Install Chocolatey if not available
+        if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        }
+        
+        # Install NASM and 7-Zip
+        choco install nasm 7zip -y
+        
+    - name: Run build script
+      run: |
+        # Clean and create directories
+        if exist ".\bin\win64" del .\bin\win64\*.* /F /Q 2>nul
+        if exist ".\dist" del .\dist\*.* /F /Q 2>nul
+        if not exist ".\bin\win64" mkdir ".\bin\win64"
+        if not exist ".\dist" mkdir ".\dist"
+        
+        # Run the build
+        call npm run package
+        call npx nexe index.js --build --target=22.18.0 -o .\bin\win64\guardian-win64.exe
+        
+        # Copy files
+        copy .\tools\cgservice.exe .\bin\win64
+        xcopy /s /q /i html bin\win64\html
+        xcopy /s /q /i dist\index.js bin\win64\index.js*
+        copy .\commands\win\*.* .\bin\win64
+        copy exclude.txt .\bin\win64\exclude.txt
+        copy package.json .\bin\win64\package.json
+        copy config.json.sample .\bin\win64\config.json
+        
+        # Create archive
+        .\tools\7z.exe a -r .\bin\win64\guardian-win64.zip .\bin\win64\*.*
+        
+    - name: Generate SHA-256 hash
+      run: |
+        $hash = Get-FileHash -Path "bin\win64\guardian-win64.zip" -Algorithm SHA256
+        $hash.Hash | Out-File -FilePath "bin\win64\guardian-win64.zip.sha256" -Encoding ASCII
+        Write-Host "SHA-256: $($hash.Hash)"
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: guardian-win64
+        path: |
+          bin/win64/guardian-win64.zip
+          bin/win64/guardian-win64.zip.sha256
+          bin/win64/
+        retention-days: 3
