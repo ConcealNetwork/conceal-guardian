@@ -42,7 +42,7 @@ jobs:
         # Run the build
         npm run package
         cp -r dist/* ./bin/ubuntu22/
-        npx nexe ./bin/ubuntu22/index.js --build --target=22.18.0 --python=$(which python3) --bundle -o ./bin/ubuntu22/guardian-linux64
+        npx nexe index.js --build --target=22.18.0 --python=$(which python3) --bundle -o ./bin/ubuntu22/guardian-linux64
         
         # Test the bundled version
         node ./bin/ubuntu22/index.js --version

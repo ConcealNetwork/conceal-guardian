@@ -53,7 +53,7 @@ jobs:
         REM Run the build
         call npm run package
         xcopy /s /q /i dist .\bin\win64
-        call npx nexe .\bin\win64\index.js --build --target=22.18.0 --bundle -o .\bin\win64\guardian-win64.exe
+        call npx nexe index.js --build --target=22.18.0 --bundle -o .\bin\win64\guardian-win64.exe
         
         REM Test the bundled version
         node .\bin\win64\index.js --version
