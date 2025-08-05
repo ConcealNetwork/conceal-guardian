@@ -54,13 +54,13 @@ jobs:
         cp ./config.json.sample ./bin/ubuntu22/config.json
         cp ./ccx-guardian.service.template ./bin/ubuntu22/
         
-        # Create archive
-        tar -czf ./bin/ubuntu22/guardian-linux64-ubuntu-22.tar.gz --exclude guardian-linux64-ubuntu-22.tar.gz -C ./bin/ubuntu22 .
+        mkdir -p ./output
+        tar -czf ./output/guardian-linux64-ubuntu-22.tar.gz -C ./bin/ubuntu22 .
         
     - name: Generate SHA-256 hash
       run: |
-        hash=$(sha256sum bin/ubuntu22/guardian-linux64-ubuntu-22.tar.gz | cut -d' ' -f1)
-        echo "$hash" > bin/ubuntu22/guardian-linux64-ubuntu-22.tar.gz.sha256
+        hash=$(sha256sum output/guardian-linux64-ubuntu-22.tar.gz | cut -d' ' -f1)
+        echo "$hash" > output/guardian-linux64-ubuntu-22.tar.gz.sha256
         echo "SHA-256: $hash"
         
     - name: Upload artifacts
@@ -68,6 +68,6 @@ jobs:
       with:
         name: guardian-linux64-ubuntu22
         path: |
-          bin/ubuntu22/guardian-linux64-ubuntu-22.tar.gz
-          bin/ubuntu22/guardian-linux64-ubuntu-22.tar.gz.sha256
+          output/guardian-linux64-ubuntu-22.tar.gz
+          output/guardian-linux64-ubuntu-22.tar.gz.sha256
         retention-days: 3 
