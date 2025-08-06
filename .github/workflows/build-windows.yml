@@ -15,8 +15,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.release.tag_name }}
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -79,19 +77,13 @@ jobs:
         $hash.Hash | Out-File -FilePath "bin\win64\guardian-win64.zip.sha256" -Encoding ASCII
         Write-Host "SHA-256: $($hash.Hash)"
         
-    - name: Debug git ref
-      run: |
-        echo "Current git ref: ${{ github.ref }}"
-        echo "GitHub event name: ${{ github.event_name }}"
-        echo "Release tag: ${{ github.event.release.tag_name }}"
-        
-    - name: Upload to Release
-      uses: softprops/action-gh-release@v1
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
       with:
-        tag_name: ${{ github.event.release.tag_name }}
-        files: |
+        name: guardian-win64
+        path: |
           bin/win64/guardian-win64.zip
           bin/win64/guardian-win64.zip.sha256
-        token: ${{ secrets.GITHUB_TOKEN }}
+        retention-days: 3
         
 
