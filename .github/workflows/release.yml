@@ -81,6 +81,33 @@ jobs:
       run: |
         echo "Release for tag v${{ steps.version.outputs.version }} already exists, skipping creation"
         
+    - name: Trigger Windows Build
+      uses: peter-evans/workflow-dispatch@v1
+      with:
+        workflow: build-windows.yml
+        ref: ${{ github.ref }}
+        inputs: |
+          release_version: ${{ steps.version.outputs.version }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Trigger Ubuntu 22 Build
+      uses: peter-evans/workflow-dispatch@v1
+      with:
+        workflow: build-ubuntu22.yml
+        ref: ${{ github.ref }}
+        inputs: |
+          release_version: ${{ steps.version.outputs.version }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Trigger Ubuntu 24 Build
+      uses: peter-evans/workflow-dispatch@v1
+      with:
+        workflow: build-ubuntu24.yml
+        ref: ${{ github.ref }}
+        inputs: |
+          release_version: ${{ steps.version.outputs.version }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
     - name: Wait for builds to complete
       run: |
         echo "Waiting for builds to complete..."
