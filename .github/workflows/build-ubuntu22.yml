@@ -2,9 +2,11 @@ name: Build Ubuntu 22.04 Executable
 
 on:
   workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-ubuntu22:
@@ -70,4 +72,14 @@ jobs:
         path: |
           output/guardian-linux64-ubuntu-22.tar.gz
           output/guardian-linux64-ubuntu-22.tar.gz.sha256
-        retention-days: 3 
+        retention-days: 3
+        
+    - name: Upload to Release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          output/guardian-linux64-ubuntu-22.tar.gz
+          output/guardian-linux64-ubuntu-22.tar.gz.sha256
+        draft: true
+        prerelease: false 
