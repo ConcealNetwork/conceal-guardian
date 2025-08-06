@@ -2,6 +2,8 @@ name: Build Ubuntu 24.04 Executable
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [build-ubuntu24]
 
 permissions:
   contents: write

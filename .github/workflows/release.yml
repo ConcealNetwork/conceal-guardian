@@ -82,31 +82,28 @@ jobs:
         echo "Release for tag v${{ steps.version.outputs.version }} already exists, skipping creation"
         
     - name: Trigger Windows Build
-      uses: peter-evans/workflow-dispatch@v1
+      uses: peter-evans/repository-dispatch@v3
       with:
-        workflow: build-windows.yml
-        ref: ${{ github.ref }}
-        inputs: |
-          release_version: ${{ steps.version.outputs.version }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        event-type: build-windows
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Trigger Ubuntu 22 Build
-      uses: peter-evans/workflow-dispatch@v1
+      uses: peter-evans/repository-dispatch@v3
       with:
-        workflow: build-ubuntu22.yml
-        ref: ${{ github.ref }}
-        inputs: |
-          release_version: ${{ steps.version.outputs.version }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        event-type: build-ubuntu22
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Trigger Ubuntu 24 Build
-      uses: peter-evans/workflow-dispatch@v1
+      uses: peter-evans/repository-dispatch@v3
       with:
-        workflow: build-ubuntu24.yml
-        ref: ${{ github.ref }}
-        inputs: |
-          release_version: ${{ steps.version.outputs.version }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        event-type: build-ubuntu24
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Wait for builds to complete
       run: |
@@ -134,6 +131,7 @@ jobs:
           artifacts/guardian-linux64-ubuntu22/guardian-linux64-ubuntu-22.tar.gz.sha256
           artifacts/guardian-linux64-ubuntu24/guardian-linux64-ubuntu-24.tar.gz
           artifacts/guardian-linux64-ubuntu24/guardian-linux64-ubuntu-24.tar.gz.sha256
-        token: ${{ secrets.GITHUB_TOKEN }} 
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
 
         

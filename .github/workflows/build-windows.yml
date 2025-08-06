@@ -2,6 +2,8 @@ name: Build Windows Executable
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [build-windows]
 
 permissions:
   contents: write
