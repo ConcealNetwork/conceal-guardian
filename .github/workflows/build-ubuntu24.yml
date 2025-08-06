@@ -66,13 +66,13 @@ jobs:
         echo "$hash" > output/guardian-linux64-ubuntu-24.tar.gz.sha256
         echo "SHA-256: $hash"
         
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        name: guardian-linux64-ubuntu24
-        path: |
+        files: |
           output/guardian-linux64-ubuntu-24.tar.gz
           output/guardian-linux64-ubuntu-24.tar.gz.sha256
-        retention-days: 3
+        token: ${{ secrets.GITHUB_TOKEN }}
         
  
