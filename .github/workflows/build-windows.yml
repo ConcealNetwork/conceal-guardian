@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   release:
     types: [published, created]
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: write
@@ -18,6 +15,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.release.tag_name }}
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -89,6 +88,7 @@ jobs:
     - name: Upload to Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: ${{ github.event.release.tag_name }}
         files: |
           bin/win64/guardian-win64.zip
           bin/win64/guardian-win64.zip.sha256

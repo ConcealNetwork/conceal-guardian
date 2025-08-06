@@ -73,6 +73,7 @@ jobs:
         prerelease: false
         token: ${{ secrets.GITHUB_TOKEN }}
         fail_on_unmatched_files: false
-        generate_release_notes: false 
+        generate_release_notes: false
+        update_existing: true 
 
         
