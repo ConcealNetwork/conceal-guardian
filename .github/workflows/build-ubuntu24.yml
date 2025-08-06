@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   release:
     types: [published, created]
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write

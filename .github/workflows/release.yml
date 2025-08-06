@@ -40,6 +40,12 @@ jobs:
         git push origin "v${{ steps.version.outputs.version }}"
         echo "Created and pushed tag v${{ steps.version.outputs.version }}"
         
+    - name: Debug tag info
+      run: |
+        echo "Current git ref: ${{ github.ref }}"
+        echo "Tag name: v${{ steps.version.outputs.version }}"
+        git ls-remote --tags origin | grep "v${{ steps.version.outputs.version }}" || echo "Tag not found in remote"
+        
     - name: Skip tag creation
       if: steps.tag_exists.outputs.exists == 'true'
       run: |
@@ -66,6 +72,7 @@ jobs:
         draft: true
         prerelease: false
         token: ${{ secrets.GITHUB_TOKEN }}
-        fail_on_unmatched_files: false 
+        fail_on_unmatched_files: false
+        generate_release_notes: false 
 
         
