@@ -3,7 +3,7 @@ name: Build Ubuntu 22.04 Executable
 on:
   workflow_dispatch:
   release:
-    types: [published, created]
+    types: [created]
 
 permissions:
   contents: write

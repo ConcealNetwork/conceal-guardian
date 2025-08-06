@@ -3,7 +3,7 @@ name: Build Windows Executable
 on:
   workflow_dispatch:
   release:
-    types: [published, created]
+    types: [created]
 
 permissions:
   contents: write
