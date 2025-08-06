@@ -86,12 +86,4 @@ jobs:
           bin/win64/guardian-win64.zip.sha256
         retention-days: 3
         
-    - name: Upload to Release
-      if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          bin/win64/guardian-win64.zip
-          bin/win64/guardian-win64.zip.sha256
-        draft: true
-        prerelease: false
+
