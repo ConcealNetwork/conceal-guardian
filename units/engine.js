@@ -187,7 +187,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
       const killingGracePeriod = 20; // Wait 20 seconds for clean exit
       // First, try to send 'exit' command for clean shutdown
       try {
-        if (nodeProcess.stdin && !nodeProcess.stdin.destroyed) {
+        if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
           logMessage("Sending 'exit' command to daemon for clean shutdown", "info", false);
           
           // Ensure the command is properly formatted and sent
@@ -210,8 +210,34 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
             }
           }, killingGracePeriod * 1000); 
         } else {
-          logMessage("Stdin not available, sending SIGTERM to daemon process", "info", false);
-          nodeProcess.kill('SIGTERM');
+          logMessage("Stdin not available, attempting to save before SIGTERM", "info", false);
+          
+          // Wait 2 seconds and check if stdin becomes writable
+          setTimeout(() => {
+            if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
+              try {
+                const saveCommand = 'save\n';
+                logMessage(`Writing to stdin: "${saveCommand.trim()}"`, "info", false);
+                nodeProcess.stdin.write(saveCommand, (err) => {
+                  if (err) {
+                    logMessage(`Error writing save command: ${err.message}`, "error", false);
+                  } else {
+                    logMessage("Successfully sent 'save' command to daemon", "info", false);
+                  }
+                });
+              } catch (err) {
+                logMessage(`Error sending save command: ${err.message}`, "error", false);
+              }
+            }
+            
+            // Apply the grace period after attempting to save
+            setTimeout(() => {
+              if (nodeProcess && !nodeProcess.killed) {
+                logMessage(`Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`, "info", false);
+                nodeProcess.kill('SIGTERM');
+              }
+            }, killingGracePeriod * 1000);
+          }, 2000); // Wait 2 seconds before attempting to save
         }
       } catch (err) {
         logMessage(`Error sending exit command: ${err.message}`, "error", false);

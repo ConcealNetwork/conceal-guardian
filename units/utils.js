@@ -18,8 +18,9 @@ export function ensureUserDataDir() {
 };
 
 export function ensureNodeUniqueId() {
-  var nodeDataFile = path.join(ensureUserDataDir(), "nodedata.json");
-  var nodeData = null;
+  const nodeDataFile = path.join(ensureUserDataDir(), "nodedata.json");
+  const tempFile = `${nodeDataFile}.tmp`;
+  let nodeData = null;
 
   // Try to read existing file first
   try {
@@ -30,16 +31,41 @@ export function ensureNodeUniqueId() {
     nodeData = {
       id: new UUID(4).format()
     };
-    
-    // Use file descriptor to avoid race condition
+
+    // Ensure directory exists
+    const dir = path.dirname(nodeDataFile);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    // Write to a temporary file first
     try {
-      const fd = fs.openSync(nodeDataFile, fs.O_CREAT | fs.O_EXCL | fs.O_WRONLY, 0o600);
-      fs.writeFileSync(fd, JSON.stringify(nodeData), "utf8");
-      fs.closeSync(fd);
-    } catch (e) {
-      // File was created by another process between read and write
-      // Read the existing file instead
-      nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
+      fs.writeFileSync(tempFile, JSON.stringify(nodeData), { mode: 0o664 });
+      
+      // Atomically rename the temp file to the final file
+      try {
+        fs.renameSync(tempFile, nodeDataFile);
+        console.log(`File created successfully: ${nodeDataFile}`);
+        return nodeData.id;
+      } catch (renameError) {
+        // If rename fails, it means someone try to create the file outside of this process, so we need to overwrite the existing file
+        if (fs.existsSync(nodeDataFile)) {
+          console.log(`File already exists, overwriting: ${nodeDataFile}`);
+          fs.copyFileSync(tempFile, nodeDataFile);
+          return nodeData.id;
+        } else {
+          // If rename failed and final file doesn't exist, throw the error
+          console.error(`Failed to rename temp file: ${renameError.message}`);
+          throw renameError;
+        }
+      }
+    } catch (writeError) {
+      // Clean up the temp file if something went wrong
+      if (fs.existsSync(tempFile)) {
+        fs.unlinkSync(tempFile);
+      }
+      console.error(`Failed to write temp file: ${writeError.message}`);
+      throw writeError;
     }
     
     return nodeData.id;
