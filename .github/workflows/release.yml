@@ -111,27 +111,38 @@ jobs:
         echo "Builds can take up to 4 hours, waiting 5 hours to be safe..."
         sleep 18000  # Wait 5 hours for builds to complete
         
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-        
-    - name: List downloaded artifacts
+        - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: 'guardian-*'
+          merge-multiple: true
+  
+    - name: Extract nested artifacts
       run: |
-        find artifacts -type f -name "*.zip" -o -name "*.tar.gz" -o -name "*.sha256"
+        # Create extraction directory
+        mkdir -p artifacts/extracted
         
+        # Find and extract all zip files
+        find artifacts -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
+        
+        # Verify extracted files
+        echo "Extracted files:"
+        find artifacts/extracted -type f
+
     - name: Upload artifacts to release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: "v${{ steps.version.outputs.version }}"
         files: |
-          artifacts/guardian-win64/guardian-win64.zip
-          artifacts/guardian-win64/guardian-win64.zip.sha256
-          artifacts/guardian-linux64-ubuntu22/guardian-linux64-ubuntu-22.tar.gz
-          artifacts/guardian-linux64-ubuntu22/guardian-linux64-ubuntu-22.tar.gz.sha256
-          artifacts/guardian-linux64-ubuntu24/guardian-linux64-ubuntu-24.tar.gz
-          artifacts/guardian-linux64-ubuntu24/guardian-linux64-ubuntu-24.tar.gz.sha256
+          artifacts/extracted/guardian-win64.zip
+          artifacts/extracted/guardian-win64.zip.sha256
+          artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz
+          artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256
+          artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz
+          artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
 
         
