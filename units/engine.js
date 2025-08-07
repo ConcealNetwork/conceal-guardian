@@ -184,7 +184,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
 
     if (nodeProcess) {
       isStoping = true;
-      const killingGracePeriod = 20; // Wait 20 seconds for clean exit
+      const killingGracePeriod = 25; // Wait 25 seconds for clean exit
       
       // Try to send 'exit' command for clean shutdown
       try {
@@ -202,6 +202,12 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
               setTimeout(attemptSave, 2000);
             } else {
               logMessage("Successfully sent 'exit' command to daemon", "info", false);
+              // If exit sent successfully, but haven't received a response, attempt save after 15 seconds as a safety measure (only if process is still running)
+              setTimeout(() => {
+                if (nodeProcess && !nodeProcess.killed) {
+                  attemptSave();
+                }
+              }, 15000);
             }
           });
         } else {
