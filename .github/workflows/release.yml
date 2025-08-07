@@ -108,8 +108,8 @@ jobs:
     - name: Wait for builds to complete
       run: |
         echo "Waiting for builds to complete..."
-        echo "Builds can take up to 4 hours, waiting 5 hours to be safe..."
-        sleep 18000  # Wait 5 hours for builds to complete
+        echo "Builds can take up to 3.5 hours, waiting 4 hours to be safe..."
+        sleep 14400  # Wait 4 hours for builds to complete
         
         - name: Download all artifacts
         uses: actions/download-artifact@v4

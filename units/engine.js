@@ -185,7 +185,8 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
     if (nodeProcess) {
       isStoping = true;
       const killingGracePeriod = 20; // Wait 20 seconds for clean exit
-      // First, try to send 'exit' command for clean shutdown
+      
+      // Try to send 'exit' command for clean shutdown
       try {
         if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
           logMessage("Sending 'exit' command to daemon for clean shutdown", "info", false);
@@ -197,53 +198,30 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           nodeProcess.stdin.write(exitCommand, (err) => {
             if (err) {
               logMessage(`Error writing to stdin: ${err.message}`, "error", false);
+              // If exit fails, attempt save after 2 seconds
+              setTimeout(attemptSave, 2000);
             } else {
               logMessage("Successfully sent 'exit' command to daemon", "info", false);
             }
           });
-          
-          // Give the daemon some time to process the exit command
-          setTimeout(() => {
-            if (nodeProcess && !nodeProcess.killed) {
-              logMessage(`Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`, "info", false);
-              nodeProcess.kill('SIGTERM');
-            }
-          }, killingGracePeriod * 1000); 
         } else {
-          logMessage("Stdin not available, attempting to save before SIGTERM", "info", false);
-          
-          // Wait 2 seconds and check if stdin becomes writable
-          setTimeout(() => {
-            if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
-              try {
-                const saveCommand = 'save\n';
-                logMessage(`Writing to stdin: "${saveCommand.trim()}"`, "info", false);
-                nodeProcess.stdin.write(saveCommand, (err) => {
-                  if (err) {
-                    logMessage(`Error writing save command: ${err.message}`, "error", false);
-                  } else {
-                    logMessage("Successfully sent 'save' command to daemon", "info", false);
-                  }
-                });
-              } catch (err) {
-                logMessage(`Error sending save command: ${err.message}`, "error", false);
-              }
-            }
-            
-            // Apply the grace period after attempting to save
-            setTimeout(() => {
-              if (nodeProcess && !nodeProcess.killed) {
-                logMessage(`Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`, "info", false);
-                nodeProcess.kill('SIGTERM');
-              }
-            }, killingGracePeriod * 1000);
-          }, 2000); // Wait 2 seconds before attempting to save
+          logMessage("Stdin not available for exit command", "info", false);
+          // If stdin is not available for exit, attempt save after 2 seconds
+          setTimeout(attemptSave, 2000);
         }
       } catch (err) {
         logMessage(`Error sending exit command: ${err.message}`, "error", false);
-        logMessage("Sending SIGTERM to daemon process", "info", false);
-        nodeProcess.kill('SIGTERM');
+        // If exit fails, attempt save after 2 seconds
+        setTimeout(attemptSave, 2000);
       }
+      
+      // After killingGracePeriod, send SIGTERM
+      setTimeout(() => {
+        if (nodeProcess && !nodeProcess.killed) {
+          logMessage(`Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`, "info", false);
+          nodeProcess.kill('SIGTERM');
+        }
+      }, killingGracePeriod * 1000);
       
       // Fallback to SIGKILL after timeout
       const killTimeoutMs = (configOpts.restart.terminateTimeout || 120) * 1000 < 30000 ? 30000 : (configOpts.restart.terminateTimeout || 120) * 1000;
@@ -255,6 +233,27 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
       }, killTimeoutMs);
     }
   };
+
+  // Helper function to attempt save command
+  function attemptSave() {
+    try {
+      if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
+        const saveCommand = 'save\n';
+        logMessage(`Writing to stdin: "${saveCommand.trim()}"`, "info", false);
+        nodeProcess.stdin.write(saveCommand, (err) => {
+          if (err) {
+            logMessage(`Error writing save command: ${err.message}`, "error", false);
+          } else {
+            logMessage("Successfully sent 'save' command to daemon", "info", false);
+          }
+        });
+      } else {
+        logMessage("Stdin not available for save command", "info", false);
+      }
+    } catch (err) {
+      logMessage(`Error sending save command: ${err.message}`, "error", false);
+    }
+  }
 
   this.logError = function (errMessage) {
     logMessage(errMessage, "error", false);
