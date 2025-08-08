@@ -13,11 +13,23 @@ import os from "os";
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
 const wrongLinuxOSMsg = "Only Ubuntu (20.04, 20.10) and (22.04, 22.10) have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
+const supportedUbuntuVersionsCore = ['20.04', '20.10', '22.04', '22.05'];
+const supportedUbuntuVersionsGuardian = ['20.04', '20.10', '22.04', '22.05', '24.04'];
 const wrongOSMsg = "This operating system has no precompiled binaries you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 
 // Define a function to filter releases.
 function filterRelease(release) {
   return release.prerelease === false;
+}
+
+// Define a function to get Linux OS info.
+function getLinuxOSInfo() {
+  if (process.platform === "linux") {
+    const linuxOSInfo = osInfo({ mode: 'sync' });
+    console.log(`Running on ${linuxOSInfo.pretty_name}`);
+    return linuxOSInfo;
+  }
+  return null;
 }
 
 function extractArchive(filePath, outDir, callback) {
@@ -49,7 +61,7 @@ function extractArchive(filePath, outDir, callback) {
 
 export function downloadLatestDaemon(nodePath, callback) {
     var finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
-    var linuxOSInfo = null;
+    var linuxOSInfo = getLinuxOSInfo();
 
     if (fs.existsSync(finalTempDir)) {
       fs.rmSync(finalTempDir, { recursive: true, force: true });
@@ -60,12 +72,8 @@ export function downloadLatestDaemon(nodePath, callback) {
 
     // only for linux try to get it
     if (process.platform === "linux") {
-      linuxOSInfo = osInfo({ mode: 'sync' });
-      // if we are running on linux, print the version and flavor
-      console.log(`Running on ${linuxOSInfo.pretty_name}`);
-
       if (linuxOSInfo.id == "ubuntu") {
-        if ((linuxOSInfo.version_id !== "20.04") && (linuxOSInfo.version_id !== "20.10") && (linuxOSInfo.version_id !== "22.04") && (linuxOSInfo.version_id !== "22.10")) {
+        if (!supportedUbuntuVersionsCore.includes(linuxOSInfo.version_id)) {
           callback(wrongLinuxOSMsg);
           return false;
         }
@@ -83,9 +91,9 @@ export function downloadLatestDaemon(nodePath, callback) {
       if (process.platform === "win32") {
         return asset.name.indexOf('win64') >= 0;
       } else if (process.platform === "linux") {
-        if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "20.04") || (linuxOSInfo.version_id == "20.10"))) {
+        if ((linuxOSInfo.id == "ubuntu") && (linuxOSInfo.version_id.startsWith("20"))) {
           return asset.name.indexOf('ubuntu-2004') >= 0;
-        } else if ((linuxOSInfo.id == "ubuntu") && ((linuxOSInfo.version_id == "22.04") || (linuxOSInfo.version_id == "22.10"))) {
+        } else if ((linuxOSInfo.id == "ubuntu") && (linuxOSInfo.version_id.startsWith("22"))) {
           return asset.name.indexOf('ubuntu-2204') >= 0;
         } else {
           return false;
@@ -138,9 +146,9 @@ export function downloadLatestDaemon(nodePath, callback) {
 
 export function downloadLatestGuardian(callback) {
   var finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
-
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir, { recursive: true });
+  var linuxOSInfo = getLinuxOSInfo();
+  if (!fs.existsSync(finalTempDir)) {
+    fs.mkdirSync(finalTempDir, { recursive: true });
   }
 
   // remove and remake the dir
@@ -152,7 +160,21 @@ export function downloadLatestGuardian(callback) {
     if (process.platform === "win32") {
       return asset.name.indexOf('win64') >= 0;
     } else if (process.platform === "linux") {
-      return asset.name.indexOf('linux64') >= 0;
+      if (!supportedUbuntuVersionsGuardian.includes(linuxOSInfo.version_id)) {
+        return false;
+      } else {
+        // Check Ubuntu version and select appropriate asset:
+        // - Ubuntu 22.x: use guardian-linux64-ubuntu-22.tar.gz
+        // - Ubuntu 24.x: use guardian-linux64-ubuntu-24.tar.gz  
+        // - Ubuntu 20.x: use guardian-linux64.tar.gz (generic, no Ubuntu specification)
+        if (linuxOSInfo.version_id.startsWith("22")) {
+          return asset.name.indexOf('ubuntu-22') >= 0;
+        } else if (linuxOSInfo.version_id.startsWith("24")) {
+          return asset.name.indexOf('ubuntu-24') >= 0;
+        } else {
+          return asset.name.indexOf('linux64') >= 0 && asset.name.indexOf('ubuntu-') === -1;
+        }
+      }
     } else if (process.platform === "darwin") {
       return asset.name.indexOf('mac64') >= 0;
     } else {
@@ -180,7 +202,7 @@ export function downloadLatestGuardian(callback) {
             var extensionPos = executableName.lastIndexOf(".");
 
             // get the backup name for the old file and rename it to that name
-            var backupName = executableName.substr(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
+            var backupName = executableName.substring(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
 
             fs.renameSync(path.join(process.cwd(), getGuardianExecutableName()), path.join(process.cwd(), backupName));
             fs.cpSync(path.join(finalTempDir, '*'), process.cwd(), { recursive: true, force: true });

@@ -110,23 +110,18 @@ jobs:
         echo "Waiting for builds to complete..."
         echo "Builds can take up to 3.5 hours, waiting 4 hours to be safe..."
         sleep 14400  # Wait 4 hours for builds to complete
-        
-        - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          pattern: 'guardian-*'
-          merge-multiple: true
-  
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        pattern: 'guardian-*'
+        merge-multiple: true
+
     - name: Extract nested artifacts
       run: |
-        # Create extraction directory
         mkdir -p artifacts/extracted
-        
-        # Find and extract all zip files
         find artifacts -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
-        
-        # Verify extracted files
         echo "Extracted files:"
         find artifacts/extracted -type f
 
