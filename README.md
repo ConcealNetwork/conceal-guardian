@@ -6,6 +6,10 @@ Conceal Node Guardian is a process that monitors the `conceald` daemon. It is ca
 
 It also has an ability to connect to a pool with other nodes for the purpose of infrastructure monitoring or running a remote node with fee listing.
 
+## 📚 Documentation
+
+**📖 [Complete Documentation Wiki](docs/README.md)** - Comprehensive guides for installation, configuration, usage, troubleshooting, and security.
+
 ## Table of Contents
   * [Installation](#installation)
      * [Node.js](#nodejs)
