@@ -112,16 +112,47 @@ jobs:
         sleep 14400  # Wait 4 hours for builds to complete
 
     - name: Download all artifacts
-      uses: actions/download-artifact@v4
+      uses: dawidd6/action-download-artifact@v4
       with:
-        path: artifacts
-        pattern: 'guardian-*'
-        merge-multiple: true
+        workflow: build-windows.yml
+        path: artifacts/windows
+        name: guardian-win64
+
+    - name: Download Ubuntu 22 artifacts
+      uses: dawidd6/action-download-artifact@v4
+      with:
+        workflow: build-ubuntu22.yml
+        path: artifacts/ubuntu22
+        name: guardian-linux64-ubuntu22
+
+    - name: Download Ubuntu 24 artifacts
+      uses: dawidd6/action-download-artifact@v4
+      with:
+        workflow: build-ubuntu24.yml
+        path: artifacts/ubuntu24
+        name: guardian-linux64-ubuntu24
 
     - name: Extract nested artifacts
       run: |
         mkdir -p artifacts/extracted
-        find artifacts -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
+        
+        # Extract Windows artifacts
+        if [ -d "artifacts/windows" ]; then
+          find artifacts/windows -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
+        fi
+        
+        # Extract Ubuntu 22 artifacts
+        if [ -d "artifacts/ubuntu22" ]; then
+          find artifacts/ubuntu22 -name "*.tar.gz" -exec tar -xzf {} -C artifacts/extracted \;
+          find artifacts/ubuntu22 -name "*.sha256" -exec cp {} artifacts/extracted/ \;
+        fi
+        
+        # Extract Ubuntu 24 artifacts
+        if [ -d "artifacts/ubuntu24" ]; then
+          find artifacts/ubuntu24 -name "*.tar.gz" -exec tar -xzf {} -C artifacts/extracted \;
+          find artifacts/ubuntu24 -name "*.sha256" -exec cp {} artifacts/extracted/ \;
+        fi
+        
         echo "Extracted files:"
         find artifacts/extracted -type f
 
