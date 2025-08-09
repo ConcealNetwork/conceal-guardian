@@ -112,21 +112,21 @@ jobs:
         sleep 14400  # Wait 4 hours for builds to complete
 
     - name: Download all artifacts
-      uses: dawidd6/action-download-artifact@v4
+      uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-windows.yml
         path: artifacts/windows
         name: guardian-win64
 
     - name: Download Ubuntu 22 artifacts
-      uses: dawidd6/action-download-artifact@v4
+      uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-ubuntu22.yml
         path: artifacts/ubuntu22
         name: guardian-linux64-ubuntu22
 
     - name: Download Ubuntu 24 artifacts
-      uses: dawidd6/action-download-artifact@v4
+      uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-ubuntu24.yml
         path: artifacts/ubuntu24
