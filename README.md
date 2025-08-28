@@ -273,8 +273,8 @@ API serves a single endpoint - `/getInfo`.
 Sample request:
 
 ```bash
-# Assuming API port in config.json is set to 8000
-$ curl http://127.0.0.1:8000/getInfo
+# Assuming API port in config.json is set to 8080
+$ curl http://127.0.0.1:8080/getInfo
 ```
 
 Sample response:
