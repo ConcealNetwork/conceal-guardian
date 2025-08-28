@@ -13,7 +13,7 @@ import os from "os";
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
 const wrongLinuxOSMsg = "Only Ubuntu (20.04, 20.10) and (22.04, 22.10) have precompiled binaries, on other linux systems you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
-const supportedUbuntuVersionsCore = ['20.04', '20.10', '22.04', '22.05'];
+const supportedUbuntuVersionsCore = ['20.04', '20.10', '22.04', '22.05', '24.04'];
 const supportedUbuntuVersionsGuardian = ['20.04', '20.10', '22.04', '22.05', '24.04'];
 const wrongOSMsg = "This operating system has no precompiled binaries you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 
@@ -95,6 +95,8 @@ export function downloadLatestDaemon(nodePath, callback) {
           return asset.name.indexOf('ubuntu-2004') >= 0;
         } else if ((linuxOSInfo.id == "ubuntu") && (linuxOSInfo.version_id.startsWith("22"))) {
           return asset.name.indexOf('ubuntu-2204') >= 0;
+        } else if ((linuxOSInfo.id == "ubuntu") && (linuxOSInfo.version_id.startsWith("24"))) {
+          return asset.name.indexOf('ubuntu-2404') >= 0;
         } else {
           return false;
         }

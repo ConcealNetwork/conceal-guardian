@@ -170,6 +170,7 @@ jobs:
           artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256
           artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz
           artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256
+        append_body: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
