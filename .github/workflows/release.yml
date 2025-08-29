@@ -109,7 +109,7 @@ jobs:
       run: |
         echo "Waiting for builds to complete..."
         echo "Builds can take up to 3.5 hours, waiting 4 hours to be safe..."
-        sleep 14400  # Wait 4 hours for builds to complete
+        sleep 13500  # Wait 3.45 hours for builds to complete
 
     - name: Download all artifacts
       uses: dawidd6/action-download-artifact@v6
@@ -135,29 +135,64 @@ jobs:
         name: guardian-linux64-ubuntu24
         allow_forks: false
 
-    - name: Extract nested artifacts
+    - name: Copy artifacts to release directory
       run: |
         mkdir -p artifacts/extracted
         
-        # Extract Windows artifacts
+        echo "=== Checking Windows artifacts ==="
+        ls -la artifacts/windows/ || echo "Windows artifacts directory not found"
+        
+        echo "=== Checking Ubuntu 22 artifacts ==="
+        ls -la artifacts/ubuntu22/ || echo "Ubuntu 22 artifacts directory not found"
+        
+        echo "=== Checking Ubuntu 24 artifacts ==="
+        ls -la artifacts/ubuntu24/ || echo "Ubuntu 24 artifacts directory not found"
+        
+        # Copy Windows artifacts (preserve the zip file)
         if [ -d "artifacts/windows" ]; then
-          find artifacts/windows -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
+          echo "Copying Windows artifacts..."
+          find artifacts/windows -name "*.zip" -exec cp {} artifacts/extracted/ \;
+          echo "Windows copy complete"
+        else
+          echo "Windows artifacts directory not found, skipping copy"
         fi
         
-        # Extract Ubuntu 22 artifacts
+        # Copy Ubuntu 22 artifacts (preserve the tar.gz and sha256 files)
         if [ -d "artifacts/ubuntu22" ]; then
-          find artifacts/ubuntu22 -name "*.tar.gz" -exec tar -xzf {} -C artifacts/extracted \;
+          echo "Copying Ubuntu 22 artifacts..."
+          find artifacts/ubuntu22 -name "*.tar.gz" -exec cp {} artifacts/extracted/ \;
           find artifacts/ubuntu22 -name "*.sha256" -exec cp {} artifacts/extracted/ \;
+          echo "Ubuntu 22 copy complete"
+        else
+          echo "Ubuntu 22 artifacts directory not found, skipping copy"
         fi
         
-        # Extract Ubuntu 24 artifacts
+        # Copy Ubuntu 24 artifacts (preserve the tar.gz and sha256 files)
         if [ -d "artifacts/ubuntu24" ]; then
-          find artifacts/ubuntu24 -name "*.tar.gz" -exec tar -xzf {} -C artifacts/extracted \;
+          echo "Copying Ubuntu 24 artifacts..."
+          find artifacts/ubuntu24 -name "*.tar.gz" -exec cp {} artifacts/extracted/ \;
           find artifacts/ubuntu24 -name "*.sha256" -exec cp {} artifacts/extracted/ \;
+          echo "Ubuntu 24 copy complete"
+        else
+          echo "Ubuntu 24 artifacts directory not found, skipping copy"
         fi
         
-        echo "Extracted files:"
+        echo "=== Final release files ==="
         find artifacts/extracted -type f
+        echo "=== Directory structure ==="
+        ls -la artifacts/extracted/
+
+    - name: Debug artifacts before upload
+      run: |
+        echo "=== Files available for upload ==="
+        ls -la artifacts/extracted/ || echo "Extracted directory not found"
+        echo "=== Checking specific files ==="
+        [ -f "artifacts/extracted/guardian-win64.zip" ] && echo "✓ Windows zip found" || echo "✗ Windows zip missing"
+        [ -f "artifacts/extracted/guardian-win64.zip.sha256" ] && echo "✓ Windows sha256 found" || echo "✗ Windows sha256 missing"
+        [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz" ] && echo "✓ Ubuntu 22 tar.gz found" || echo "✗ Ubuntu 22 tar.gz missing"
+        [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256" ] && echo "✓ Ubuntu 22 sha256 found" || echo "✓ Ubuntu 22 sha256 found"
+        [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz" ] && echo "✓ Ubuntu 24 tar.gz found" || echo "✗ Ubuntu 24 tar.gz missing"
+        [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256" ] && echo "✓ Ubuntu 24 sha256 found" || echo "✓ Ubuntu 24 sha256 found"
 
     - name: Upload artifacts to release
       uses: softprops/action-gh-release@v1
@@ -165,11 +200,25 @@ jobs:
         tag_name: "v${{ steps.version.outputs.version }}"
         files: |
           artifacts/extracted/guardian-win64.zip
-          artifacts/extracted/guardian-win64.zip.sha256
           artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz
-          artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256
           artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz
-          artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256
+        body: |
+          ## Checksums
+          
+          **Windows:**
+          ```
+          guardian-win64.zip sha256 = $(cat artifacts/extracted/guardian-win64.zip.sha256)
+          ```
+          
+          **Ubuntu 22:**
+          ```
+          guardian-linux64-ubuntu-22.tar.gz sha256 = $(cat artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256)
+          ```
+          
+          **Ubuntu 24:**
+          ```
+          guardian-linux64-ubuntu-24.tar.gz sha256 = $(cat artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256)
+          ```
         append_body: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
