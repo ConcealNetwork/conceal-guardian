@@ -114,54 +114,37 @@ jobs:
         echo "Builds can take up to 3hours30, waiting 3 hours 45 to be safe..."
         sleep 13500  # Wait 3.75 hours for builds to complete
 
-    - name: Get workflow run IDs and download artifacts
-      run: |
-        # Get current time to filter runs triggered after this release
-        TRIGGER_TIME=$(date -u -d '5 minutes ago' '+%Y-%m-%dT%H:%M:%SZ')
-        RELEASE_VERSION="${{ steps.version.outputs.version }}"
-        
-        echo "Looking for workflows triggered after: $TRIGGER_TIME"
-        echo "For release version: $RELEASE_VERSION"
-        
-        # Get workflow runs triggered for our specific release version
-        WIN_RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/build-windows.yml/runs?created=">$TRIGGER_TIME" --jq ".workflow_runs[] | select(.head_commit.message | contains(\"$RELEASE_VERSION\")) | .id" | head -1)
-        U22_RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/build-ubuntu22.yml/runs?created=">$TRIGGER_TIME" --jq ".workflow_runs[] | select(.head_commit.message | contains(\"$RELEASE_VERSION\")) | .id" | head -1)
-        U24_RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/build-ubuntu24.yml/runs?created=">$TRIGGER_TIME" --jq ".workflow_runs[] | select(.head_commit.message | contains(\"$RELEASE_VERSION\")) | .id" | head -1)
-        
-        # Fallback: if no version-specific runs found, get the most recent ones after trigger time
-        if [ -z "$WIN_RUN_ID" ]; then
-          WIN_RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/build-windows.yml/runs?created=">$TRIGGER_TIME" --jq '.workflow_runs[0].id')
-        fi
-        if [ -z "$U22_RUN_ID" ]; then
-          U22_RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/build-ubuntu22.yml/runs?created=">$TRIGGER_TIME" --jq '.workflow_runs[0].id')
-        fi
-        if [ -z "$U24_RUN_ID" ]; then
-          U24_RUN_ID=$(gh api repos/${{ github.repository }}/actions/workflows/build-ubuntu24.yml/runs?created=">$TRIGGER_TIME" --jq '.workflow_runs[0].id')
-        fi
-        
-        echo "Windows run ID: $WIN_RUN_ID"
-        echo "Ubuntu 22 run ID: $U22_RUN_ID" 
-        echo "Ubuntu 24 run ID: $U24_RUN_ID"
-        
-        # Download Windows artifact and extract
-        gh api repos/${{ github.repository }}/actions/runs/$WIN_RUN_ID/artifacts --jq '.artifacts[] | select(.name=="guardian-win64") | .archive_download_url' | xargs curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o windows.zip
-        unzip windows.zip -d windows/
-        
-        # Download Ubuntu 22 artifact and extract
-        gh api repos/${{ github.repository }}/actions/runs/$U22_RUN_ID/artifacts --jq '.artifacts[] | select(.name=="guardian-linux64-ubuntu22") | .archive_download_url' | xargs curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o ubuntu22.zip
-        unzip ubuntu22.zip -d ubuntu22/
-        
-        # Download Ubuntu 24 artifact and extract  
-        gh api repos/${{ github.repository }}/actions/runs/$U24_RUN_ID/artifacts --jq '.artifacts[] | select(.name=="guardian-linux64-ubuntu24") | .archive_download_url' | xargs curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o ubuntu24.zip
-        unzip ubuntu24.zip -d ubuntu24/
-        
-        ls -la windows/ ubuntu22/ ubuntu24/
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Download all artifacts
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        workflow: build-windows.yml
+        path: windows
+        name: guardian-win64
+        allow_forks: false
+
+    - name: Download Ubuntu 22 artifacts
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        workflow: build-ubuntu22.yml
+        path: ubuntu22
+        name: guardian-linux64-ubuntu22
+        allow_forks: false
+
+    - name: Download Ubuntu 24 artifacts
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        workflow: build-ubuntu24.yml
+        path: ubuntu24
+        name: guardian-linux64-ubuntu24
+        allow_forks: false
 
     - name: Prepare release files
       run: |
-        # Copy Windows zip and sha256
+        # List what we actually downloaded
+        echo "=== Downloaded artifacts ==="
+        ls -la windows/ ubuntu22/ ubuntu24/
+        
+        # Copy Windows files
         cp windows/guardian-win64.zip .
         cp windows/guardian-win64.zip.sha256 .
         
@@ -171,6 +154,7 @@ jobs:
         cp ubuntu24/guardian-linux64-ubuntu-24.tar.gz .
         cp ubuntu24/guardian-linux64-ubuntu-24.tar.gz.sha256 .
         
+        echo "=== Final files for release ==="
         ls -la *.zip *.tar.gz *.sha256
 
     - name: Generate checksums for release body
