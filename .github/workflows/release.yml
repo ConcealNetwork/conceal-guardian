@@ -179,6 +179,16 @@ jobs:
         find artifacts/extracted -type f
         echo "=== Directory structure ==="
         ls -la artifacts/extracted/
+        
+        echo "=== Checking for specific files ==="
+        [ -f "artifacts/extracted/guardian-win64.zip" ] && echo "✓ Windows zip found" || echo "✗ Windows zip missing"
+        [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz" ] && echo "✓ Ubuntu 22 tar.gz found" || echo "✗ Ubuntu 22 tar.gz missing"
+        [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz" ] && echo "✓ Ubuntu 24 tar.gz found" || echo "✗ Ubuntu 24 tar.gz missing"
+        
+        echo "=== Checking for checksum files ==="
+        [ -f "artifacts/extracted/guardian-win64.zip.sha256" ] && echo "✓ Windows sha256 found" || echo "✗ Windows sha256 missing"
+        [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256" ] && echo "✓ Ubuntu 22 sha256 found" || echo "✗ Ubuntu 22 sha256 missing"
+        [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256" ] && echo "✓ Ubuntu 24 sha256 found" || echo "✗ Ubuntu 24 sha256 missing"
 
     - name: Debug artifacts before upload
       run: |
@@ -191,6 +201,41 @@ jobs:
         [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256" ] && echo "✓ Ubuntu 22 sha256 found" || echo "✓ Ubuntu 22 sha256 found"
         [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz" ] && echo "✓ Ubuntu 24 tar.gz found" || echo "✗ Ubuntu 24 tar.gz missing"
         [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256" ] && echo "✓ Ubuntu 24 sha256 found" || echo "✓ Ubuntu 24 sha256 found"
+
+    - name: Generate checksums for release body
+      id: checksums
+      run: |
+        echo "=== Generating checksums ==="
+        
+        # Windows checksum
+        if [ -f "artifacts/extracted/guardian-win64.zip.sha256" ]; then
+          WINDOWS_CHECKSUM=$(cat artifacts/extracted/guardian-win64.zip.sha256)
+          echo "windows_checksum=$WINDOWS_CHECKSUM" >> $GITHUB_OUTPUT
+          echo "Windows checksum: $WINDOWS_CHECKSUM"
+        else
+          echo "windows_checksum=NOT_FOUND" >> $GITHUB_OUTPUT
+          echo "Windows checksum file not found"
+        fi
+        
+        # Ubuntu 22 checksum
+        if [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256" ]; then
+          UBUNTU22_CHECKSUM=$(cat artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256)
+          echo "ubuntu22_checksum=$UBUNTU22_CHECKSUM" >> $GITHUB_OUTPUT
+          echo "Ubuntu 22 checksum: $UBUNTU22_CHECKSUM"
+        else
+          echo "ubuntu22_checksum=NOT_FOUND" >> $GITHUB_OUTPUT
+          echo "Ubuntu 22 checksum file not found"
+        fi
+        
+        # Ubuntu 24 checksum
+        if [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256" ]; then
+          UBUNTU24_CHECKSUM=$(cat artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256)
+          echo "ubuntu24_checksum=$UBUNTU24_CHECKSUM" >> $GITHUB_OUTPUT
+          echo "Ubuntu 24 checksum: $UBUNTU24_CHECKSUM"
+        else
+          echo "ubuntu24_checksum=NOT_FOUND" >> $GITHUB_OUTPUT
+          echo "Ubuntu 24 checksum file not found"
+        fi
 
     - name: Upload artifacts to release
       uses: softprops/action-gh-release@v1
@@ -205,17 +250,15 @@ jobs:
           
           **Windows:**
           ```
-          guardian-win64.zip sha256 = $(cat artifacts/extracted/guardian-win64.zip.sha256)
+          guardian-win64.zip sha256 = ${{ steps.checksums.outputs.windows_checksum }}
           ```
-          
           **Ubuntu 22:**
           ```
-          guardian-linux64-ubuntu-22.tar.gz sha256 = $(cat artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256)
+          guardian-linux64-ubuntu-22.tar.gz sha256 = ${{ steps.checksums.outputs.ubuntu22_checksum }}
           ```
-          
           **Ubuntu 24:**
           ```
-          guardian-linux64-ubuntu-24.tar.gz sha256 = $(cat artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256)
+          guardian-linux64-ubuntu-24.tar.gz sha256 = ${{ steps.checksums.outputs.ubuntu24_checksum }}
           ```
         append_body: true
       env:
