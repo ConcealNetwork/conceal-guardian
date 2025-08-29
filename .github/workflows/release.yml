@@ -135,7 +135,7 @@ jobs:
         name: guardian-linux64-ubuntu24
         allow_forks: false
 
-    - name: Copy artifacts to release directory
+    - name: Extract and prepare artifacts for release
       run: |
         mkdir -p artifacts/extracted
         
@@ -157,24 +157,22 @@ jobs:
           echo "Windows artifacts directory not found, skipping copy"
         fi
         
-        # Copy Ubuntu 22 artifacts (preserve the tar.gz and sha256 files)
+        # Extract Ubuntu 22 artifacts from the zip
         if [ -d "artifacts/ubuntu22" ]; then
-          echo "Copying Ubuntu 22 artifacts..."
-          find artifacts/ubuntu22 -name "*.tar.gz" -exec cp {} artifacts/extracted/ \;
-          find artifacts/ubuntu22 -name "*.sha256" -exec cp {} artifacts/extracted/ \;
-          echo "Ubuntu 22 copy complete"
+          echo "Extracting Ubuntu 22 artifacts..."
+          find artifacts/ubuntu22 -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
+          echo "Ubuntu 22 extraction complete"
         else
-          echo "Ubuntu 22 artifacts directory not found, skipping copy"
+          echo "Ubuntu 22 artifacts directory not found, skipping extraction"
         fi
         
-        # Copy Ubuntu 24 artifacts (preserve the tar.gz and sha256 files)
+        # Extract Ubuntu 24 artifacts from the zip
         if [ -d "artifacts/ubuntu24" ]; then
-          echo "Copying Ubuntu 24 artifacts..."
-          find artifacts/ubuntu24 -name "*.tar.gz" -exec cp {} artifacts/extracted/ \;
-          find artifacts/ubuntu24 -name "*.sha256" -exec cp {} artifacts/extracted/ \;
-          echo "Ubuntu 24 copy complete"
+          echo "Extracting Ubuntu 24 artifacts..."
+          find artifacts/ubuntu24 -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
+          echo "Ubuntu 24 extraction complete"
         else
-          echo "Ubuntu 24 artifacts directory not found, skipping copy"
+          echo "Ubuntu 24 artifacts directory not found, skipping extraction"
         fi
         
         echo "=== Final release files ==="
