@@ -86,12 +86,5 @@ export function getNodeExecutableName() {
 };
 
 export function getGuardianExecutableName() {
-  if (process.platform === "win32") {
-    return 'guardian-win64.exe';
-  } else if (process.platform === "linux") {
-    return 'guardian-linux64';
-  }
-  else {
-    return 'guardian-macos64';
-  }
+  return path.basename(process.argv[0]);
 };
