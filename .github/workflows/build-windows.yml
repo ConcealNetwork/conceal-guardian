@@ -97,7 +97,7 @@ jobs:
       with:
         files: bin/win64/guardian-win64.zip
         draft: true
-        name: Conceal Guardian v${{ github.ref_name }}
+        name: Conceal Guardian ${{ github.ref_name }}
         body: |
           **Windows Build** - guardian-win64.zip
           `SHA256: ${{ steps.generate_hash.outputs.hash }}`
