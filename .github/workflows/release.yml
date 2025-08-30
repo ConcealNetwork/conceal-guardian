@@ -50,37 +50,7 @@ jobs:
       if: steps.tag_exists.outputs.exists == 'true'
       run: |
         echo "Tag v${{ steps.version.outputs.version }} already exists, skipping tag creation"
-        
-    - name: Check if release exists
-      id: release_exists
-      run: |
-        # Check if a release already exists for this tag
-        if curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.version.outputs.version }}" \
-          | grep -q '"id"'; then
-          echo "exists=true" >> $GITHUB_OUTPUT
-          echo "Release for tag v${{ steps.version.outputs.version }} already exists"
-        else
-          echo "exists=false" >> $GITHUB_OUTPUT
-          echo "No release found for tag v${{ steps.version.outputs.version }}"
-        fi
-        
-    - name: Create Draft Release
-      if: steps.release_exists.outputs.exists == 'false'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: "v${{ steps.version.outputs.version }}"
-        draft: true
-        prerelease: false
-        token: ${{ secrets.GITHUB_TOKEN }}
-        fail_on_unmatched_files: false
-        generate_release_notes: false
-        
-    - name: Skip Release Creation
-      if: steps.release_exists.outputs.exists == 'true'
-      run: |
-        echo "Release for tag v${{ steps.version.outputs.version }} already exists, skipping creation"
-        
+       
     - name: Trigger Windows Build
       id: windows_build
       uses: peter-evans/repository-dispatch@v3
@@ -154,6 +124,8 @@ jobs:
         cp ubuntu24/guardian-linux64-ubuntu-24.tar.gz .
         cp ubuntu24/guardian-linux64-ubuntu-24.tar.gz.sha256 .
         
+        chown -R 1000:1000 *.zip *.tar.gz *.sha256
+        
         echo "=== Final files for release ==="
         ls -la *.zip *.tar.gz *.sha256
 
@@ -172,6 +144,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: "v${{ steps.version.outputs.version }}"
+        draft: true
         files: |
           guardian-win64.zip
           guardian-linux64-ubuntu-22.tar.gz
