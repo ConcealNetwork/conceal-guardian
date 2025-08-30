@@ -81,9 +81,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: guardian-win64
-        path: |
-          bin/win64/guardian-win64.zip
-          bin/win64/guardian-win64.zip.sha256
+        path: bin/win64/guardian-win64.zip
         retention-days: 3
         
 

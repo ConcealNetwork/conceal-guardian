@@ -84,7 +84,8 @@ jobs:
         echo "Builds can take up to 3hours30, waiting 3 hours 45 to be safe..."
         sleep 13500  # Wait 3.75 hours for builds to complete
 
-    - name: Download all artifacts
+
+    - name: Download Windows artifact
       uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-windows.yml
@@ -92,7 +93,7 @@ jobs:
         name: guardian-win64
         allow_forks: false
 
-    - name: Download Ubuntu 22 artifacts
+    - name: Download Ubuntu 22 artifact
       uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-ubuntu22.yml
@@ -100,7 +101,7 @@ jobs:
         name: guardian-linux64-ubuntu22
         allow_forks: false
 
-    - name: Download Ubuntu 24 artifacts
+    - name: Download Ubuntu 24 artifact
       uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-ubuntu24.yml
@@ -108,37 +109,22 @@ jobs:
         name: guardian-linux64-ubuntu24
         allow_forks: false
 
-    - name: Prepare release files
-      run: |
-        # List what we actually downloaded
-        echo "=== Downloaded artifacts ==="
-        ls -la windows/ ubuntu22/ ubuntu24/
-        
-        # Copy Windows files
-        cp windows/guardian-win64.zip .
-        cp windows/guardian-win64.zip.sha256 .
-        
-        # Copy Ubuntu files  
-        cp ubuntu22/guardian-linux64-ubuntu-22.tar.gz .
-        cp ubuntu22/guardian-linux64-ubuntu-22.tar.gz.sha256 .
-        cp ubuntu24/guardian-linux64-ubuntu-24.tar.gz .
-        cp ubuntu24/guardian-linux64-ubuntu-24.tar.gz.sha256 .
-        
-        chown -R 1000:1000 *.zip *.tar.gz *.sha256
-        
-        echo "=== Final files for release ==="
-        ls -la *.zip *.tar.gz *.sha256
-
-    - name: Generate checksums for release body
+    - name: Generate checksums
       id: checksums
       run: |
-        WINDOWS_CHECKSUM=$(cat guardian-win64.zip.sha256)
-        UBUNTU22_CHECKSUM=$(cat guardian-linux64-ubuntu-22.tar.gz.sha256)
-        UBUNTU24_CHECKSUM=$(cat guardian-linux64-ubuntu-24.tar.gz.sha256)
+        # Generate checksums for the actual files
+        WINDOWS_CHECKSUM=$(sha256sum windows/guardian-win64.zip | cut -d' ' -f1)
+        UBUNTU22_CHECKSUM=$(sha256sum ubuntu22/guardian-linux64-ubuntu-22.tar.gz | cut -d' ' -f1)
+        UBUNTU24_CHECKSUM=$(sha256sum ubuntu24/guardian-linux64-ubuntu-24.tar.gz | cut -d' ' -f1)
         
         echo "windows_checksum=$WINDOWS_CHECKSUM" >> $GITHUB_OUTPUT
         echo "ubuntu22_checksum=$UBUNTU22_CHECKSUM" >> $GITHUB_OUTPUT
         echo "ubuntu24_checksum=$UBUNTU24_CHECKSUM" >> $GITHUB_OUTPUT
+        
+        echo "=== Generated checksums ==="
+        echo "Windows: $WINDOWS_CHECKSUM"
+        echo "Ubuntu 22: $UBUNTU22_CHECKSUM"
+        echo "Ubuntu 24: $UBUNTU24_CHECKSUM"
 
     - name: Upload artifacts to release
       uses: softprops/action-gh-release@v1
@@ -146,9 +132,9 @@ jobs:
         tag_name: "v${{ steps.version.outputs.version }}"
         draft: true
         files: |
-          guardian-win64.zip
-          guardian-linux64-ubuntu-22.tar.gz
-          guardian-linux64-ubuntu-24.tar.gz
+          windows/guardian-win64.zip
+          ubuntu22/guardian-linux64-ubuntu-22.tar.gz
+          ubuntu24/guardian-linux64-ubuntu-24.tar.gz
         body: |
           ## Checksums
           

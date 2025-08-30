@@ -70,9 +70,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: guardian-linux64-ubuntu24
-        path: |
-          output/guardian-linux64-ubuntu-24.tar.gz
-          output/guardian-linux64-ubuntu-24.tar.gz.sha256
+        path: output/guardian-linux64-ubuntu-24.tar.gz
         retention-days: 3
         
  
