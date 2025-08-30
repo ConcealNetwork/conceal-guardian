@@ -50,215 +50,105 @@ jobs:
       if: steps.tag_exists.outputs.exists == 'true'
       run: |
         echo "Tag v${{ steps.version.outputs.version }} already exists, skipping tag creation"
-        
-    - name: Check if release exists
-      id: release_exists
-      run: |
-        # Check if a release already exists for this tag
-        if curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.version.outputs.version }}" \
-          | grep -q '"id"'; then
-          echo "exists=true" >> $GITHUB_OUTPUT
-          echo "Release for tag v${{ steps.version.outputs.version }} already exists"
-        else
-          echo "exists=false" >> $GITHUB_OUTPUT
-          echo "No release found for tag v${{ steps.version.outputs.version }}"
-        fi
-        
-    - name: Create Draft Release
-      if: steps.release_exists.outputs.exists == 'false'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: "v${{ steps.version.outputs.version }}"
-        draft: true
-        prerelease: false
-        token: ${{ secrets.GITHUB_TOKEN }}
-        fail_on_unmatched_files: false
-        generate_release_notes: false
-        
-    - name: Skip Release Creation
-      if: steps.release_exists.outputs.exists == 'true'
-      run: |
-        echo "Release for tag v${{ steps.version.outputs.version }} already exists, skipping creation"
-        
+       
     - name: Trigger Windows Build
+      id: windows_build
       uses: peter-evans/repository-dispatch@v3
       with:
         event-type: build-windows
-        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}", "branch": "${{ github.ref_name }}"}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Trigger Ubuntu 22 Build
+      id: ubuntu22_build
       uses: peter-evans/repository-dispatch@v3
       with:
         event-type: build-ubuntu22
-        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}", "branch": "${{ github.ref_name }}"}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Trigger Ubuntu 24 Build
+      id: ubuntu24_build
       uses: peter-evans/repository-dispatch@v3
       with:
         event-type: build-ubuntu24
-        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}", "branch": "${{ github.ref_name }}"}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Wait for builds to complete
       run: |
         echo "Waiting for builds to complete..."
-        echo "Builds can take up to 3.5 hours, waiting 4 hours to be safe..."
-        sleep 13500  # Wait 3.45 hours for builds to complete
+        echo "Builds can take up to 3hours30, waiting 3 hours 45 to be safe..."
+        sleep 13500  # Wait 3.75 hours for builds to complete
 
-    - name: Download all artifacts
+
+    - name: Download Windows artifact
       uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-windows.yml
-        path: artifacts/windows
+        path: windows
         name: guardian-win64
         allow_forks: false
 
-    - name: Download Ubuntu 22 artifacts
+    - name: Download Ubuntu 22 artifact
       uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-ubuntu22.yml
-        path: artifacts/ubuntu22
+        path: ubuntu22
         name: guardian-linux64-ubuntu22
         allow_forks: false
 
-    - name: Download Ubuntu 24 artifacts
+    - name: Download Ubuntu 24 artifact
       uses: dawidd6/action-download-artifact@v6
       with:
         workflow: build-ubuntu24.yml
-        path: artifacts/ubuntu24
+        path: ubuntu24
         name: guardian-linux64-ubuntu24
         allow_forks: false
 
-    - name: Extract and prepare artifacts for release
-      run: |
-        mkdir -p artifacts/extracted
-        
-        echo "=== Checking Windows artifacts ==="
-        ls -la artifacts/windows/ || echo "Windows artifacts directory not found"
-        
-        echo "=== Checking Ubuntu 22 artifacts ==="
-        ls -la artifacts/ubuntu22/ || echo "Ubuntu 22 artifacts directory not found"
-        
-        echo "=== Checking Ubuntu 24 artifacts ==="
-        ls -la artifacts/ubuntu24/ || echo "Ubuntu 24 artifacts directory not found"
-        
-        # Copy Windows artifacts (preserve the zip file)
-        if [ -d "artifacts/windows" ]; then
-          echo "Copying Windows artifacts..."
-          find artifacts/windows -name "*.zip" -exec cp {} artifacts/extracted/ \;
-          echo "Windows copy complete"
-        else
-          echo "Windows artifacts directory not found, skipping copy"
-        fi
-        
-        # Extract Ubuntu 22 artifacts from the zip
-        if [ -d "artifacts/ubuntu22" ]; then
-          echo "Extracting Ubuntu 22 artifacts..."
-          find artifacts/ubuntu22 -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
-          echo "Ubuntu 22 extraction complete"
-        else
-          echo "Ubuntu 22 artifacts directory not found, skipping extraction"
-        fi
-        
-        # Extract Ubuntu 24 artifacts from the zip
-        if [ -d "artifacts/ubuntu24" ]; then
-          echo "Extracting Ubuntu 24 artifacts..."
-          find artifacts/ubuntu24 -name "*.zip" -exec unzip -o {} -d artifacts/extracted \;
-          echo "Ubuntu 24 extraction complete"
-        else
-          echo "Ubuntu 24 artifacts directory not found, skipping extraction"
-        fi
-        
-        echo "=== Final release files ==="
-        find artifacts/extracted -type f
-        echo "=== Directory structure ==="
-        ls -la artifacts/extracted/
-        
-        echo "=== Checking for specific files ==="
-        [ -f "artifacts/extracted/guardian-win64.zip" ] && echo "✓ Windows zip found" || echo "✗ Windows zip missing"
-        [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz" ] && echo "✓ Ubuntu 22 tar.gz found" || echo "✗ Ubuntu 22 tar.gz missing"
-        [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz" ] && echo "✓ Ubuntu 24 tar.gz found" || echo "✗ Ubuntu 24 tar.gz missing"
-        
-        echo "=== Checking for checksum files ==="
-        [ -f "artifacts/extracted/guardian-win64.zip.sha256" ] && echo "✓ Windows sha256 found" || echo "✗ Windows sha256 missing"
-        [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256" ] && echo "✓ Ubuntu 22 sha256 found" || echo "✗ Ubuntu 22 sha256 missing"
-        [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256" ] && echo "✓ Ubuntu 24 sha256 found" || echo "✗ Ubuntu 24 sha256 missing"
-
-    - name: Debug artifacts before upload
-      run: |
-        echo "=== Files available for upload ==="
-        ls -la artifacts/extracted/ || echo "Extracted directory not found"
-        echo "=== Checking specific files ==="
-        [ -f "artifacts/extracted/guardian-win64.zip" ] && echo "✓ Windows zip found" || echo "✗ Windows zip missing"
-        [ -f "artifacts/extracted/guardian-win64.zip.sha256" ] && echo "✓ Windows sha256 found" || echo "✗ Windows sha256 missing"
-        [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz" ] && echo "✓ Ubuntu 22 tar.gz found" || echo "✗ Ubuntu 22 tar.gz missing"
-        [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256" ] && echo "✓ Ubuntu 22 sha256 found" || echo "✓ Ubuntu 22 sha256 found"
-        [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz" ] && echo "✓ Ubuntu 24 tar.gz found" || echo "✗ Ubuntu 24 tar.gz missing"
-        [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256" ] && echo "✓ Ubuntu 24 sha256 found" || echo "✓ Ubuntu 24 sha256 found"
-
-    - name: Generate checksums for release body
+    - name: Generate checksums
       id: checksums
       run: |
-        echo "=== Generating checksums ==="
+        # Generate checksums for the actual files
+        WINDOWS_CHECKSUM=$(sha256sum windows/guardian-win64.zip | cut -d' ' -f1)
+        UBUNTU22_CHECKSUM=$(sha256sum ubuntu22/guardian-linux64-ubuntu-22.tar.gz | cut -d' ' -f1)
+        UBUNTU24_CHECKSUM=$(sha256sum ubuntu24/guardian-linux64-ubuntu-24.tar.gz | cut -d' ' -f1)
         
-        # Windows checksum
-        if [ -f "artifacts/extracted/guardian-win64.zip.sha256" ]; then
-          WINDOWS_CHECKSUM=$(cat artifacts/extracted/guardian-win64.zip.sha256)
-          echo "windows_checksum=$WINDOWS_CHECKSUM" >> $GITHUB_OUTPUT
-          echo "Windows checksum: $WINDOWS_CHECKSUM"
-        else
-          echo "windows_checksum=NOT_FOUND" >> $GITHUB_OUTPUT
-          echo "Windows checksum file not found"
-        fi
+        echo "windows_checksum=$WINDOWS_CHECKSUM" >> $GITHUB_OUTPUT
+        echo "ubuntu22_checksum=$UBUNTU22_CHECKSUM" >> $GITHUB_OUTPUT
+        echo "ubuntu24_checksum=$UBUNTU24_CHECKSUM" >> $GITHUB_OUTPUT
         
-        # Ubuntu 22 checksum
-        if [ -f "artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256" ]; then
-          UBUNTU22_CHECKSUM=$(cat artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz.sha256)
-          echo "ubuntu22_checksum=$UBUNTU22_CHECKSUM" >> $GITHUB_OUTPUT
-          echo "Ubuntu 22 checksum: $UBUNTU22_CHECKSUM"
-        else
-          echo "ubuntu22_checksum=NOT_FOUND" >> $GITHUB_OUTPUT
-          echo "Ubuntu 22 checksum file not found"
-        fi
-        
-        # Ubuntu 24 checksum
-        if [ -f "artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256" ]; then
-          UBUNTU24_CHECKSUM=$(cat artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz.sha256)
-          echo "ubuntu24_checksum=$UBUNTU24_CHECKSUM" >> $GITHUB_OUTPUT
-          echo "Ubuntu 24 checksum: $UBUNTU24_CHECKSUM"
-        else
-          echo "ubuntu24_checksum=NOT_FOUND" >> $GITHUB_OUTPUT
-          echo "Ubuntu 24 checksum file not found"
-        fi
+        echo "=== Generated checksums ==="
+        echo "Windows: $WINDOWS_CHECKSUM"
+        echo "Ubuntu 22: $UBUNTU22_CHECKSUM"
+        echo "Ubuntu 24: $UBUNTU24_CHECKSUM"
 
     - name: Upload artifacts to release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: "v${{ steps.version.outputs.version }}"
+        draft: true
         files: |
-          artifacts/extracted/guardian-win64.zip
-          artifacts/extracted/guardian-linux64-ubuntu-22.tar.gz
-          artifacts/extracted/guardian-linux64-ubuntu-24.tar.gz
+          windows/guardian-win64.zip
+          ubuntu22/guardian-linux64-ubuntu-22.tar.gz
+          ubuntu24/guardian-linux64-ubuntu-24.tar.gz
         body: |
           ## Checksums
           
-          **Windows:**
+          **Windows:** guardian-win64.zip sha256
           ```
-          guardian-win64.zip sha256 = ${{ steps.checksums.outputs.windows_checksum }}
+          ${{ steps.checksums.outputs.windows_checksum }}
           ```
-          **Ubuntu 22:**
+          **Ubuntu 22:** guardian-linux64-ubuntu-22.tar.gz sha256
           ```
-          guardian-linux64-ubuntu-22.tar.gz sha256 = ${{ steps.checksums.outputs.ubuntu22_checksum }}
+          ${{ steps.checksums.outputs.ubuntu22_checksum }}
           ```
-          **Ubuntu 24:**
+          **Ubuntu 24:** guardian-linux64-ubuntu-24.tar.gz sha256
           ```
-          guardian-linux64-ubuntu-24.tar.gz sha256 = ${{ steps.checksums.outputs.ubuntu24_checksum }}
+          ${{ steps.checksums.outputs.ubuntu24_checksum }}
           ```
         append_body: true
       env:

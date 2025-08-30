@@ -15,6 +15,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.client_payload.branch || 'master' }}
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -81,9 +83,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: guardian-win64
-        path: |
-          bin/win64/guardian-win64.zip
-          bin/win64/guardian-win64.zip.sha256
+        path: bin/win64/guardian-win64.zip
         retention-days: 3
         
 
