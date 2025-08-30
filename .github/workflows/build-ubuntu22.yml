@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: [build-ubuntu22]
+  push:
+    tags:
+      - "*"
 
 permissions:
   contents: write
@@ -16,7 +19,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.client_payload.branch || 'master' }}
+        ref: ${{ github.event_name == 'push' && github.ref || github.event.client_payload.branch || 'master' }}
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -62,9 +65,11 @@ jobs:
         tar -czf ./output/guardian-linux64-ubuntu-22.tar.gz -C ./bin/ubuntu22 .
         
     - name: Generate SHA-256 hash
+      id: generate_hash
       run: |
         hash=$(sha256sum output/guardian-linux64-ubuntu-22.tar.gz | cut -d' ' -f1)
         echo "$hash" > output/guardian-linux64-ubuntu-22.tar.gz.sha256
+        echo "hash=$hash" >> $GITHUB_OUTPUT
         echo "SHA-256: $hash"
         
     - name: Upload artifacts
@@ -73,5 +78,19 @@ jobs:
         name: guardian-linux64-ubuntu22
         path: output/guardian-linux64-ubuntu-22.tar.gz
         retention-days: 3
+        
+    - name: Create Release (Tag-based builds)
+      if: github.event_name == 'push'
+      uses: softprops/action-gh-release@v2.0.4
+      with:
+        files: output/guardian-linux64-ubuntu-22.tar.gz
+        draft: true
+        name: Conceal Guardian v${{ github.ref_name }}
+        body: |
+          **Ubuntu 22.04 Build** - guardian-linux64-ubuntu-22.tar.gz
+          `SHA256: ${{ steps.generate_hash.outputs.hash }}`
+        append_body: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
  
