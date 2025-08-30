@@ -56,7 +56,7 @@ jobs:
       uses: peter-evans/repository-dispatch@v3
       with:
         event-type: build-windows
-        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}", "branch": "${{ github.ref_name }}"}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
@@ -65,7 +65,7 @@ jobs:
       uses: peter-evans/repository-dispatch@v3
       with:
         event-type: build-ubuntu22
-        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}", "branch": "${{ github.ref_name }}"}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
@@ -74,7 +74,7 @@ jobs:
       uses: peter-evans/repository-dispatch@v3
       with:
         event-type: build-ubuntu24
-        client-payload: '{"release_version": "${{ steps.version.outputs.version }}"}'
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}", "branch": "${{ github.ref_name }}"}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
