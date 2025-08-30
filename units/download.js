@@ -155,6 +155,28 @@ export function downloadLatestGuardian(callback) {
     return;
   }
   
+  const current = currentVersion();
+  
+  // latestVersion() returns a Promise, so we need to handle it asynchronously
+  latestVersion().then(latest => {
+    if (current === latest) {
+      callback("Already running the latest version (" + current + ")");
+      return;
+    } else if (current > latest) {
+      callback("Current version is greater than latest version (" + current + " > " + latest + ")");
+      return;
+    } else {
+      console.log(`Updating from version ${current} to ${latest}`);
+      // Continue with the existing download logic below
+      executeDownload();
+    }
+  }).catch(err => {
+    callback("Failed to get latest version: " + err.message);
+    return;
+  });
+  
+  // Move all download logic into a separate function that only gets called when needed
+  function executeDownload() {
   var finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
   var linuxOSInfo = getLinuxOSInfo();
   if (!fs.existsSync(finalTempDir)) {
@@ -191,7 +213,8 @@ export function downloadLatestGuardian(callback) {
       return false;
     }
   };
-
+  
+  // Execute the actual download
   downloadRelease('ConcealNetwork', 'conceal-guardian', finalTempDir, filterRelease, filterAssetGuardian, true).then(function () {
     fs.readdir(finalTempDir, function (err, items) {
       if (items.length > 0) {
@@ -200,7 +223,13 @@ export function downloadLatestGuardian(callback) {
             // 1. Backup current executable
             var executableName = getGuardianExecutableName();
             var extensionPos = executableName.lastIndexOf(".");
-            var backupName = executableName.substring(0, extensionPos < 0 ? executableName.length : extensionPos) + ".old";
+            // Use existing extensionPos to handle any extension properly
+            let backupName;
+            if (extensionPos < 0) {
+              backupName = executableName + "-" + current + ".old";
+            } else {
+              backupName = executableName.substring(0, extensionPos) + "-" + current + executableName.substring(extensionPos) + ".old";
+            }
             fs.renameSync(path.join(process.cwd(), executableName), path.join(process.cwd(), backupName));
 
             // 2. Get list of files to preserve from exclude.txt
@@ -219,7 +248,7 @@ export function downloadLatestGuardian(callback) {
 
             // 4. Extract new release directly into CWD (skip excluded files)
             fs.readdirSync(finalTempDir).forEach(file => {
-              if (!excludeFiles.includes(file)) {
+              if (!excludeFiles.includes(file) && !file.endsWith('.gz') && !file.endsWith('.zip')) {
                 var srcPath = path.join(finalTempDir, file);
                 var destPath = path.join(process.cwd(), file);
                 if (fs.statSync(srcPath).isDirectory()) {
@@ -231,9 +260,9 @@ export function downloadLatestGuardian(callback) {
             });
 
             // 5. Set executable permissions on new executable
-            fs.readdirSync(process.cwd()).forEach(file => {
-              if (file.startsWith('guardian-') && !file.endsWith('.old') && !file.includes('.')) {
-                fs.chmodSync(path.join(process.cwd(), file), fs.constants.S_IRWXU);
+            fs.readdirSync(path.join(process.cwd())).forEach(file => {
+              if (file.startsWith('guardian-') && !file.endsWith('.old')) {
+                fs.chmodSync(path.join(process.cwd(), file), 0o755);
               }
             });
             fs.rmSync(finalTempDir, { recursive: true, force: true });
@@ -249,4 +278,30 @@ export function downloadLatestGuardian(callback) {
   }).catch(function (err) {
     callback(err.message);
   });
+  } // End of executeDownload function
 };
+
+// Get current version
+export function currentVersion() {
+
+  const pjson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
+  return pjson.version;
+}
+
+// Get latest version from GitHub releases
+export function latestVersion() {
+  return new Promise((resolve, reject) => {
+    // Fetch latest release from GitHub
+    fetch('https://api.github.com/repos/ConcealNetwork/conceal-guardian/releases/latest', {
+      headers: { 'User-Agent': 'Conceal Node Guardian' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const version = data.tag_name.replace('v', ''); // Remove 'v' prefix
+      resolve(version);
+    })
+    .catch(err => {
+      reject(`Failed to fetch latest version: ${err.message}`);
+    });
+  });
+}

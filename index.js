@@ -208,25 +208,30 @@ if (cmdOptions.help) {
       }
     } else if (cmdOptions.node) {
       if (cmdOptions.node === "update") {
-        stop(configOpts, configFileName);
-        downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+        stop(configOpts, configFileName, function() {
+          // Service stopped, now proceed with daemon update
+          downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
           if (error) {
             console.log(`\nError updating daemon: ${error}\n`);
           } else {
             console.log("\nThe daemon has been succesfully updated\n");
           }
         });
+        }); // Close stop callback
       } else {
         console.log('\nWrong parameter for node command. Valid values: "update"\n');
       }
     } else if (cmdOptions.update) {
-      stop(configOpts, configFileName);
+      stop(configOpts, configFileName, function() {
+        console.log("Stopping the guardian...");
       downloadLatestGuardian(function (error) {
+        console.log("Downloading the guardian...", error);
         if (error) {
           console.log(`\nError updating the guardian: ${error}\n`);
         } else {
           console.log("\nThe guardian has been succesfully updated\n");
         }
+      });
       });
     } else {
       const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
