@@ -108,17 +108,13 @@ export function stop(configOpts, configFileName, callback) {
   try {
     if (process.platform == "win32") {
       execa('cgservice.exe', ['stop'], { reject: false }).then(({ stdout, exitCode }) => {
-        if (exitCode === 0) {
-          callback();
-        } else {
+        if (exitCode !== 0) {
           callback(new Error("Error stopping guardian: " + stdout));
         }
       });
     } else if (process.platform == "linux") {
       execa('systemctl', ['stop', 'ccx-guardian'], { reject: false }).then(({ stdout, exitCode }) => {
-        if (exitCode === 0) {
-          callback();
-        } else {
+        if (exitCode !== 0) {
           callback(new Error("Error stopping guardian: " + stdout));
         }
       });
