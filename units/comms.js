@@ -1,68 +1,80 @@
-// Copyright (c) 2019, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
-const vsprintf = require("sprintf-js").vsprintf;
-const moment = require("moment");
-const CCX = require("conceal-api");
+import moment from "moment";
+import CCX from "conceal-api";
 
-module.exports = {
-  RpcCommunicator: function (configOpts, errorCallback) {
-    // create the CCX api interface object
-    var CCXApi = new CCX("http://127.0.0.1", "3333", configOpts.node.port, (configOpts.node.rfcTimeout || 5) * 1000);
-    var IsRunning = false;
-    var lastHeight = 0;
-    var infoData = null;
-    var lastTS = moment();
+export function RpcCommunicator(configOpts, errorCallback) {
+  // create the CCX api interface object
+  var CCXApi = new CCX({
+    daemonHost: "http://127.0.0.1", 
+    daemonRpcPort: configOpts.node.port,
+    timeout: (configOpts.node.rfcTimeout || 5) * 1000
+  });
+  var checkInterval = null;
+  var timeoutCount = 0;
+  var IsRunning = false;
+  var lastHeight = 0;
+  var infoData = null;
+  var lastTS = moment();
 
-    this.stop = function () {
-      IsRunning = false;
-    };
+  this.stop = function () {
+    clearInterval(checkInterval);
+    IsRunning = false;
+    infoData = null;
+  };
 
-    this.getData = function () {
-      return infoData;
-    };
+  this.getData = function () {
+    return infoData;
+  };
 
-    this.start = function () {
-      IsRunning = true;
-      lastTS = moment();
+  this.start = function () {
+    IsRunning = true;
+    timeoutCount = 0;
+    lastTS = moment();
+
+    // set the periodic checking interval
+    checkInterval = setInterval(function () {
       checkAliveAndWell();
-    };
+    }, 30000);
+  };
 
-    function checkAliveAndWell() {
-      if (IsRunning) {
-        CCXApi.info().then(data => {
-          var heightIsOK = true;
-          infoData = data;
+  function checkAliveAndWell() {
+    if (IsRunning) {
+      CCXApi.info().then(data => {
+        var heightIsOK = true;
+        infoData = data;
 
-          if (lastHeight !== data.height) {
-            console.log(vsprintf("Current block height is %d", [data.height]));
-            lastHeight = data.height;
-            lastTS = moment();
+        if (lastHeight !== data.height) {
+          console.log(`Current block height is ${data.height}`);
+          lastHeight = data.height;
+          lastTS = moment();
+        } else {
+          var duration = moment.duration(moment().diff(lastTS));
+
+          if (duration.asSeconds() > (configOpts.restart.maxBlockTime || 1800)) {
+            errorCallback(`No new block has be seen for more then ${(configOpts.restart.maxBlockTime || 1800) / 60} minutes`);
+            heightIsOK = false;
+          }
+        }
+
+        if (heightIsOK) {
+          if (data.status !== "OK") {
+            errorCallback("Status is: " + data.status);
           } else {
-            var duration = moment.duration(moment().diff(lastTS));
-
-            if (duration.asSeconds() > (configOpts.restart.maxBlockTime || 1800)) {
-              errorCallback(vsprintf("No new block has be seen for more then %d minutes", [(configOpts.restart.maxBlockTime || 1800) / 60]));
-              heightIsOK = false;
-            }
+            // reset counter
+            timeoutCount = 0;
           }
-
-          if (heightIsOK) {
-            if (data.status !== "OK") {
-              errorCallback("Status is: " + data.status);
-            } else {
-              setTimeout(() => {
-                checkAliveAndWell();
-              }, 5000);
-            }
-          }
-        }).catch(err => {
-          if (IsRunning) {
+        }
+      }).catch(err => {
+        if (IsRunning) {
+          timeoutCount++;
+          if (timeoutCount >= 3) {
             errorCallback(err);
           }
-        });
-      }
+        }
+      });
     }
   }
-};
+}

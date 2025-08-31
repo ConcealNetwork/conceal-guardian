@@ -1,0 +1,108 @@
+name: Build Windows Executable
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [build-windows]
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event_name == 'push' && github.ref || github.event.client_payload.branch || 'master' }}
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.18.0'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Install global tools
+      run: |
+        npm install -g @vercel/ncc nexe@4.0.0-rc.7
+        
+    - name: Setup Visual Studio Build Tools
+      uses: microsoft/setup-msbuild@v1.1
+      
+    - name: Install Missing Prerequisites
+      run: |
+        # Install Chocolatey if not available
+        if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        }
+        
+        # Install NASM and 7-Zip
+        choco install nasm 7zip -y
+        
+    - name: Run build script
+      shell: cmd
+      run: |
+        REM Clean and create directories
+        if exist ".\bin\win64" del .\bin\win64\*.* /F /Q 2>nul
+        if exist ".\dist" del .\dist\*.* /F /Q 2>nul
+        if not exist ".\bin\win64" mkdir ".\bin\win64"
+        if not exist ".\dist" mkdir ".\dist"
+        
+        REM Run the build
+        call npm run package
+        xcopy /s /q /i dist .\bin\win64
+        call npx nexe index.js --build --target=22.18.0 --bundle -o .\bin\win64\guardian-win64.exe
+        
+        REM Test the bundled version
+        node .\bin\win64\index.js --version
+        
+        REM Copy files
+        copy .\tools\cgservice.exe .\bin\win64
+        xcopy /s /q /i html bin\win64\html
+        copy .\commands\win\*.* .\bin\win64
+        copy exclude.txt .\bin\win64\exclude.txt
+        copy package.json .\bin\win64\package.json
+        copy config.json.sample .\bin\win64\config.json
+        
+        REM Create archive
+        .\tools\7z.exe a -r .\bin\win64\guardian-win64.zip .\bin\win64\*.*
+        
+    - name: Generate SHA-256 hash
+      id: generate_hash
+      run: |
+        $hash = Get-FileHash -Path "bin\win64\guardian-win64.zip" -Algorithm SHA256
+        $hash.Hash | Out-File -FilePath "bin\win64\guardian-win64.zip.sha256" -Encoding ASCII
+        echo "hash=$($hash.Hash)" >> $env:GITHUB_OUTPUT
+        Write-Host "SHA-256: $($hash.Hash)"
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: guardian-win64
+        path: bin/win64/guardian-win64.zip
+        retention-days: 3
+        
+    - name: Create Release (Tag-based builds)
+      if: github.event_name == 'push'
+      uses: softprops/action-gh-release@v2.0.4
+      with:
+        files: bin/win64/guardian-win64.zip
+        draft: true
+        name: Conceal Guardian ${{ github.ref_name }}
+        body: |
+          **Windows Build** - guardian-win64.zip
+          `SHA256: ${{ steps.generate_hash.outputs.hash }}`
+        append_body: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+

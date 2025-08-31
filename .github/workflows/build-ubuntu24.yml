@@ -1,0 +1,97 @@
+name: Build Ubuntu 24.04 Executable
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [build-ubuntu24]
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-ubuntu24:
+    runs-on: ubuntu-24.04
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event_name == 'push' && github.ref || github.event.client_payload.branch || 'master' }}
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.18.0'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Install global tools
+      run: |
+        npm install -g @vercel/ncc nexe@4.0.0-rc.7
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip nasm
+        
+    - name: Run build script
+      run: |
+        # Clean and create directories
+        rm -rf ./bin/ubuntu24/*
+        rm -rf ./dist/*
+        mkdir -p ./bin/ubuntu24
+        mkdir -p ./dist
+        
+        # Run the build
+        npm run package
+        cp -r dist/* ./bin/ubuntu24/
+        npx nexe index.js --build --target=22.18.0 --python=$(which python3) --bundle -o ./bin/ubuntu24/guardian-linux64
+        
+        # Test the bundled version
+        node ./bin/ubuntu24/index.js --version
+        
+        # Copy files
+        cp -R ./html ./bin/ubuntu24/html
+        cp ./exclude.txt ./bin/ubuntu24/exclude.txt
+        cp ./package.json ./bin/ubuntu24/package.json
+        cp ./config.json.sample ./bin/ubuntu24/config.json
+        cp ./ccx-guardian.service.template ./bin/ubuntu24/
+        
+        # Create archive
+        mkdir -p ./output
+        tar -czf ./output/guardian-linux64-ubuntu-24.tar.gz --exclude guardian-linux64-ubuntu-24.tar.gz -C ./bin/ubuntu24 .
+        
+    - name: Generate SHA-256 hash
+      id: generate_hash
+      run: |
+        hash=$(sha256sum output/guardian-linux64-ubuntu-24.tar.gz | cut -d' ' -f1)
+        echo "$hash" > output/guardian-linux64-ubuntu-24.tar.gz.sha256
+        echo "hash=$hash" >> $GITHUB_OUTPUT
+        echo "SHA-256: $hash"
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: guardian-linux64-ubuntu24
+        path: output/guardian-linux64-ubuntu-24.tar.gz
+        retention-days: 3
+        
+    - name: Create Release (Tag-based builds)
+      if: github.event_name == 'push'
+      uses: softprops/action-gh-release@v2.0.4
+      with:
+        files: output/guardian-linux64-ubuntu-24.tar.gz
+        draft: true
+        name: Conceal Guardian ${{ github.ref_name }}
+        body: |
+          **Ubuntu 24.04 Build** - guardian-linux64-ubuntu-24.tar.gz
+          `SHA256: ${{ steps.generate_hash.outputs.hash }}`
+        append_body: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+ 

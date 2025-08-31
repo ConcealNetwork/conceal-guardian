@@ -1,66 +1,177 @@
-// Copyright (c) 2019, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
-const commandLineArgs = require("command-line-args");
-const child_process = require("child_process");
-const iplocation = require("iplocation").default;
-const apiServer = require("./apiServer.js");
-const notifiers = require("./notifiers.js");
-const vsprintf = require("sprintf-js").vsprintf;
-const download = require("./download.js");
-const publicIp = require("public-ip");
-const readline = require("readline");
-const request = require("request");
-const moment = require("moment");
-const comms = require("./comms.js");
-const pjson = require('../package.json');
-const utils = require("./utils.js");
-const path = require("path");
-const fs = require("fs");
-const os = require("os");
+import { downloadLatestDaemon } from "./download.js";
+import commandLineArgs from "command-line-args";
+import child_process from "child_process";
+import { RpcCommunicator } from "./comms.js";
+import { notifyOnError } from "./notifiers.js";
+import { createServer } from "./apiServer.js";
+import readline from "readline";
+import { execa } from "execa";
+import axios from "axios";
+import moment from "moment";
+import path from "path";
+import fs from "fs";
+import os from "os";
+import validator from "validator";
+import { 
+  ensureNodeUniqueId, 
+  ensureUserDataDir, 
+  getNodeActualPath 
+} from "./utils.js";
 
-exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
-  const nodeUniqueId = utils.ensureNodeUniqueId();
+// read the package.json to have version info available
+const pjson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")));
+
+export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
+  const nodeUniqueId = ensureNodeUniqueId();
   var poolNotifyInterval = null;
-  var starupTime = moment();
+  var startupTime = moment();
   var errorCount = 0;
   var isStoping = false;
+  var isUpdating = false;
+  var initInterval = null;
   var poolInterval = null;
   var locationData = null;
   var autoRestart = true;
   var initialized = false;
   var killTimeout = null;
   var nodeProcess = null;
-  var errorStream = null;
-  var dataStream = null;
   var externalIP = null;
   var rpcComms = null;
   var self = this;
 
-  // get GEO data
-  (async () => {
-    externalIP = await publicIp.v4();
-
-    iplocation(externalIP, [], (error, res) => {
-      if (!error) {
-        locationData = res;
+  // get GEO data with retry mechanism and fallback APIs
+  async function getGeoData() {
+    const maxRetries = 10;
+    const retryDelay = 2000; // 2 seconds
+    
+    // Primary API
+    const primaryIPApi = 'https://api.ipify.org';
+    const primaryGeoApi = 'https://ipapi.co/{ip}/json/';
+    
+    // Fallback API (used after 5 attempts) - More reputable alternatives
+    const fallbackIPApi = 'https://checkip.amazonaws.com';
+    const fallbackGeoApi = 'https://ipinfo.io/{ip}/json';
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        logMessage(`Attempting to get geolocalization data (attempt ${attempt}/${maxRetries})`, "info", false);
+        
+        // Choose API based on attempt number
+        const ipApi = attempt > 5 ? fallbackIPApi : primaryIPApi;
+        const geoApi = attempt > 5 ? fallbackGeoApi : primaryGeoApi;
+        
+        if (attempt > 5) {
+          logMessage("Switching to fallback API after 5 attempts", "info", false);
+        }
+        
+        // Get external IP
+        let ipResponse = await axios.get(ipApi, { 
+          timeout: retryDelay,
+          headers: { 'User-Agent': 'Conceal Node Guardian' }
+        });
+        
+        // Validate IP response
+        if (!ipResponse.data || typeof ipResponse.data !== 'string') {
+          throw new Error('Invalid IP response format');
+        }
+        
+        // Handle different IP API response formats
+        if (attempt > 5) {
+          // checkip.amazonaws.com returns plain text: "x.y.z.t"
+          externalIP = ipResponse.data.trim();
+        } else {
+          // api.ipify.org returns plain text: "x.y.z.t"
+          externalIP = ipResponse.data.trim();
+        }
+        
+        // Validate IP format
+        const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        if (!ipRegex.test(externalIP)) {
+          throw new Error('Invalid IP address format received');
+        }
+        
+        logMessage("Detecting geolocalization data", "info", false);
+        
+        // Validate and construct geo API URL
+        const geoApiUrl = geoApi.replace('{ip}', externalIP);
+        if (!geoApiUrl.startsWith('https://')) {
+          throw new Error('Invalid geo API URL');
+        }
+        
+        // Get geo data
+        let geoResponse = await axios.get(geoApiUrl, { 
+          timeout: retryDelay,
+          headers: { 'User-Agent': 'Conceal Node Guardian' }
+        });
+        
+        // Validate geo response
+        if (!geoResponse.data || typeof geoResponse.data !== 'object') {
+          throw new Error('Invalid geo response format');
+        }
+        
+        let geoData = geoResponse.data;
+        
+        // Handle different response formats
+        if (attempt > 5) {
+          // ipinfo.io format
+          locationData = {
+            country: geoData.country,
+            countryCode: geoData.country,
+            region: geoData.region,
+            regionCode: geoData.region,
+            city: geoData.city,
+            postal: geoData.postal,
+            ip: geoData.ip,
+            latitude: parseFloat(geoData.loc.split(',')[0]),
+            longitude: parseFloat(geoData.loc.split(',')[1]),
+            timezone: geoData.timezone
+          };
+        } else {
+          // ipapi.co format
+          locationData = {
+            country: geoData.country_name,
+            countryCode: geoData.country_code,
+            region: geoData.region,
+            regionCode: geoData.region_code,
+            city: geoData.city,
+            postal: geoData.postal,
+            ip: geoData.ip,
+            latitude: geoData.latitude,
+            longitude: geoData.longitude,
+            timezone: geoData.timezone
+          };
+        }
+        
+        logMessage("Geolocalization successful", "info", false);
+        return; // Success, exit the retry loop
+        
+      } catch(err) {
+        logMessage(`Geolocalization attempt ${attempt} failed: ${err.message}`, "error", false);
+        
+        if (attempt === maxRetries) {
+          logMessage("All geolocalization attempts failed, continuing without location data", "error", false);
+          locationData = null;
+          externalIP = null;
+        } else {
+          logMessage(`Retrying geolocalization in ${retryDelay/1000} seconds...`, "info", false);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
       }
-    });
-  })();
+    }
+  }
+
+  // Start geolocalization process
+  getGeoData();
 
   this.stop = function (doAutoRestart) {
+    logMessage("Stopping the daemon process", "info", false);
+
     autoRestart = (doAutoRestart != null) ? doAutoRestart : true;
     clearInterval(poolNotifyInterval);
-
-    if (errorStream) {
-      errorStream.close();
-      errorStream = null;
-    }
-    if (dataStream) {
-      dataStream.close();
-      dataStream = null;
-    }
 
     if (rpcComms) {
       rpcComms.stop();
@@ -72,61 +183,159 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
     }
 
     if (nodeProcess) {
-      if (nodeProcess) {
-        logMessage("Sending SIGTERM to daemon process", "info", false);
-
-        isStoping = true;
-        nodeProcess.kill("SIGTERM");
-
-        // if normal fails, do a forced terminate
-        killTimeout = setTimeout(function () {
-          if (isStoping) {
-            logMessage("Sending SIGKILL to daemon process", "error", false);
-            nodeProcess.kill("SIGKILL");
-          }
-        }, (configOpts.restart.terminateTimeout || 5) * 1000);
+      isStoping = true;
+      const killingGracePeriod = 25; // Wait 25 seconds for clean exit
+      
+      // Try to send 'exit' command for clean shutdown
+      try {
+        if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
+          logMessage("Sending 'exit' command to daemon for clean shutdown", "info", false);
+          
+          // Ensure the command is properly formatted and sent
+          const exitCommand = 'exit\n';
+          logMessage(`Writing to stdin: "${exitCommand.trim()}"`, "info", false);
+          
+          nodeProcess.stdin.write(exitCommand, (err) => {
+            if (err) {
+              logMessage(`Error writing to stdin: ${err.message}`, "error", false);
+              // If exit fails, attempt save after 2 seconds
+              setTimeout(attemptSave, 2000);
+            } else {
+              logMessage("Successfully sent 'exit' command to daemon", "info", false);
+              // If exit sent successfully, but haven't received a response, attempt save after 15 seconds as a safety measure (only if process is still running)
+              setTimeout(() => {
+                if (nodeProcess && !nodeProcess.killed) {
+                  attemptSave();
+                }
+              }, 15000);
+            }
+          });
+        } else {
+          logMessage("Stdin not available for exit command", "info", false);
+          // If stdin is not available for exit, attempt save after 2 seconds
+          setTimeout(attemptSave, 2000);
+        }
+      } catch (err) {
+        logMessage(`Error sending exit command: ${err.message}`, "error", false);
+        // If exit fails, attempt save after 2 seconds
+        setTimeout(attemptSave, 2000);
       }
+      
+      // After killingGracePeriod, send SIGTERM
+      setTimeout(() => {
+        if (nodeProcess && !nodeProcess.killed) {
+          logMessage(`Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`, "info", false);
+          nodeProcess.kill('SIGTERM');
+        }
+      }, killingGracePeriod * 1000);
+      
+      // Fallback to SIGKILL after timeout
+      const killTimeoutMs = (configOpts.restart.terminateTimeout || 120) * 1000 < 30000 ? 30000 : (configOpts.restart.terminateTimeout || 120) * 1000;
+      killTimeout = setTimeout(() => {
+        if (nodeProcess && !nodeProcess.killed) {
+          logMessage("Sending SIGKILL to daemon process", "info", false);
+          nodeProcess.kill('SIGKILL');
+        }
+      }, killTimeoutMs);
     }
   };
+
+  // Helper function to attempt save command
+  function attemptSave() {
+    try {
+      if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
+        const saveCommand = 'save\n';
+        logMessage(`Writing to stdin: "${saveCommand.trim()}"`, "info", false);
+        nodeProcess.stdin.write(saveCommand, (err) => {
+          if (err) {
+            logMessage(`Error writing save command: ${err.message}`, "error", false);
+          } else {
+            logMessage("Successfully sent 'save' command to daemon", "info", false);
+          }
+        });
+      } else {
+        logMessage("Stdin not available for save command", "info", false);
+      }
+    } catch (err) {
+      logMessage(`Error sending save command: ${err.message}`, "error", false);
+    }
+  }
 
   this.logError = function (errMessage) {
     logMessage(errMessage, "error", false);
   };
 
+  this.getProcess = function() {
+    return nodeProcess;
+  }
+
   function errorCallback(errorData) {
-    restartDaemonProcess(errorData, true);
+    (async () => {
+      await restartDaemonProcess(errorData, true);
+    })();
   }
 
   //*************************************************************//
   //        get the info about the node in full details
   //*************************************************************//
-  function getNodeInfoData() {
-    return {
-      id: nodeUniqueId,
-      os: process.platform,
-      name: configOpts.node.name || os.hostname(),
-      version: guardVersion,
-      nodeHost: externalIP,
-      nodePort: configOpts.node.port,
-      url: configOpts.url,
-      status: {
-        errors: errorCount,
-        startTime: starupTime,
-        initialized: initialized
-      },
-      blockchain: rpcComms ? rpcComms.getData() : null,
-      location: {
-        ip: externalIP,
-        data: locationData
+  async function getNodeInfoData() {
+    try {
+      // Ensure geolocalization is complete before returning data, worth case it will return null
+      if (!locationData && !externalIP) {
+        logMessage("Waiting for geolocalization to complete...", "info", false);
+        await getGeoData();
       }
-    };
+      
+      return {
+        id: nodeUniqueId,
+        os: process.platform,
+        name: configOpts.node.name || os.hostname(),
+        version: guardVersion,
+        nodeHost: externalIP,
+        nodePort: configOpts.node.port,
+        url: configOpts.url,
+        status: {
+          errors: errorCount,
+          startTime: startupTime.toISOString(),
+          initialized: initialized
+        },
+        blockchain: rpcComms ? rpcComms.getData() : null,
+        location: {
+          ip: externalIP,
+          data: locationData
+        }
+      };
+    } catch (err) {
+      logMessage(`Error in getNodeInfoData: ${err.message}`, "error", false);
+      
+      // Return basic data even if geolocalization fails
+      return {
+        id: nodeUniqueId,
+        os: process.platform,
+        name: configOpts.node.name || os.hostname(),
+        version: guardVersion,
+        nodeHost: externalIP || 'unknown',
+        nodePort: configOpts.node.port,
+        url: configOpts.url,
+        status: {
+          errors: errorCount,
+          startTime: startupTime.toISOString(),
+          initialized: initialized
+        },
+        blockchain: rpcComms ? rpcComms.getData() : null,
+        location: {
+          ip: externalIP || 'unknown',
+          data: locationData
+        }
+      };
+    }
   }
 
   //*************************************************************//
   //       log the error to text file and send it to Discord
   //*************************************************************//
-  function logMessage(msgText, msgType, sendNotification) {
-    var userDataDir = utils.ensureUserDataDir();
+  async function logMessage(msgText, msgType, sendNotification) {
+    var userDataDir = ensureUserDataDir();
     var logEntry = [];
 
     logEntry.push(moment().format("YYYY-MM-DD hh:mm:ss"));
@@ -139,71 +348,181 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
     // send notification if specified in the config
     if (sendNotification && configOpts.error && configOpts.error.notify) {
-      notifiers.notifyOnError(configOpts, msgText, msgType, getNodeInfoData());
+      try {
+        const nodeData = await getNodeInfoData();
+        notifyOnError(configOpts, msgText, msgType, nodeData);
+      } catch (err) {
+        logMessage(`Error getting node data for notification: ${err.message}`, "error", false);
+      }
     }
   }
 
   //*************************************************************//
   //     restarts the node if an error occurs automatically
   //*************************************************************//
-  function restartDaemonProcess(errorData, sendNotification) {
-    logMessage(errorData, "error", sendNotification);
+  async function restartDaemonProcess(errorData, sendNotification) {
+    await logMessage(errorData, "error", sendNotification);
+    clearInterval(initInterval);
     self.stop();
-  }
-
-  function checkIfInitialized() {
-    if (!initialized) {
-      var duration = moment.duration(moment().diff(starupTime));
-
-      if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
-        restartDaemonProcess("Initialization is taking to long, restarting", true);
-      } else {
-        setTimeout(() => {
-          checkIfInitialized();
-        }, 5000);
-      }
-    }
   }
 
   function setNotifyPoolInterval() {
     if (configOpts.pool && configOpts.pool.notify && configOpts.pool.notify.url) {
       // send the info about node to the pool
-      poolNotifyInterval = setInterval(function () {
-        var packetData = {
-          uri: configOpts.pool.notify.url,
-          strictSSL: false,
-          method: "POST",
-          json: getNodeInfoData()
-        };
+      logMessage("Starting the periodic pool notifications", "info", false);
 
-        request(packetData, function (err, res, data) {
-          if (err) {
-            logMessage(err.message, "error", false);
+      poolNotifyInterval = setInterval(async function () {
+        try {
+          const nodeData = await getNodeInfoData();
+          
+          // Recursive sanitization function that preserves all data types using validator
+          function sanitizeData(data, maxDepth = 3, currentDepth = 0) {
+            if (currentDepth > maxDepth) return null;
+            
+            if (data === null || data === undefined) {
+              return null;
+            }
+            
+            if (typeof data === 'string') {
+              // Smart sanitization for paths containing "/daemon/"
+              if (data.includes('/daemon')) {
+                const parts = data.split('/daemon');
+                if (parts.length === 2) {
+                  // Sanitize parts before and after "/daemon"
+                  const before = validator.escape(parts[0]).substring(0, 500);
+                  const after = validator.escape(parts[1]).substring(0, 500);
+                  return before + '/daemon' + after;
+                } else if (parts.length > 2) {
+                  // Multiple "/daemon" occurrences - suspicious, sanitize everything
+                  return validator.escape(data.substring(0, 1000));
+                } else {
+                  // "/daemon" at the beginning or end
+                  const before = parts[0] ? validator.escape(parts[0]).substring(0, 500) : '';
+                  const after = parts[1] ? validator.escape(parts[1]).substring(0, 500) : '';
+                  return before + '/daemon' + after;
+                }
+              }
+              // Use validator's safe string sanitization
+              return validator.escape(data.substring(0, 1000));
+            }
+            
+            if (typeof data === 'number') {
+              // Numbers don't need escaping, just ensure they're valid
+              return isFinite(data) ? data : 0;
+            }
+            
+            if (typeof data === 'boolean') {
+              return data;
+            }
+            
+            if (data instanceof Date) {
+              return data.toISOString();
+            }
+            
+            if (Array.isArray(data)) {
+              return data.slice(0, 100).map(item => sanitizeData(item, maxDepth, currentDepth + 1));
+            }
+            
+            if (typeof data === 'object') {
+              const sanitized = {};
+              for (const [key, value] of Object.entries(data)) {
+                if (typeof key === 'string' && key.length <= 100) {
+                  // Sanitize object keys
+                  const sanitizedKey = validator.escape(key);
+                  sanitized[sanitizedKey] = sanitizeData(value, maxDepth, currentDepth + 1);
+                }
+              }
+              return sanitized;
+            }
+            
+            // Fallback for unknown types - convert to string first
+            return validator.escape(String(data).substring(0, 1000));
           }
-        });
+          
+          // Sanitize the entire node data recursively
+          const sanitizedData = sanitizeData(nodeData);
+
+          // Validate URL - must be HTTPS and end with .conceal.network/pool/update
+          if (!validator.isURL(configOpts.pool.notify.url, { 
+            protocols: ['https'], 
+            require_protocol: true,
+            require_valid_protocol: true,
+            allow_underscores: false,
+            allow_trailing_dot: false,
+            allow_protocol_relative_urls: false
+          }) || !configOpts.pool.notify.url.endsWith('.conceal.network/pool/update')) {
+            throw new Error('Invalid pool URL');
+          } 
+          
+          const poolNotifyUrl = configOpts.pool.notify.url;
+          
+          axios.post(poolNotifyUrl, sanitizedData, {
+            timeout: 10000,
+            headers: {
+              'Content-Type': 'application/json',
+              'User-Agent': 'Conceal Node Guardian'
+            }
+          }).then(response => {
+            //logMessage(`Pool notification successful: ${response.status}`, "info", false);
+          }).catch(err => {
+            logMessage(`Pool notification failed: ${err.message}`, "error", false);
+          });
+
+        } catch (err) {
+          logMessage(`Error preparing pool notification: ${err.message}`, "error", false);
+        }
       }, (configOpts.pool.notify.interval || 30) * 1000);
     }
   }
 
   //*************************************************************//
-  //         processes a single line from data or error stream
+  //         periodically check if the core has initialized
   //*************************************************************//
-  function processSingleLine(line) {
-    // core is initialized, we can start the queries
-    if (line.indexOf("Core initialized OK") > -1) {
-      logMessage("Core is initialized, starting the periodic checking...", "info", false);
-      initialized = true;
+  function waitForCoreToInitialize() {
+    if (!initialized) {
+      let duration = moment.duration(moment().diff(startupTime));
 
-      if (!rpcComms) {
-        rpcComms = new comms.RpcCommunicator(configOpts, errorCallback);
+      if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
+        (async () => {
+          await restartDaemonProcess("Initialization is taking to long, restarting", true);
+        })();
+      } else {
+        // Validate port number before making request
+        const port = Number(configOpts.node.port);
+        if (isNaN(port) || port < 1 || port > 65535) {
+          logMessage("Invalid port number in configuration", "error", false);
+          return;
+        }
+
+        // Construct and validate URL using validator
+        const localUrl = `http://127.0.0.1:${port}/getinfo`;
+        
+        if (!validator.isURL(localUrl, { protocols: ['http'], require_protocol: true })) {
+          logMessage("Invalid local URL format", "error", false);
+          return;
+        }
+        
+        axios.get(localUrl, {
+          headers: { 'User-Agent': 'Conceal Node Guardian' },
+          timeout: 5000
+        }).then(response => {
+          // Validate response data
+          if (response.data && typeof response.data === 'object' && response.data.status === "OK") {
+            logMessage("Core is initialized, starting the periodic checking...", "info", false);
+            clearInterval(initInterval);
+            initialized = true;
+
+            if (!rpcComms) {
+              rpcComms = new RpcCommunicator(configOpts, errorCallback);
+            }
+
+            // start comms
+            rpcComms.start();
+          }
+        }).catch(err => {
+          // Handle error silently as this is expected during initialization
+        });
       }
-
-      // close streams and start comms
-      errorStream.close();
-      dataStream.close();
-      errorStream = null;
-      dataStream = null;
-      rpcComms.start();
     }
   }
 
@@ -211,8 +530,21 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   //         start the daemon process and then monitor it
   //*************************************************************//
   function startDaemonProcess() {
-    nodeProcess = child_process.spawn(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || []);
-    logMessage("Started the daemon process", "info", false);
+    (async () => {
+      nodeProcess = execa(getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || [], {
+        stdio: ['pipe', 'pipe', 'pipe'], // Enable stdin communication
+        detached: false, // Keep attached to parent process
+        windowsHide: true,
+        // Prevent the child from receiving signals when terminal closes
+        cleanup: true
+      });
+    })().catch(err => {
+      logMessage(`Error starting the daemon process: ${err}`, 'info', false);
+      nodeProcess = null;
+    });
+
+    logMessage('Started the daemon process', 'info', false);
+    startupTime = moment();
     autoRestart = true;
     isStoping = false;
 
@@ -222,24 +554,10 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
         process.exit(0);
       }, 3000);
     } else {
-      dataStream = readline.createInterface({
-        input: nodeProcess.stdout
-      });
-
-      errorStream = readline.createInterface({
-        input: nodeProcess.stderr
-      });
-
-      dataStream.on("line", line => {
-        processSingleLine(line);
-      });
-
-      errorStream.on("line", line => {
-        processSingleLine(line);
-      });
-
       nodeProcess.on("error", function (err) {
-        restartDaemonProcess(vsprintf("Error on starting the node process: %s", [err]), false);
+        (async () => {
+          await restartDaemonProcess(`Error on starting the node process: ${err}`, false);
+        })();
       });
 
       // if daemon closes the try to log and restart it
@@ -249,7 +567,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
         // check if we need to stop it
         if (isStoping === false) {
-          self.stop();
+          self.stop(false);
         }
 
         // always do a cleanup of resources
@@ -261,7 +579,7 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
 
           if (!signal) {
             // only log if signall is empty, which means it was spontaneous crash
-            logMessage(vsprintf("Node process closed with code %d", [code]), "error", true);
+            logMessage(`Node process closed with code ${code}`, "error", true);
           }
 
           // check if we have crossed the maximum error number in short period
@@ -283,46 +601,55 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
       // start notifying the pool
       setNotifyPoolInterval();
       // start the initilize checking
-      checkIfInitialized();
+      initInterval = setInterval(function () {
+        waitForCoreToInitialize();
+      }, 10000);
     }
   }
 
   // check if autoupdate is turned on
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
-      if (rpcComms && initialized) {
-        nodeData = rpcComms.getData();
+      if (rpcComms && initialized && !isUpdating) {        
+        let nodeData = rpcComms.getData();
 
         // check node
         if (nodeData) {
-          request.get({
-            url: 'https://api.github.com/repos/ConcealNetwork/conceal-core/releases/latest',
-            headers: { 'User-Agent': 'Conceal Node Guardian' },
-            json: true
-          }, (err, res, release) => {
-            if (!err && release) {
-              if (release.tag_name !== nodeData.version) {
-                // stop the daemon
-                self.stop(false);
+          axios.get('https://api.github.com/repos/ConcealNetwork/conceal-core/releases/latest', {
+            headers: { 'User-Agent': 'Conceal Node Guardian' }
+          }).then(response => {
+            if (response.data.tag_name !== nodeData.version) {
+              // stop the daemon
+              isUpdating = true;
+              self.stop(false);
 
-                var waitStopInteval = setInterval(function () {
-                  if (nodeProcess == null) {
-                    clearInterval(waitStopInteval);
+              let waitStopInteval = setInterval(function () {
+                if (nodeProcess == null) {
+                  clearInterval(waitStopInteval);
 
-                    download.downloadLatestDaemon(utils.getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
-                      if (error) {
-                        logMessage(vsprintf("\nError auto updating daemon: %s\n", [error]), "error", true);
-                      } else {
-                        logMessage("The deamon was automatically updated", "info", true);
-                      }
+                  downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
+                    if (error) {
+                      (async () => {
+                        await logMessage(`\nError auto updating daemon: ${error}\n`, "error", true);
+                      })();
+                    } else {
+                      (async () => {
+                        await logMessage("The deamon was automatically updated", "info", true);
+                      })();
+                    }
 
-                      // start the daemon 
-                      startDaemonProcess();
-                    });
-                  }
-                }, 1000);
-              }
+                    // start the daemon 
+                    startDaemonProcess();
+                    isUpdating = false;
+                  });
+                }
+              }, 1000);
             }
+          }).catch(err => {
+            (async () => {
+              await logMessage(`\nError auto updating daemon: ${err}\n`, "error", true);
+            })();
+            isUpdating = false;
           });
         }
       }
@@ -333,13 +660,20 @@ exports.NodeGuard = function (cmdOptions, configOpts, rootPath, guardVersion) {
   // for servicing API calls for the current node
   if (configOpts.api && configOpts.api.port) {
     logMessage("Starting the API server", "info", false);
-    nodeDirectory = path.dirname(utils.getNodeActualPath(cmdOptions, configOpts, rootPath));
-    apiServer.createServer(configOpts, nodeDirectory, function () {
-      return getNodeInfoData();
+    var nodeDirectory = path.dirname(getNodeActualPath(cmdOptions, configOpts, rootPath));
+    createServer(configOpts, nodeDirectory, async function () {
+      try {
+        return await getNodeInfoData();
+      } catch (err) {
+        logMessage(`Error in API server callback: ${err.message}`, "error", false);
+        return null;
+      }
     });
   }
 
   // start the process
-  logMessage("Starting the guardian", "info", false);
+  (async () => {
+    await logMessage("Starting the guardian", "info", false);
+  })();
   startDaemonProcess();
 };

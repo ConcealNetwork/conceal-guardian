@@ -6,11 +6,11 @@
     "bindAddr": "0.0.0.0"
   },
   "restart": {
-    "terminateTimeout": 5,
+    "terminateTimeout": 120,
     "errorForgetTime": 600,
     "maxCloseErrors": 3,
-    "maxBlockTime": 1800,
-    "maxInitTime": 900
+    "maxBlockTime": 3600,
+    "maxInitTime": 3600
   },
   "api": {
     "port": 8080

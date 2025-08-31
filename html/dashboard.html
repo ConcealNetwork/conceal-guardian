@@ -1,7 +1,7 @@
 <div class="dash-headline-two">
   <div>
     <h4 class="tx-white mg-b-5">Welcome</h4>
-    <p class="mg-b-0">Today is March 20, 2018</p>
+    <p class="mg-b-0">Today is <span id="today"></span></p>
   </div>
   <div class="d-h-t-right" id="nodeBasicInfo">
     <div class="summary-item">
@@ -26,7 +26,7 @@
     <h4 class="tx-white mg-b-3">General Info</h4>
   </div>
   <div>
-    <a href="" class="btn btn-primary-outline">Show on Explorer</a>
+    <a href="https://explorer.conceal.network/index.html#nodes" target="_blank" class="btn btn-primary-outline">Open Explorer</a>
   </div>
 </div><!-- d-flex -->
 
@@ -73,7 +73,7 @@
     <h4 class="tx-white mg-b-3">Geolocation Info</h4>
   </div>
   <div>
-    <a href="" class="btn btn-primary-outline">Google Maps</a>
+    <a href="https://www.openstreetmap.org/?mlat={{location.data.latitude}}&mlon={{location.data.longitude}}&zoom=4" target="_blank" class="btn btn-primary-outline">OpenStreetMap</a>
   </div>
 </div><!-- d-flex -->
 
@@ -113,5 +113,7 @@
   </div><!-- col-4 -->
 </div><!-- row -->
 <script>
-  // no code so far
+  var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  var today  = new Date();
+  document.getElementById("today").innerHTML = today.toLocaleDateString("en-US", options);
 </script>

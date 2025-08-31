@@ -7,6 +7,15 @@
 
 .idea
 /bin
+/dist
 /.vscode
 /.scannerwork
 /guardian-win64.exe
+nginx-guardian-config-*.txt
+
+# Ignore CodeQL database folder
+codeql-db/
+
+# Ignore SARIF files generated locally
+*.sarif
+

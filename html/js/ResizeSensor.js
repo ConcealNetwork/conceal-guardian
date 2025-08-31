@@ -39,12 +39,12 @@
      */
     function forEachElement(elements, callback){
         var elementsType = Object.prototype.toString.call(elements);
-        var isCollectionTyped = ('[object Array]' === elementsType
+        var isCollectionTyped = ((//jquery
+        ('[object Array]' === elementsType
             || ('[object NodeList]' === elementsType)
             || ('[object HTMLCollection]' === elementsType)
             || ('[object Object]' === elementsType)
-            || ('undefined' !== typeof jQuery && elements instanceof jQuery) //jquery
-            || ('undefined' !== typeof Elements && elements instanceof Elements) //mootools
+            || ('undefined' !== typeof jQuery && elements instanceof jQuery) || ('undefined' !== typeof Elements && elements instanceof Elements))) //mootools
         );
         var i = 0, j = elements.length;
         if (isCollectionTyped) {

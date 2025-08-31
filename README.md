@@ -1,10 +1,14 @@
-# Conceal Node Guardian
+# Conceal Node Guardian 
 
 ## About
 
 Conceal Node Guardian is a process that monitors the `conceald` daemon. It is catching daemon errors, monitors the block count and, in case of an error, it restarts the daemon and notifies on Discord via web hook, sends an e-mail, or both.
 
 It also has an ability to connect to a pool with other nodes for the purpose of infrastructure monitoring or running a remote node with fee listing.
+
+## 📚 Documentation
+
+**📖 [Complete Documentation Wiki](docs/README.md)** - Comprehensive guides for installation, configuration, usage, troubleshooting, and security.
 
 ## Table of Contents
   * [Installation](#installation)
@@ -27,7 +31,7 @@ Conceal Node Guardian can be installed to run with Node.js or used as precompile
 
 Ensure that requirements are installed:
 
-* [Node.js](https://nodejs.org/) (version 6 or higher)
+* [Node.js](https://nodejs.org/) (version 18.19.0 or higher)
 * [npm](https://www.npmjs.com/)
 
 Or use [nvm](https://github.com/creationix/nvm) (Node Version Manager) to manage your Node.js installations.
@@ -109,6 +113,7 @@ You can use [sample configuration](config.json.sample) and modify it for your ne
    }
 }
 ```
+
 **Description of configuration options:**
 
 * **node**
@@ -268,8 +273,8 @@ API serves a single endpoint - `/getInfo`.
 Sample request:
 
 ```bash
-# Assuming API port in config.json is set to 8000
-$ curl http://127.0.0.1:8000/getInfo
+# Assuming API port in config.json is set to 8080
+$ curl http://127.0.0.1:8080/getInfo
 ```
 
 Sample response:
