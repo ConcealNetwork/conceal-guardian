@@ -85,7 +85,6 @@ jobs:
       uses: softprops/action-gh-release@v2.0.4
       with:
         files: output/guardian-linux64-ubuntu-24.tar.gz
-        draft: true
         name: Conceal Guardian ${{ github.ref_name }}
         body: |
           **Ubuntu 24.04 Build** - guardian-linux64-ubuntu-24.tar.gz

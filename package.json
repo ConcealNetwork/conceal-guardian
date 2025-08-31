@@ -1,6 +1,6 @@
 {
   "name": "nodeguard",
-  "version": "0.7.8",
+  "version": "0.7.7",
   "description": "Conceal Node Guard",
   "main": "index.js",
   "type": "module",
@@ -44,7 +44,7 @@
     "pure-uuid": "^1.6.2",
     "read-last-lines": "^1.8.0",
     "string-template": "^1.0.0",
-    "tar": "^7.0.0",
+    "tar": "^7.4.3",
     "username": "^7.0.0",
     "validator": "^13.15.15",
     "xmlbuilder": "^15.1.1"

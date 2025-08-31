@@ -7,6 +7,7 @@ import downloadRelease from "download-github-release";
 import extractZIP from "extract-zip";
 import * as extractTAR from "tar";
 import osInfo from "linux-os-info";
+import { execa } from 'execa';
 import path from "path";
 import fs from "fs";
 import os from "os";
@@ -230,7 +231,8 @@ export function downloadLatestGuardian(callback) {
             } else {
               backupName = executableName.substring(0, extensionPos) + "-" + current + executableName.substring(extensionPos) + ".old";
             }
-            fs.renameSync(path.join(process.cwd(), executableName), path.join(process.cwd(), backupName));
+            // Copy instead of rename since the file is currently running
+            fs.cpSync(path.join(process.cwd(), executableName), path.join(process.cwd(), backupName));
 
             // 2. Get list of files to preserve from exclude.txt
             var excludeFiles = [];
@@ -239,34 +241,61 @@ export function downloadLatestGuardian(callback) {
               excludeFiles = fs.readFileSync(excludePath, 'utf-8').split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
             }
 
-            // 3. Clean CWD - remove all files except *.old and excluded files
+            // 3. Clean CWD - remove all files except *.old, excluded files, and current executable
             fs.readdirSync(process.cwd()).forEach(file => {
-              if (!file.endsWith('.old') && !excludeFiles.includes(file)) {
+              if (!file.endsWith('.old') && !excludeFiles.includes(file) && file !== executableName) {
                 fs.rmSync(path.join(process.cwd(), file), { recursive: true, force: true });
               }
             });
 
-            // 4. Extract new release directly into CWD (skip excluded files)
+            // 4. Move new files from temp directory (not copy)
             fs.readdirSync(finalTempDir).forEach(file => {
-              if (!excludeFiles.includes(file) && !file.endsWith('.gz') && !file.endsWith('.zip')) {
+              if (!excludeFiles.includes(file) && !file.endsWith('.gz') && !file.endsWith('.zip') && file !== executableName) {
                 var srcPath = path.join(finalTempDir, file);
                 var destPath = path.join(process.cwd(), file);
                 if (fs.statSync(srcPath).isDirectory()) {
                   fs.cpSync(srcPath, destPath, { recursive: true, force: true });
+                  fs.rmSync(srcPath, { recursive: true, force: true });
                 } else {
-                  fs.cpSync(srcPath, destPath);
+                  fs.renameSync(srcPath, destPath);
                 }
               }
             });
 
-            // 5. Set executable permissions on new executable
-            fs.readdirSync(path.join(process.cwd())).forEach(file => {
-              if (file.startsWith('guardian-') && !file.endsWith('.old')) {
-                fs.chmodSync(path.join(process.cwd(), file), 0o755);
+            // 5. Find new executable, rename and prepare for final move
+            var newExecutableName = null;
+            fs.readdirSync(finalTempDir).forEach(file => {
+              if (file.startsWith('guardian-') && 
+                  !file.endsWith('.js') && 
+                  !file.endsWith('.json') && 
+                  !file.endsWith('.gz') && 
+                  !file.endsWith('.zip')) {
+                newExecutableName = file;
               }
             });
-            fs.rmSync(finalTempDir, { recursive: true, force: true });
-            callback(null);
+
+            if (newExecutableName) {
+              // Rename new executable to .new extension
+              var tempNewExecutable = executableName + '.new';
+              fs.renameSync(path.join(finalTempDir, newExecutableName), path.join(process.cwd(), tempNewExecutable));
+              
+              // Set executable permissions
+              fs.chmodSync(path.join(process.cwd(), tempNewExecutable), 0o755);
+              
+              // Clean up temp directory
+              fs.rmSync(finalTempDir, { recursive: true, force: true });
+              
+              // Execute final move as separate process
+              execa('bash', ['-c', `sleep 2 && mv ${tempNewExecutable} ${executableName}`], { 
+                detached: true,
+                stdio: 'ignore'
+              }).unref();
+              
+              console.log('Update completed. New executable ready.');
+              callback(null);
+            } else {
+              callback("New executable not found in downloaded files");
+            }
           } else {
             callback("Failed to extract the archive");
           }
