@@ -45,6 +45,7 @@ try {
     type: Boolean
   }, {
     name: "version",
+    alias: "v",
     type: Boolean
   }, {
     name: "help",
@@ -66,72 +67,44 @@ if (cmdOptions.help) {
       header: 'Options',
       optionList: [
         {
+          name: 'help',
+          typeLabel: ' ',
+          description: 'Shows this help instructions\n'
+        },
+        {
           name: 'config',
           typeLabel: '{underline file}',
-          description: 'The path to configuration file. If empty it uses the config.json in the same directory as the app.'
+          description: 'The path to configuration file. If empty it uses the config.json in the same directory as the app.\n'
         },
         {
           name: 'daemon',
           typeLabel: '{underline file}',
-          description: 'The path to node daemon executable. If empty it uses the same directory as the app.'
-        },
-        {
-          name: 'setup',
-          description: 'Initiates the interactive config setup for the guardian'
-        },
-        {
-          name: 'service',
-          description: 'Controls the service behaviour. Possible values are: "install", "remove", "start", "stop"'
+          description: 'The path to node daemon executable. If empty it uses the same directory as the app.\n'
         },
         {
           name: 'node',
-          description: 'Node related commands. Possible values are: "update"'
+          typeLabel: '{underline update}',
+          description: 'Updates to the latest stable version of the node daemon. Node must be stoped first\n'
+        },
+        {
+          name: 'service',
+          typeLabel: '{underline install|remove|start|stop|status}',
+          description: 'Controls the service behaviour\n'
+        },
+        {
+          name: 'setup',
+          typeLabel: ' ',
+          description: 'Initiates the interactive config setup for the guardian\n'
         },
         {
           name: 'update',
-          description: 'Update the guardian instance to the latest version'
+          typeLabel: ' ',
+          description: 'Update the guardian instance to the latest version\n'
         },
         {
           name: 'version',
-          description: 'Shows the verion of the Guardian app'
-        },
-        {
-          name: 'help',
-          description: 'Shows this help instructions'
-        }
-      ]
-    },
-    {
-      header: 'Service option values',
-      optionList: [
-        {
-          name: 'install',
-          description: 'Install the guardian as a service in the OS.'
-        },
-        {
-          name: 'remove',
-          description: 'Removes the guardian as a service from the OS.'
-        },
-        {
-          name: 'start',
-          description: 'Starts the guardian as OS service.'
-        },
-        {
-          name: 'stop',
-          description: 'Stops the guardian as OS service.'
-        },
-        {
-          name: 'status',
-          description: 'Shows the status of the OS service.'
-        }
-      ]
-    },
-    {
-      header: 'Node option values',
-      optionList: [
-        {
-          name: 'update',
-          description: 'Updates to the latest stable version of the node daemon. Node must be stoped first'
+          typeLabel: ' ',
+          description: 'Shows the version of the Conceal Guardian app'
         }
       ]
     }

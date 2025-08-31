@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: [build-windows]
+  push:
+    tags:
+      - "*"
 
 permissions:
   contents: write
@@ -16,7 +19,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.client_payload.branch || 'master' }}
+        ref: ${{ github.event_name == 'push' && github.ref || github.event.client_payload.branch || 'master' }}
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -74,9 +77,11 @@ jobs:
         .\tools\7z.exe a -r .\bin\win64\guardian-win64.zip .\bin\win64\*.*
         
     - name: Generate SHA-256 hash
+      id: generate_hash
       run: |
         $hash = Get-FileHash -Path "bin\win64\guardian-win64.zip" -Algorithm SHA256
         $hash.Hash | Out-File -FilePath "bin\win64\guardian-win64.zip.sha256" -Encoding ASCII
+        echo "hash=$($hash.Hash)" >> $env:GITHUB_OUTPUT
         Write-Host "SHA-256: $($hash.Hash)"
         
     - name: Upload artifacts
@@ -85,5 +90,19 @@ jobs:
         name: guardian-win64
         path: bin/win64/guardian-win64.zip
         retention-days: 3
+        
+    - name: Create Release (Tag-based builds)
+      if: github.event_name == 'push'
+      uses: softprops/action-gh-release@v2.0.4
+      with:
+        files: bin/win64/guardian-win64.zip
+        draft: true
+        name: Conceal Guardian ${{ github.ref_name }}
+        body: |
+          **Windows Build** - guardian-win64.zip
+          `SHA256: ${{ steps.generate_hash.outputs.hash }}`
+        append_body: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
 
