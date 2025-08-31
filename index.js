@@ -198,7 +198,6 @@ if (cmdOptions.help) {
       stop(configOpts, configFileName, function() {
         console.log("Stopping the guardian...");
       downloadLatestGuardian(function (error) {
-        console.log("Downloading the guardian...", error);
         if (error) {
           console.log(`\nError updating the guardian: ${error}\n`);
         } else {
