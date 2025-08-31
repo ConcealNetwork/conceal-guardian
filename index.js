@@ -197,13 +197,13 @@ if (cmdOptions.help) {
     } else if (cmdOptions.update) {
       stop(configOpts, configFileName, function() {
         console.log("Stopping the guardian...");
-      downloadLatestGuardian(function (error) {
-        if (error) {
-          console.log(`\nError updating the guardian: ${error}\n`);
-        } else {
-          console.log("\nThe guardian has been succesfully updated\n");
-        }
-      });
+        downloadLatestGuardian(function (error) {
+          if (error) {
+            console.log(`\nError updating the guardian: ${error}\n`);
+          } else {
+            console.log("\nThe guardian has been succesfully updated\n");
+          }
+        });
       });
     } else {
       const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
