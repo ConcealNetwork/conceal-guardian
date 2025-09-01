@@ -5,6 +5,7 @@
 import UUID from "pure-uuid";
 import path from "path";
 import fs from "fs";
+import { execa } from 'execa';
 
 export function ensureUserDataDir() {
   var userDataDir = process.env.APPDATA || (process.platform === "darwin" ? process.env.HOME + "/Library/Application Support" : process.env.HOME + "/.local/share");
@@ -88,3 +89,61 @@ export function getNodeExecutableName() {
 export function getGuardianExecutableName() {
   return path.basename(process.argv[0]);
 };
+
+// Function to swap executable files
+export function swapExecutable(tempNewExecutable, executableName, callback) {
+  const tempNewExecutablePath = path.join(process.cwd(), tempNewExecutable);
+  const executableNamePath = path.join(process.cwd(), executableName);
+  
+  // Check if both files exist
+  if (!fs.existsSync(tempNewExecutablePath)) {
+    callback(`Error updating guardian: ${tempNewExecutable} not found`);
+    return;
+  }
+  console.log(`tempNewExecutablePath: ${tempNewExecutablePath}`);
+  if (!fs.existsSync(executableNamePath)) {
+    callback(`Error updating guardian: ${executableName} not found`);
+    return;
+  }
+  console.log(`executableNamePath: ${executableNamePath}`);
+  console.log('Update completed. New executable ready.');
+  callback(null);
+  const finalExecutableName = path.basename(tempNewExecutablePath).replace('.new', '');
+
+  // Start the swap process and exit immediately
+  const swapProcess = () => {
+    if (process.platform === "win32") {
+      const batchContent = `
+timeout /t 5 /nobreak >nul
+del "${executableName}"
+rename "${tempNewExecutablePath}" "${finalExecutableName}"
+timeout /t 5 /nobreak >nul
+del "%~f0"
+exit /b 0
+`;
+      const batchFile = path.join(process.cwd(), 'swap.bat');
+      fs.writeFileSync(batchFile, batchContent);
+      
+             execa('cmd', ['/k', 'swap.bat'], { 
+         detached: true,
+         stdio: 'ignore',
+         cwd: process.cwd()
+       }).unref();
+         } else {
+       // Linux/Unix: use bash with sleep, delete old, rename new
+       execa('bash', ['-c', `sleep 10 && rm "${executableNamePath}" && mv "${tempNewExecutablePath}" "${finalExecutableName}"`], { 
+         detached: true,
+         stdio: 'ignore'
+       }).unref();
+     }
+  };
+  
+  // Start swap process and wait before exiting
+  swapProcess();
+  
+  // Give the child process time to start, then exit
+  setTimeout(() => {
+    console.log('Exiting to complete file swap...');
+    process.exit(0);
+  }, 1000);
+}

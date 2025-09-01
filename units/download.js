@@ -7,7 +7,6 @@ import downloadRelease from "download-github-release";
 import extractZIP from "extract-zip";
 import * as extractTAR from "tar";
 import osInfo from "linux-os-info";
-import { execa } from 'execa';
 import path from "path";
 import fs from "fs";
 import os from "os";
@@ -149,7 +148,7 @@ export function downloadLatestDaemon(nodePath, callback) {
 };
 
 
-export function downloadLatestGuardian(callback) {
+export function downloadLatestGuardian(callback, swapExecutableCallback) {
   // Check if running via Node.js - updates not supported
   if (getGuardianExecutableName() === 'node') {
     callback("Guardian update not supported when running via Node.js");
@@ -278,21 +277,16 @@ export function downloadLatestGuardian(callback) {
               // Rename new executable to .new extension
               var tempNewExecutable = executableName + '.new';
               fs.renameSync(path.join(finalTempDir, newExecutableName), path.join(process.cwd(), tempNewExecutable));
-              
               // Set executable permissions
               fs.chmodSync(path.join(process.cwd(), tempNewExecutable), 0o755);
-              
               // Clean up temp directory
               fs.rmSync(finalTempDir, { recursive: true, force: true });
-              
-              // Execute final move as separate process
-              execa('bash', ['-c', `sleep 2 && mv ${tempNewExecutable} ${executableName}`], { 
-                detached: true,
-                stdio: 'ignore'
-              }).unref();
-              
-              console.log('Update completed. New executable ready.');
-              callback(null);
+              // Call the swap executable callback
+              if (swapExecutableCallback) {
+                swapExecutableCallback(tempNewExecutable, executableName, callback);
+              } else {
+                callback(null);
+              }
             } else {
               callback("New executable not found in downloaded files");
             }

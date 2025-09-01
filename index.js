@@ -2,7 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
-import { getNodeActualPath } from "./units/utils.js";
+import { getNodeActualPath, swapExecutable } from "./units/utils.js";
 import commandLineUsage from "command-line-usage";
 import commandLineArgs from "command-line-args";
 import { NodeGuard } from "./units/engine.js";
@@ -201,9 +201,9 @@ if (cmdOptions.help) {
           if (error) {
             console.log(`\nError updating the guardian: ${error}\n`);
           } else {
-            console.log("\nThe guardian has been succesfully updated\n");
+            console.log("\nFiles have been downloaded,swap executable is next...\n");
           }
-        });
+        }, swapExecutable);
       });
     } else {
       const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
