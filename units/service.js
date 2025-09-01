@@ -19,6 +19,8 @@ export function install(configOpts, configFileName) {
       xmlFile.ele('description', 'Conceal Guardian for monitoring the Conceal Daemon');
       xmlFile.ele('executable', path.join(process.cwd(), 'guardian-win64.exe'));
       xmlFile.ele('arguments', '--config ' + configFileName);
+      // Configure WinSW to use stopwait for graceful shutdown
+      xmlFile.ele('stoptimeout', '30000');
 
       fs.writeFile("cgservice.xml", xmlFile.end({ pretty: true }), function (err) {
         if (err) {
@@ -104,64 +106,80 @@ export function stop(configOpts, configFileName, callback) {
     return;
   }
 
-  // With callback - stop and wait for completion
-  try {
-    if (process.platform == "win32") {
-      execa('cgservice.exe', ['stop'], { reject: false }).then(({ stdout, exitCode }) => {
-        if (exitCode !== 0) {
-          callback(new Error("Error stopping guardian: " + stdout));
-        }
-      });
-    } else if (process.platform == "linux") {
-      execa('systemctl', ['stop', 'ccx-guardian'], { reject: false }).then(({ stdout, exitCode }) => {
-        if (exitCode !== 0) {
-          callback(new Error("Error stopping guardian: " + stdout));
-        }
-      });
-    } else {
-      console.log("\nPlatform is not supported!\n");
-      callback(new Error("Platform not supported"));
-      return;
-    }
-
-    // Check status every 5 seconds, timeout after 1 minute
-    let attempts = 0;
+  // With callback - first check if already stopped, then stop if needed
+  const checkStatus = async () => {
     const maxAttempts = 12; // 12 x 5 seconds = 1 minute
+    let attempts = 0;
     
-    const checkStatus = () => {
-      attempts++;
-      
+    while (attempts < maxAttempts) {
       if (process.platform == "win32") {
         // Windows status check
-        execa('cgservice.exe', ['status'], { reject: false }).then(({ stdout, exitCode }) => {
+        try {
+          const { stdout, exitCode } = await execa('cgservice.exe', ['status'], { reject: false });
           if (stdout.includes('stopped') || stdout.includes('not running')) {
-            callback(); // Service stopped successfully
-          } else if (attempts >= maxAttempts) {
-            callback(new Error("Error stopping guardian: timeout after 1 minute"));
+            // Service is already stopped
+            callback();
+            break;
           } else {
-            setTimeout(checkStatus, 5000); // Check again in 5 seconds
+            // Service is still running, need to stop it
+            if (attempts === 0) {
+              // First attempt - stop the service
+              const stopResult = await execa('cgservice.exe', ['stop'], { reject: false });
+              if (stopResult.exitCode !== 0) {
+                callback(new Error("Error stopping guardian: " + stopResult.stdout));
+                break;
+              }
+            }
           }
-        });
+        } catch (err) {
+          callback(new Error("Error checking Windows service status: " + err.message));
+          break;
+        }
       } else if (process.platform == "linux") {
         // Linux status check
-        execa('systemctl', ['is-active', 'ccx-guardian.service'], { reject: false }).then(({ stdout, exitCode }) => {
+        try {
+          const { stdout, exitCode } = await execa('systemctl', ['is-active', 'ccx-guardian.service'], { reject: false });
           if (stdout.trim() === 'inactive') {
-            callback(); // Service stopped successfully
-          } else if (attempts >= maxAttempts) {
-            callback(new Error("Error stopping guardian: timeout after 1 minute"));
+            // Service is already stopped
+            callback();
+            break;
           } else {
-            setTimeout(checkStatus, 5000); // Check again in 5 seconds
+            // Service is still running, need to stop it
+            if (attempts === 0) {
+              // First attempt - stop the service
+              const stopResult = await execa('systemctl', ['stop', 'ccx-guardian'], { reject: false });
+              if (stopResult.exitCode !== 0) {
+                callback(new Error("Error stopping guardian: " + stopResult.stdout));
+                break;
+              }
+            }
           }
-        });
+        } catch (err) {
+          callback(new Error("Error checking Linux service status: " + err.message));
+          break;
+        }
+      } else {
+        console.log("\nPlatform is not supported!\n");
+        callback(new Error("Platform not supported"));
+        break;
       }
-    };
-    // Start checking status
-    setTimeout(checkStatus, 5000); // First check after 5 seconds
+      
+      attempts++;
+      if (attempts >= maxAttempts) {
+        callback(new Error("Error stopping guardian: timeout after 1 minute"));
+        break;
+      }
+      
+      // Wait 5 seconds before next check
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  };
 
-  } catch (err) {
+  // Start the status checking process
+  checkStatus().catch(err => {
     console.log(err.message);
     callback(err);
-  }
+  });
 };
 
 export function status(configOpts, configFileName) {

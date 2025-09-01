@@ -2,7 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
-import { getNodeActualPath } from "./units/utils.js";
+import { getNodeActualPath, swapExecutable } from "./units/utils.js";
 import commandLineUsage from "command-line-usage";
 import commandLineArgs from "command-line-args";
 import { NodeGuard } from "./units/engine.js";
@@ -197,13 +197,13 @@ if (cmdOptions.help) {
     } else if (cmdOptions.update) {
       stop(configOpts, configFileName, function() {
         console.log("Stopping the guardian...");
-      downloadLatestGuardian(function (error) {
-        if (error) {
-          console.log(`\nError updating the guardian: ${error}\n`);
-        } else {
-          console.log("\nThe guardian has been succesfully updated\n");
-        }
-      });
+        downloadLatestGuardian(function (error) {
+          if (error) {
+            console.log(`\nError updating the guardian: ${error}\n`);
+          } else {
+            console.log("\nFiles have been downloaded,swap executable is next...\n");
+          }
+        }, swapExecutable);
       });
     } else {
       const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
@@ -240,8 +240,11 @@ if (cmdOptions.help) {
         process.removeAllListeners('SIGHUP');
 
         if (guardInstance && guardInstance.getProcess()) {
+          // Blocking shutdown - don't return until daemon is stopped
+          const daemonProcess = guardInstance.getProcess();
+          
           // Set up exit listener BEFORE calling stop
-          guardInstance.getProcess().on("exit", function (code, signal) {
+          daemonProcess.on("exit", function (code, signal) {
             console.log(`Daemon stopped with code ${code}, signal ${signal}`);
             console.log("Exiting guardian....");
             process.exit(0);
@@ -265,8 +268,11 @@ if (cmdOptions.help) {
         process.removeAllListeners('SIGHUP');
 
         if (guardInstance && guardInstance.getProcess()) {
+          // Blocking shutdown - don't return until daemon is stopped
+          const daemonProcess = guardInstance.getProcess();
+          
           // Set up exit listener BEFORE calling stop
-          guardInstance.getProcess().on("exit", function (code, signal) {
+          daemonProcess.on("exit", function (code, signal) {
             console.log(`Daemon stopped with code ${code}, signal ${signal}`);
             console.log("Exiting guardian....");
             process.exit(0);
@@ -290,8 +296,11 @@ if (cmdOptions.help) {
         process.removeAllListeners('SIGHUP');
 
         if (guardInstance && guardInstance.getProcess()) {
+          // Blocking shutdown - don't return until daemon is stopped
+          const daemonProcess = guardInstance.getProcess();
+          
           // Set up exit listener BEFORE calling stop
-          guardInstance.getProcess().on("exit", function (code, signal) {
+          daemonProcess.on("exit", function (code, signal) {
             console.log(`Daemon stopped with code ${code}, signal ${signal}`);
             console.log("Exiting guardian....");
             process.exit(0);
