@@ -117,7 +117,6 @@ export function swapExecutable(tempNewExecutable, executableName, callback) {
 timeout /t 5 /nobreak >nul
 del "${executableName}"
 rename "${tempNewExecutablePath}" "${finalExecutableName}"
-timeout /t 5 /nobreak >nul
 del "%~f0"
 exit /b 0
 `;
@@ -131,7 +130,7 @@ exit /b 0
        }).unref();
          } else {
        // Linux/Unix: use bash with sleep, delete old, rename new
-       execa('bash', ['-c', `sleep 10 && rm "${executableNamePath}" && mv "${tempNewExecutablePath}" "${finalExecutableName}"`], { 
+       execa('bash', ['-c', `sleep 5 && rm "${executableNamePath}" && mv "${tempNewExecutablePath}" "${finalExecutableName}"`], { 
          detached: true,
          stdio: 'ignore'
        }).unref();
