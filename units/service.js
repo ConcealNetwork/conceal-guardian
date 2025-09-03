@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 import xmlbuilder from "xmlbuilder";
-import { username } from "username";
+import { usernameSync } from "username";
 import format from "string-template";
 import { execa } from "execa";
 import { spinner } from './utils.js';
@@ -33,7 +33,7 @@ export function install(configOpts, configFileName) {
     } else if (process.platform == "linux") {
       var template = fs.readFileSync("ccx-guardian.service.template", "utf8");
       var parsedData = format(template, {
-        user: username.sync(),
+        user: usernameSync() || os.userInfo().username,
         workDir: process.cwd(),
         execPath: path.join(process.cwd(), 'guardian-linux64'),
         configPath: configFileName
@@ -45,6 +45,7 @@ export function install(configOpts, configFileName) {
         } else {
           console.log('\nService is succesfully installed.\n');
           execa('systemctl', ['daemon-reload'], { reject: false });
+          execa('systemctl', ['enable', 'ccx-guardian'], { reject: false });
         }
       });
     } else {
