@@ -261,7 +261,7 @@ export function downloadLatestGuardian(callback, swapExecutableCallback) {
               }
             });
 
-            // 5. Find new executable, rename and prepare for final move
+            // 5. Find new executable, rename and prepare for final move, doing this way, in case down the road we change the name of the executable, we don't have to change the code here
             var newExecutableName = null;
             fs.readdirSync(finalTempDir).forEach(file => {
               if (file.startsWith('guardian-') && 

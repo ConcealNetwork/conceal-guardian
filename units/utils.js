@@ -100,12 +100,10 @@ export function swapExecutable(tempNewExecutable, executableName, callback) {
     callback(`Error updating guardian: ${tempNewExecutable} not found`);
     return;
   }
-  console.log(`tempNewExecutablePath: ${tempNewExecutablePath}`);
   if (!fs.existsSync(executableNamePath)) {
     callback(`Error updating guardian: ${executableName} not found`);
     return;
   }
-  console.log(`executableNamePath: ${executableNamePath}`);
   console.log('Update completed. New executable ready.');
   callback(null);
   const finalExecutableName = path.basename(tempNewExecutablePath).replace('.new', '');
@@ -140,9 +138,28 @@ exit /b 0
   // Start swap process and wait before exiting
   swapProcess();
   
-  // Give the child process time to start, then exit
+  // Give the child process time to start, then exit (so we have a 4 second buffer for swapping)
   setTimeout(() => {
     console.log('Exiting to complete file swap...');
     process.exit(0);
   }, 1000);
+}
+
+// Reusable spinner function
+export function spinner(durationSeconds, message = 'Processing...') {
+  const spinnerChars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  let spinnerIndex = 0;
+  
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      process.stdout.write(`\r${spinnerChars[spinnerIndex]} ${message}`);
+      spinnerIndex = (spinnerIndex + 1) % spinnerChars.length;
+    }, 100);
+    
+    setTimeout(() => {
+      clearInterval(interval);
+      process.stdout.write('\r' + ' '.repeat(message.length + 2) + '\r'); // Clear the line
+      resolve();
+    }, durationSeconds * 1000);
+  });
 }

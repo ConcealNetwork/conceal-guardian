@@ -6,6 +6,7 @@ import xmlbuilder from "xmlbuilder";
 import { username } from "username";
 import format from "string-template";
 import { execa } from "execa";
+import { spinner } from './utils.js';
 import path from "path";
 import fs from "fs";
 import os from "os";
@@ -124,6 +125,7 @@ export function stop(configOpts, configFileName, callback) {
             // Service is still running, need to stop it
             if (attempts === 0) {
               // First attempt - stop the service
+              console.log('Service is running, stopping it...');
               const stopResult = await execa('cgservice.exe', ['stop'], { reject: false });
               if (stopResult.exitCode !== 0) {
                 callback(new Error("Error stopping guardian: " + stopResult.stdout));
@@ -147,6 +149,7 @@ export function stop(configOpts, configFileName, callback) {
             // Service is still running, need to stop it
             if (attempts === 0) {
               // First attempt - stop the service
+              console.log('Service is running, stopping it...');
               const stopResult = await execa('systemctl', ['stop', 'ccx-guardian'], { reject: false });
               if (stopResult.exitCode !== 0) {
                 callback(new Error("Error stopping guardian: " + stopResult.stdout));
@@ -170,8 +173,8 @@ export function stop(configOpts, configFileName, callback) {
         break;
       }
       
-      // Wait 5 seconds before next check
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Show spinning cursor while waiting
+      await spinner(5, "Waiting for service to stop...");
     }
   };
 
