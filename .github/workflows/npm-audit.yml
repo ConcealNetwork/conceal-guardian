@@ -1,0 +1,46 @@
+name: NPM Audit & Syntax Check
+
+on:
+  push:
+    branches: [ development ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run npm audit
+      run: npm audit
+      
+    - name: Check JavaScript syntax
+      run: |
+        ERROR_FOUND=0
+        while IFS= read -r file; do
+          if ! node --check "$file" 2>/dev/null; then
+            ERROR_OUTPUT=$(node --check "$file" 2>&1)
+            if echo "$ERROR_OUTPUT" | grep -qE "(SyntaxError|Syntax Error)"; then
+              echo "Syntax error in: $file"
+              echo "$ERROR_OUTPUT" | grep -E "(SyntaxError|Syntax Error)" || echo "$ERROR_OUTPUT"
+              ERROR_FOUND=1
+            fi
+          fi
+        done < <(find . -name "*.js" \
+          -not -path "./node_modules/*" \
+          -not -path "./.git/*" \
+          -not -path "./html/lib/*" \
+          -not -path "./bin/*")
+        if [ $ERROR_FOUND -eq 1 ]; then
+          echo "Found syntax errors in one or more files"
+          exit 1
+        fi
