@@ -27,7 +27,7 @@ jobs:
         node-version: '24.14.0'
         
     - name: Install dependencies
-      run: npm install
+      run: npm ci
       
     - name: Install global tools
       run: |

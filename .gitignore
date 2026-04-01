@@ -2,7 +2,7 @@
 /conceald.exe
 /conceald.log
 /conceald
-/package-lock.json
+# package-lock.json
 /config.json
 
 .idea
