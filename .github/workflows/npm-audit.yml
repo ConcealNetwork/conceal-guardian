@@ -1,30 +1,47 @@
-name: NPM Audit & Syntax Check
+name: npm-audit
 
 on:
   push:
-    branches: [ development ]
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   audit:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v5
       
     - name: Setup Node.js
       uses: actions/setup-node@v5
       with:
-        node-version: '24'
-        
+        node-version: 24
+        cache: npm
+        cache-dependency-path: |
+          package-lock.json
+
+    - name: Enable Socket Firewall Free
+      uses: socketdev/action@ba6de6cc0565af1f42295590380973573297e31f
+      with:
+        mode: firewall-free
+
+    - name: Verify lockfile exists
+      run: test -f package-lock.json
+
+    - name: Audit package-lock.json
+      run: npx --yes package-lock-audit package-lock.json
+
     - name: Install dependencies
-      run: npm install
+      run: sfw npm ci
       
     - name: Run npm audit
-      run: npm audit
+      run: sfw npm audit --audit-level=high
       
     - name: Check JavaScript syntax
       run: |
