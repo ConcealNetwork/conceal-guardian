@@ -28,7 +28,7 @@
   "dependencies": {
     "axios": "1.13.6",
     "command-line-args": "^6.0.0",
-    "command-line-usage": "^7.0.1",
+    "command-line-usage": "^7.0.4",
     "conceal-api": "^0.8.6",
     "download-github-release": "^0.3.2",
     "execa": "^9.6.0",
