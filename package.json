@@ -39,7 +39,7 @@
     "inquirer": "^13.2.2",
     "linux-os-info": "^2.0.0",
     "moment": "^2.29.4",
-    "nodemailer": "^8.0.0",
+    "nodemailer": "^8.0.4",
     "object-path": "^0.11.8",
     "pure-uuid": "^2.0.0",
     "read-last-lines": "^1.8.0",
@@ -59,6 +59,7 @@
   },
   "overrides": {
     "body-parser": "2.2.2",
+    "path-to-regexp": "8.4.0",
     "yauzl": "3.2.1"
   }
 }
