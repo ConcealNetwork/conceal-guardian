@@ -1,0 +1,94 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Security Findings Store",
+    "type": "object",
+    "required": ["repo", "findings"],
+    "properties": {
+      "repo": {
+        "type": "string",
+        "description": "Repository identifier, e.g. conceal-guardian"
+      },
+      "lastReviewed": {
+        "type": ["string", "null"],
+        "description": "ISO 8601 date-time of the last human review pass, or null if never"
+      },
+      "findings": {
+        "type": "array",
+        "description": "List of reviewed security findings for this repo",
+        "items": {
+          "type": "object",
+          "required": ["id", "title", "status", "severity", "files"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Stable identifier, e.g. SG-001"
+            },
+            "title": {
+              "type": "string",
+              "description": "Short human-readable description of the finding"
+            },
+            "status": {
+              "type": "string",
+              "description": "Lifecycle status of the finding",
+              "enum": ["open", "fixed", "accepted-risk", "duplicate", "rejected"]
+            },
+            "severity": {
+              "type": "string",
+              "description": "Impact level if exploited",
+              "enum": ["low", "medium", "high", "critical"]
+            },
+            "confidence": {
+              "type": ["string", "null"],
+              "description": "Confidence in the finding's validity",
+              "enum": ["low", "medium", "high", null]
+            },
+            "firstSeen": {
+              "type": ["string", "null"],
+              "description": "ISO 8601 date-time when first recorded, or null if unknown"
+            },
+            "lastReviewed": {
+              "type": ["string", "null"],
+              "description": "ISO 8601 date-time of the most recent human review, or null"
+            },
+            "source": {
+              "type": ["string", "null"],
+              "description": "Source of the finding, e.g. manual-review, agent-name, scanner-name"
+            },
+            "files": {
+              "type": "array",
+              "description": "Paths to files involved in the finding",
+              "items": {
+                "type": "string"
+              }
+            },
+            "summary": {
+              "type": ["string", "null"],
+              "description": "One-paragraph summary of the issue"
+            },
+            "exploitPath": {
+              "type": ["string", "null"],
+              "description": "Textual description of the attacker path from input to impact"
+            },
+            "remediation": {
+              "type": ["string", "null"],
+              "description": "Recommended mitigation steps"
+            },
+            "duplicateOf": {
+              "type": ["string", "null"],
+              "description": "ID of the canonical finding this is a duplicate of, if any"
+            },
+            "acceptedRiskId": {
+              "type": ["string", "null"],
+              "description": "ID in accepted-risks.md if this finding is covered by an accepted risk"
+            },
+            "notes": {
+              "type": ["string", "null"],
+              "description": "Free-form notes or review history details"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "additionalProperties": false
+  }

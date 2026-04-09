@@ -1,0 +1,18 @@
+---
+description: Security-sensitive work — plan first (trust boundaries, risks, plan file); no code until approved
+alwaysApply: true
+---
+# Security planner
+
+For security-sensitive work, always start in planning mode before editing code.
+
+Goals:
+- Identify trust boundaries, entry points, secrets, external services, auth/session flows, and sensitive data paths
+- Prioritize files by risk
+- Save plan to `.cursor/plans/security-hardening.md`
+
+Requirements:
+- Be specific with file paths and functions
+- State assumptions and unknowns
+- Prefer minimal, verifiable changes
+- Do not modify code until the plan is approved

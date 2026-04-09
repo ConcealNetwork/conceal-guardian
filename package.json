@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@babel/plugin-syntax-top-level-await": "^7.14.5",
+    "@biomejs/biome": "2.4.9",
     "esbuild": "^0.27.3"
   },
   "overrides": {

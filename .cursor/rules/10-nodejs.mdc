@@ -1,0 +1,17 @@
+---
+description: Node.js dependency, install, and validation workflow defaults for this repository
+alwaysApply: true
+---
+# Node.js workflow
+
+- Use npm for package management unless explicitly told otherwise.
+- Use `npm ci` for normal installs from an existing committed lockfile.
+- Do not use `npm install` casually on an existing project; use it only when intentionally changing dependencies.
+- Preserve `package-lock.json` consistency and review lockfile changes carefully.
+- Follow `security/dependency-policy.md` before proposing or applying dependency additions, removals, or upgrades.
+- Respect the repository `.npmrc`, including `min-release-age` and `ignore-scripts=true`.
+- Prefer `npx npq` for intentional dependency review when adding or upgrading packages.
+- If a dependency change would require bypassing `ignore-scripts=true`, stop and ask before proceeding.
+- If a dependency is blocked for being too recent or otherwise suspicious, stop and ask before proceeding.
+- After dependency changes, run the relevant verification steps for this repository, including tests, linting, formatting checks, and other validation commands when available.
+- Do not print, expose, or modify secrets in `.env`, webhook URLs, tokens, credentials, or sensitive config without explicit approval.
