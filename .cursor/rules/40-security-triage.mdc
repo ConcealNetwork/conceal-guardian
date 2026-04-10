@@ -1,0 +1,16 @@
+---
+description: Deduplicate, normalize, and update the reviewed findings store for repeated security reviews
+alwaysApply: false
+---
+# Security triage
+
+- Use `security/findings-reviewed.json` as the canonical reviewed findings store.
+- Compare proposed findings against existing records before creating new ones.
+- Prefer updating an existing finding over creating a duplicate when title, files, exploit path, or root cause substantially match.
+- Preserve stable IDs for existing findings.
+- Allowed statuses are: open, fixed, accepted-risk, duplicate, rejected.
+- Do not reopen accepted risks unless the code changed materially or severity increased.
+- Do not mark a finding as fixed without evidence in the current code or diff.
+- If a finding is a duplicate, link it using `duplicateOf`.
+- If a finding maps to an accepted risk, link it using `acceptedRiskId`.
+- Propose updates clearly, but leave final approval to the human reviewer.

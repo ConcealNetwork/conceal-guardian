@@ -19,3 +19,12 @@ codeql-db/
 # Ignore SARIF files generated locally
 *.sarif
 
+# security-agent
+security/raw/*
+!security/raw/.gitkeep
+
+security/reports/*
+!security/reports/.gitkeep
+
+security/tmp/*
+!security/tmp/.gitkeep

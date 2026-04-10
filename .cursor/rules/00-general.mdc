@@ -1,0 +1,19 @@
+---
+description: Repo-wide workflow, safety, and change-minimization defaults for all tasks in this repository
+alwaysApply: true
+---
+# General repo workflow
+
+- Before making multi-file changes, first explain the plan in 3-7 concise steps.
+- Prefer the smallest change that fully solves the requested problem.
+- Preserve existing architecture and naming unless the user asks for refactoring.
+- Do not introduce new dependencies unless necessary; explain why before adding one.
+- After code changes, run the relevant validation commands when available, such as tests, linting, or type checks.
+- Use Biome as the canonical tool for formatting and linting in this repo.
+- Prefer non-destructive validation first, for example `biome check .`, before using write/fix commands.
+- Do not run repo-wide formatting rewrites unless the task explicitly asks for formatting cleanup.
+- Ask for confirmation before modifying authentication, cryptography, secrets handling, environment configuration, database migrations, or externally exposed security-sensitive behavior.
+- Do not invent requirements, files, endpoints, env vars, or background jobs that were not requested or clearly implied by the codebase.
+- If requirements are ambiguous, ask a clarifying question instead of guessing.
+- When changing behavior, briefly state what changed and which files were touched.
+- Prefer reversible, reviewable diffs over broad rewrites.
