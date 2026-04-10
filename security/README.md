@@ -75,3 +75,22 @@ This keeps the durable security memory in Git while avoiding noise from every in
 - `rejected` — determined not to be a valid issue (e.g., false positive or out of scope).
 
 See `findings.schema.json` for the precise JSON structure.
+
+## Reusable Cursor commands
+
+Reusable security workflows for this repo live in `.cursor/commands/`.
+
+Suggested commands:
+- `/security-review-priority-1` — review dependency and install workflow only
+- `/security-generate-finding` — turn one validated issue into a structured finding proposal
+- `/security-triage-findings` — compare proposed findings against reviewed findings and accepted risks
+- `/security-apply-finding-fix` — implement a minimal fix for one accepted finding
+
+These commands should use:
+- `.cursor/plans/security-hardening.md` for review order and scope
+- `security/threat-model.md` for repo-specific trust boundaries
+- `security/dependency-policy.md` for supply-chain rules
+- `security/findings-reviewed.json` as the canonical findings memory
+- `security/accepted-risks.md` for consciously accepted risks
+
+The agent should not update `security/findings-reviewed.json` automatically unless explicitly instructed to do so.
