@@ -1,14 +1,18 @@
-// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2026, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
+import fs from "node:fs";
+import path from "node:path";
+import { execa } from "execa";
 import UUID from "pure-uuid";
-import path from "path";
-import fs from "fs";
-import { execa } from 'execa';
 
 export function ensureUserDataDir() {
-  var userDataDir = process.env.APPDATA || (process.platform === "darwin" ? process.env.HOME + "/Library/Application Support" : process.env.HOME + "/.local/share");
+  var userDataDir =
+    process.env.APPDATA ||
+    (process.platform === "darwin"
+      ? `${process.env.HOME}/Library/Application Support`
+      : `${process.env.HOME}/.local/share`);
   userDataDir = path.join(userDataDir, "ccxNodeGuard");
 
   if (!fs.existsSync(userDataDir)) {
@@ -16,7 +20,7 @@ export function ensureUserDataDir() {
   }
 
   return userDataDir;
-};
+}
 
 export function ensureNodeUniqueId() {
   const nodeDataFile = path.join(ensureUserDataDir(), "nodedata.json");
@@ -27,10 +31,10 @@ export function ensureNodeUniqueId() {
   try {
     nodeData = JSON.parse(fs.readFileSync(nodeDataFile));
     return nodeData.id;
-  } catch (e) {
+  } catch {
     // File doesn't exist, create it atomically
     nodeData = {
-      id: new UUID(4).format()
+      id: new UUID(4).format(),
     };
 
     // Ensure directory exists
@@ -42,7 +46,7 @@ export function ensureNodeUniqueId() {
     // Write to a temporary file first
     try {
       fs.writeFileSync(tempFile, JSON.stringify(nodeData), { mode: 0o664 });
-      
+
       // Atomically rename the temp file to the final file
       try {
         fs.renameSync(tempFile, nodeDataFile);
@@ -68,33 +72,31 @@ export function ensureNodeUniqueId() {
       console.error(`Failed to write temp file: ${writeError.message}`);
       throw writeError;
     }
-    
-    return nodeData.id;
   }
-};
+}
 
 export function getNodeActualPath(cmdOptions, configOpts, rootPath) {
   const daemonPath = cmdOptions.daemon || path.join(rootPath, getNodeExecutableName());
-  return (configOpts.node.path || daemonPath);
-};
+  return configOpts.node.path || daemonPath;
+}
 
 export function getNodeExecutableName() {
   if (process.platform === "win32") {
-    return 'conceald.exe';
+    return "conceald.exe";
   } else {
-    return 'conceald';
+    return "conceald";
   }
-};
+}
 
 export function getGuardianExecutableName() {
   return path.basename(process.argv[0]);
-};
+}
 
 // Function to swap executable files
 export function swapExecutable(tempNewExecutable, executableName, callback) {
   const tempNewExecutablePath = path.join(process.cwd(), tempNewExecutable);
   const executableNamePath = path.join(process.cwd(), executableName);
-  
+
   // Check if both files exist
   if (!fs.existsSync(tempNewExecutablePath)) {
     callback(`Error updating guardian: ${tempNewExecutable} not found`);
@@ -104,9 +106,9 @@ export function swapExecutable(tempNewExecutable, executableName, callback) {
     callback(`Error updating guardian: ${executableName} not found`);
     return;
   }
-  console.log('Update completed. New executable ready.');
+  console.log("Update completed. New executable ready.");
   callback(null);
-  const finalExecutableName = path.basename(tempNewExecutablePath).replace('.new', '');
+  const finalExecutableName = path.basename(tempNewExecutablePath).replace(".new", "");
 
   // Start the swap process and exit immediately
   const swapProcess = () => {
@@ -118,47 +120,54 @@ rename "${tempNewExecutablePath}" "${finalExecutableName}"
 del "%~f0"
 exit /b 0
 `;
-      const batchFile = path.join(process.cwd(), 'swap.bat');
+      const batchFile = path.join(process.cwd(), "swap.bat");
       fs.writeFileSync(batchFile, batchContent);
-      
-             execa('cmd', ['/k', 'swap.bat'], { 
-         detached: true,
-         stdio: 'ignore',
-         cwd: process.cwd()
-       }).unref();
-         } else {
-       // Linux/Unix: use bash with sleep, delete old, rename new
-       execa('bash', ['-c', `sleep 5 && rm "${executableNamePath}" && mv "${tempNewExecutablePath}" "${finalExecutableName}"`], { 
-         detached: true,
-         stdio: 'ignore'
-       }).unref();
-     }
+
+      execa("cmd", ["/k", "swap.bat"], {
+        detached: true,
+        stdio: "ignore",
+        cwd: process.cwd(),
+      }).unref();
+    } else {
+      // Linux/Unix: use bash with sleep, delete old, rename new
+      execa(
+        "bash",
+        [
+          "-c",
+          `sleep 5 && rm "${executableNamePath}" && mv "${tempNewExecutablePath}" "${finalExecutableName}"`,
+        ],
+        {
+          detached: true,
+          stdio: "ignore",
+        },
+      ).unref();
+    }
   };
-  
+
   // Start swap process and wait before exiting
   swapProcess();
-  
+
   // Give the child process time to start, then exit (so we have a 4 second buffer for swapping)
   setTimeout(() => {
-    console.log('Exiting to complete file swap...');
+    console.log("Exiting to complete file swap...");
     process.exit(0);
   }, 1000);
 }
 
 // Reusable spinner function
-export function spinner(durationSeconds, message = 'Processing...') {
-  const spinnerChars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+export function spinner(durationSeconds, message = "Processing...") {
+  const spinnerChars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
   let spinnerIndex = 0;
-  
+
   return new Promise((resolve) => {
     const interval = setInterval(() => {
       process.stdout.write(`\r${spinnerChars[spinnerIndex]} ${message}`);
       spinnerIndex = (spinnerIndex + 1) % spinnerChars.length;
     }, 100);
-    
+
     setTimeout(() => {
       clearInterval(interval);
-      process.stdout.write('\r' + ' '.repeat(message.length + 2) + '\r'); // Clear the line
+      process.stdout.write(`\r${" ".repeat(message.length + 2)}\r`); // Clear the line
       resolve();
     }, durationSeconds * 1000);
   });

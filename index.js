@@ -2,57 +2,58 @@
 //
 // Please see the included LICENSE file for more information.
 
-import { getNodeActualPath, swapExecutable } from "./units/utils.js";
-import commandLineUsage from "command-line-usage";
+import fs from "node:fs";
+import path from "node:path";
 import commandLineArgs from "command-line-args";
+import commandLineUsage from "command-line-usage";
+import { downloadLatestDaemon, downloadLatestGuardian } from "./units/download.js";
 import { NodeGuard } from "./units/engine.js";
+import { install, remove, start, status, stop } from "./units/service.js";
 import { Initialize } from "./units/setup.js";
-import path from "path";
-import fs from "fs";
-import { 
-  downloadLatestDaemon, 
-  downloadLatestGuardian
-} from "./units/download.js";
-import {
-  install, 
-  remove, 
-  stop, 
-  start, 
-  status
-} from "./units/service.js";
+import { getNodeActualPath, swapExecutable } from "./units/utils.js";
 
 // read the package.json to have version info available
 const pjson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")));
 
+let cmdOptions;
 try {
-  var cmdOptions = commandLineArgs([{
-    name: "config",
-    type: String
-  }, {
-    name: "daemon",
-    type: String
-  }, {
-    name: "service",
-    type: String
-  }, {
-    name: "setup",
-    type: Boolean
-  }, {
-    name: "node",
-    type: String
-  }, {
-    name: "update",
-    type: Boolean
-  }, {
-    name: "version",
-    alias: "v",
-    type: Boolean
-  }, {
-    name: "help",
-    alias: "h",
-    type: Boolean
-  }]);
-} catch (err) {
+  cmdOptions = commandLineArgs([
+    {
+      name: "config",
+      type: String,
+    },
+    {
+      name: "daemon",
+      type: String,
+    },
+    {
+      name: "service",
+      type: String,
+    },
+    {
+      name: "setup",
+      type: Boolean,
+    },
+    {
+      name: "node",
+      type: String,
+    },
+    {
+      name: "update",
+      type: Boolean,
+    },
+    {
+      name: "version",
+      alias: "v",
+      type: Boolean,
+    },
+    {
+      name: "help",
+      alias: "h",
+      type: Boolean,
+    },
+  ]);
+} catch {
   console.error("\nUknown command line parameter. Use --help for instructions.");
   process.exit();
 }
@@ -60,54 +61,58 @@ try {
 if (cmdOptions.help) {
   const sections = [
     {
-      header: 'Conceal Node Guardian',
-      content: 'This is a guardian app for the conceal node daemon. Handles restarts, sends notifications, registers to pool...'
+      header: "Conceal Node Guardian",
+      content:
+        "This is a guardian app for the conceal node daemon. Handles restarts, sends notifications, registers to pool...",
     },
     {
-      header: 'Options',
+      header: "Options",
       optionList: [
         {
-          name: 'help',
-          typeLabel: ' ',
-          description: 'Shows this help instructions\n'
+          name: "help",
+          typeLabel: " ",
+          description: "Shows this help instructions\n",
         },
         {
-          name: 'config',
-          typeLabel: '{underline file}',
-          description: 'The path to configuration file. If empty it uses the config.json in the same directory as the app.\n'
+          name: "config",
+          typeLabel: "{underline file}",
+          description:
+            "The path to configuration file. If empty it uses the config.json in the same directory as the app.\n",
         },
         {
-          name: 'daemon',
-          typeLabel: '{underline file}',
-          description: 'The path to node daemon executable. If empty it uses the same directory as the app.\n'
+          name: "daemon",
+          typeLabel: "{underline file}",
+          description:
+            "The path to node daemon executable. If empty it uses the same directory as the app.\n",
         },
         {
-          name: 'node',
-          typeLabel: '{underline update}',
-          description: 'Updates to the latest stable version of the node daemon. Node must be stoped first\n'
+          name: "node",
+          typeLabel: "{underline update}",
+          description:
+            "Updates to the latest stable version of the node daemon. Node must be stoped first\n",
         },
         {
-          name: 'service',
-          typeLabel: '{underline install|remove|start|stop|status}',
-          description: 'Controls the service behaviour\n'
+          name: "service",
+          typeLabel: "{underline install|remove|start|stop|status}",
+          description: "Controls the service behaviour\n",
         },
         {
-          name: 'setup',
-          typeLabel: ' ',
-          description: 'Initiates the interactive config setup for the guardian\n'
+          name: "setup",
+          typeLabel: " ",
+          description: "Initiates the interactive config setup for the guardian\n",
         },
         {
-          name: 'update',
-          typeLabel: ' ',
-          description: 'Update the guardian instance to the latest version\n'
+          name: "update",
+          typeLabel: " ",
+          description: "Update the guardian instance to the latest version\n",
         },
         {
-          name: 'version',
-          typeLabel: ' ',
-          description: 'Shows the version of the Conceal Guardian app'
-        }
-      ]
-    }
+          name: "version",
+          typeLabel: " ",
+          description: "Shows the version of the Conceal Guardian app",
+        },
+      ],
+    },
   ];
   const usage = commandLineUsage(sections);
   console.log(usage);
@@ -118,20 +123,26 @@ if (cmdOptions.help) {
   const configFileName = cmdOptions.config || path.join(rootPath, "config.json");
 
   if (!fs.existsSync(configFileName)) {
-    console.log(`\n"${configFileName}" does not exist! Specify the correct path to the config file or create config.json in the same directory as the application. You can use the config.json.sample as an example\n`);
+    console.log(
+      `\n"${configFileName}" does not exist! Specify the correct path to the config file or create config.json in the same directory as the application. You can use the config.json.sample as an example\n`,
+    );
   } else {
     // read config option to use them either in engine or setup module
-    const configOpts = JSON.parse(fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"));
+    const configOpts = JSON.parse(
+      fs.readFileSync(cmdOptions.config || path.join(rootPath, "config.json"), "utf8"),
+    );
 
     // check if arguments are specified if not make an empty array
-    if (!(configOpts.node && configOpts.node.args)) {
+    if (!configOpts.node) {
+      configOpts.node = { args: [] };
+    } else if (!configOpts.node.args) {
       configOpts.node.args = [];
     }
 
-    if (configOpts.node && configOpts.node.bindAddr) {
-      var addrIndex = configOpts.node.args.indexOf("--rpc-bind-ip");
+    if (configOpts.node?.bindAddr) {
+      const addrIndex = configOpts.node.args.indexOf("--rpc-bind-ip");
 
-      if (addrIndex == -1) {
+      if (addrIndex === -1) {
         // add bind address to arguments
         configOpts.node.args.push("--rpc-bind-ip");
         configOpts.node.args.push(configOpts.node.bindAddr);
@@ -140,10 +151,10 @@ if (cmdOptions.help) {
       }
     }
 
-    if (configOpts.node && configOpts.node.port) {
-      var portIndex = configOpts.node.args.indexOf("--rpc-bind-port");
+    if (configOpts.node?.port) {
+      const portIndex = configOpts.node.args.indexOf("--rpc-bind-port");
 
-      if (portIndex == -1) {
+      if (portIndex === -1) {
         // add fee address to arguments
         configOpts.node.args.push("--rpc-bind-port");
         configOpts.node.args.push(configOpts.node.port);
@@ -152,7 +163,7 @@ if (cmdOptions.help) {
       }
     }
 
-    if (configOpts.node && configOpts.node.feeAddr) {
+    if (configOpts.node?.feeAddr) {
       // add fee address to arguments
       configOpts.node.args.push("--fee-address");
       configOpts.node.args.push(configOpts.node.feeAddr);
@@ -177,27 +188,30 @@ if (cmdOptions.help) {
         case "status":
           status(configOpts, configFileName);
           break;
-        default: console.log('\nWrong parameter for service command. Valid values: "install", "remove", "start", "stop", "status"\n');
+        default:
+          console.log(
+            '\nWrong parameter for service command. Valid values: "install", "remove", "start", "stop", "status"\n',
+          );
       }
     } else if (cmdOptions.node) {
       if (cmdOptions.node === "update") {
-        stop(configOpts, configFileName, function() {
+        stop(configOpts, configFileName, () => {
           // Service stopped, now proceed with daemon update
-          downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
-          if (error) {
-            console.log(`\nError updating daemon: ${error}\n`);
-          } else {
-            console.log("\nThe daemon has been succesfully updated\n");
-          }
-        });
+          downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), (error) => {
+            if (error) {
+              console.log(`\nError updating daemon: ${error}\n`);
+            } else {
+              console.log("\nThe daemon has been succesfully updated\n");
+            }
+          });
         }); // Close stop callback
       } else {
         console.log('\nWrong parameter for node command. Valid values: "update"\n');
       }
     } else if (cmdOptions.update) {
-      stop(configOpts, configFileName, function() {
+      stop(configOpts, configFileName, () => {
         console.log("Stopping the guardian...");
-        downloadLatestGuardian(function (error) {
+        downloadLatestGuardian((error) => {
           if (error) {
             console.log(`\nError updating the guardian: ${error}\n`);
           } else {
@@ -207,15 +221,15 @@ if (cmdOptions.help) {
       });
     } else {
       const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
-      var guardInstance = null;
+      let guardInstance = null;
 
       // createGuardInstance function
-      var createGuardInstance = function () {
+      const createGuardInstance = () => {
         guardInstance = new NodeGuard(cmdOptions, configOpts, rootPath, pjson.version);
       };
 
       if (!fs.existsSync(nodePath)) {
-        downloadLatestDaemon(nodePath, function (error) {
+        downloadLatestDaemon(nodePath, (error) => {
           if (error) {
             console.log(`\nError updating daemon: ${error}\n`);
           } else {
@@ -227,24 +241,24 @@ if (cmdOptions.help) {
         createGuardInstance();
       }
 
-      process.on('uncaughtException', function (err) {
+      process.on("uncaughtException", (err) => {
         guardInstance.logError(err);
       });
       // Handle SIGINT (Ctrl+C)
-      process.on('SIGINT', function() {
+      process.on("SIGINT", () => {
         console.log("Received SIGINT, stopping the guardian....");
-        
-        // Prevent signal propagation to child processes
-        process.removeAllListeners('SIGINT');
-        process.removeAllListeners('SIGTERM');
-        process.removeAllListeners('SIGHUP');
 
-        if (guardInstance && guardInstance.getProcess()) {
+        // Prevent signal propagation to child processes
+        process.removeAllListeners("SIGINT");
+        process.removeAllListeners("SIGTERM");
+        process.removeAllListeners("SIGHUP");
+
+        if (guardInstance?.getProcess()) {
           // Blocking shutdown - don't return until daemon is stopped
           const daemonProcess = guardInstance.getProcess();
-          
+
           // Set up exit listener BEFORE calling stop
-          daemonProcess.on("exit", function (code, signal) {
+          daemonProcess.on("exit", (code, signal) => {
             console.log(`Daemon stopped with code ${code}, signal ${signal}`);
             console.log("Exiting guardian....");
             process.exit(0);
@@ -259,20 +273,20 @@ if (cmdOptions.help) {
       });
 
       // Also handle SIGTERM for system service shutdowns
-      process.on('SIGTERM', function() {
+      process.on("SIGTERM", () => {
         console.log("Received SIGTERM, stopping the guardian....");
-        
-        // Prevent signal propagation to child processes
-        process.removeAllListeners('SIGINT');
-        process.removeAllListeners('SIGTERM');
-        process.removeAllListeners('SIGHUP');
 
-        if (guardInstance && guardInstance.getProcess()) {
+        // Prevent signal propagation to child processes
+        process.removeAllListeners("SIGINT");
+        process.removeAllListeners("SIGTERM");
+        process.removeAllListeners("SIGHUP");
+
+        if (guardInstance?.getProcess()) {
           // Blocking shutdown - don't return until daemon is stopped
           const daemonProcess = guardInstance.getProcess();
-          
+
           // Set up exit listener BEFORE calling stop
-          daemonProcess.on("exit", function (code, signal) {
+          daemonProcess.on("exit", (code, signal) => {
             console.log(`Daemon stopped with code ${code}, signal ${signal}`);
             console.log("Exiting guardian....");
             process.exit(0);
@@ -287,20 +301,20 @@ if (cmdOptions.help) {
       });
 
       // Handle SIGHUP (terminal window closed)
-      process.on('SIGHUP', function() {
+      process.on("SIGHUP", () => {
         console.log("Received SIGHUP (terminal closed), stopping the guardian....");
-        
-        // Prevent signal propagation to child processes
-        process.removeAllListeners('SIGINT');
-        process.removeAllListeners('SIGTERM');
-        process.removeAllListeners('SIGHUP');
 
-        if (guardInstance && guardInstance.getProcess()) {
+        // Prevent signal propagation to child processes
+        process.removeAllListeners("SIGINT");
+        process.removeAllListeners("SIGTERM");
+        process.removeAllListeners("SIGHUP");
+
+        if (guardInstance?.getProcess()) {
           // Blocking shutdown - don't return until daemon is stopped
           const daemonProcess = guardInstance.getProcess();
-          
+
           // Set up exit listener BEFORE calling stop
-          daemonProcess.on("exit", function (code, signal) {
+          daemonProcess.on("exit", (code, signal) => {
             console.log(`Daemon stopped with code ${code}, signal ${signal}`);
             console.log("Exiting guardian....");
             process.exit(0);
@@ -315,13 +329,13 @@ if (cmdOptions.help) {
       });
 
       // Handle process exit to ensure cleanup
-      process.on('exit', function(code) {
+      process.on("exit", (code) => {
         console.log(`Guardian process exiting with code ${code}`);
-        if (guardInstance && guardInstance.getProcess()) {
+        if (guardInstance?.getProcess()) {
           console.log("Ensuring daemon is stopped...");
           guardInstance.stop(false);
         }
-      });      
+      });
     }
   }
 }
