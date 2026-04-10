@@ -17,33 +17,26 @@ These files are authoritative:
 
 The `raw/`, `reports/`, and `tmp/` subdirectories are for **transient artifacts** that are normally ignored by Git.
 
-## Workflow overview
+## How to use the security workflow
 
-1. **Plan**  
-   A security planner creates or updates a plan (for example in `.cursor/plans/security-hardening.md`) and, when needed, updates `threat-model.md` to reflect new assets, entry points, or trust boundaries.
+1. **Planning (Plan Mode)**  
+   - Run `/security-plan-hardening` in Plan Mode.  
+   - Review and edit `.cursor/plans/security-hardening.md`.  
+   - When architecture or assumptions change, update `threat-model.md` as needed.
 
 2. **Review**  
-   A security reviewer inspects:
-   - the current diff, or
-   - specific high‑risk files listed in `threat-model.md`,
-   and proposes candidate findings (medium or higher severity, with evidence).
+   - Run `/security-review-priority-1` to review supply chain and install workflow.  
+   - Use `/security-generate-finding` to turn real issues into proposed findings.
 
-3. **Triage**  
-   A triage step compares proposed findings against `findings-reviewed.json` and `accepted-risks.md`:
-   - update an existing finding if it’s the same root cause,
-   - mark as `duplicate` when it’s the same issue reported again,
-   - link to an accepted risk when applicable,
-   - propose new findings only when they are genuinely new.
+3. **Recording**  
+   - Manually add approved findings to `security/findings-reviewed.json`.  
+   - Add accepted risks to `security/accepted-risks.md` when needed.
 
-4. **Approval**  
-   A human reviewer decides which updates to apply:
-   - add or update entries in `findings-reviewed.json`,
-   - update `accepted-risks.md` if a new risk is accepted,
-   - adjust `threat-model.md` if the architecture or assumptions changed.
+4. **Triage and fix**  
+   - Use `/security-triage-findings` to classify new vs duplicate vs accepted risks.  
+   - Use `/security-fix-finding` to apply minimal fixes for one `SG-00X` at a time.
 
-5. **Follow‑up**  
-   Use open findings as input for future hardening work.  
-   When code changes to address a finding, update its status to `fixed` with a short note and date.
+**Approval and follow-up:** A human reviewer still decides what is merged into `findings-reviewed.json` and `accepted-risks.md`. When code changes address a finding, update its status to `fixed` with a short note and date.
 
 ## Commit policy
 
@@ -78,13 +71,14 @@ See `findings.schema.json` for the precise JSON structure.
 
 ## Reusable Cursor commands
 
-Reusable security workflows for this repo live in `.cursor/commands/`.
+Reusable security workflows for this repo live in `.cursor/commands/` (numbered files such as `00-security-plan-hardening.md`).
 
 Suggested commands:
+- `/security-plan-hardening` — plan trust boundaries and review scope (Plan Mode)
 - `/security-review-priority-1` — review dependency and install workflow only
 - `/security-generate-finding` — turn one validated issue into a structured finding proposal
 - `/security-triage-findings` — compare proposed findings against reviewed findings and accepted risks
-- `/security-apply-finding-fix` — implement a minimal fix for one accepted finding
+- `/security-fix-finding` — implement a minimal fix for one accepted finding
 
 These commands should use:
 - `.cursor/plans/security-hardening.md` for review order and scope

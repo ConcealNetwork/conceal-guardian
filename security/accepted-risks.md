@@ -5,6 +5,8 @@ Each entry must explain *why* the risk is accepted and *when* it should be revis
 
 Use IDs of the form `AR-XXX` so they can be referenced from `findings-reviewed.json`.
 
+> **Current status:** No accepted risks have been recorded yet.
+> The sections below are templates for future entries.
 ---
 
 ## AR-001
