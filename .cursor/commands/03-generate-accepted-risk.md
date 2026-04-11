@@ -35,8 +35,9 @@ When generating a proposed accepted-risk entry:
   - recommended follow-up,
   - notes.
 
-Preferred output format:
+Output format (mandatory):
 
+```markdown
 ## AR-XXX — <short title>
 
 **Status:** accepted  
@@ -59,6 +60,13 @@ Preferred output format:
 
 **Notes:**  
 <extra context>
+```
+
+Important:
+- Output **only** one fenced ```markdown block with the AR entry.
+- Do **not** include any explanation, commentary, or reasoning outside the fenced block.
+- Do **not** modify any files; this is generate-only so the user can copy/paste into `security/accepted-risks.md`.
+
 
 After the markdown block, include a short section:
 
