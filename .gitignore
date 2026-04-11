@@ -28,3 +28,6 @@ security/reports/*
 
 security/tmp/*
 !security/tmp/.gitkeep
+
+# Plur
+CLAUDE.md
