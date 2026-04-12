@@ -29,5 +29,7 @@ security/reports/*
 security/tmp/*
 !security/tmp/.gitkeep
 
+security/findings-reviewed.private.json
+security/accepted-risks.private.md
 # Plur
 CLAUDE.md

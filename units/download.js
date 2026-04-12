@@ -2,6 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -18,6 +19,26 @@ const supportedUbuntuVersionsCore = ["20.04", "20.10", "22.04", "22.05", "24.04"
 const supportedUbuntuVersionsGuardian = ["20.04", "20.10", "22.04", "22.05", "24.04"];
 const wrongOSMsg =
   "This operating system has no precompiled binaries you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
+
+async function verifyArchiveChecksum(archivePath, owner, repo, tag) {
+  const checksumUrl = `https://github.com/${owner}/${repo}/releases/download/${tag}/checksums.sha256`;
+  const response = await fetch(checksumUrl, { headers: { "User-Agent": "Conceal Node Guardian" } });
+  if (!response.ok) {
+    throw new Error(`No checksums.sha256 found for ${owner}/${repo} release ${tag} — cannot verify archive integrity`);
+  }
+  const checksumText = await response.text();
+  const archiveName = path.basename(archivePath);
+  const matchLine = checksumText.split("\n").find((line) => line.includes(archiveName));
+  if (!matchLine) {
+    throw new Error(`No checksum entry for ${archiveName} in checksums.sha256 (release ${tag})`);
+  }
+  const expectedHash = matchLine.split(/\s+/)[0].toLowerCase();
+  const fileBuffer = fs.readFileSync(archivePath);
+  const actualHash = crypto.createHash("sha256").update(fileBuffer).digest("hex");
+  if (actualHash !== expectedHash) {
+    throw new Error(`Integrity check FAILED for ${archiveName}: expected ${expectedHash}, got ${actualHash}`);
+  }
+}
 
 // Define a function to filter releases.
 function filterRelease(release) {
@@ -179,7 +200,7 @@ export function downloadLatestGuardian(callback, swapExecutableCallback) {
       } else {
         console.log(`Updating from version ${current} to ${latest}`);
         // Continue with the existing download logic below
-        executeDownload();
+        executeDownload(`v${latest}`);
       }
     })
     .catch((err) => {
@@ -188,7 +209,7 @@ export function downloadLatestGuardian(callback, swapExecutableCallback) {
     });
 
   // Move all download logic into a separate function that only gets called when needed
-  function executeDownload() {
+  function executeDownload(releaseTag) {
     const finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
     const linuxOSInfo = getLinuxOSInfo();
     if (!fs.existsSync(finalTempDir)) {
@@ -236,9 +257,17 @@ export function downloadLatestGuardian(callback, swapExecutableCallback) {
       true,
     )
       .then(() => {
-        fs.readdir(finalTempDir, (_err, items) => {
+        fs.readdir(finalTempDir, async (_err, items) => {
           if (items.length > 0) {
-            extractArchive(path.join(finalTempDir, items[0]), finalTempDir, (success) => {
+            const archivePath = path.join(finalTempDir, items[0]);
+            try {
+              await verifyArchiveChecksum(archivePath, "ConcealNetwork", "conceal-guardian", releaseTag);
+            } catch (err) {
+              fs.rmSync(finalTempDir, { recursive: true, force: true });
+              callback(err.message);
+              return;
+            }
+            extractArchive(archivePath, finalTempDir, (success) => {
               if (success) {
                 // 1. Backup current executable
                 const executableName = getGuardianExecutableName();

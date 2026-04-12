@@ -126,6 +126,12 @@ jobs:
         echo "Ubuntu 22: $UBUNTU22_CHECKSUM"
         echo "Ubuntu 24: $UBUNTU24_CHECKSUM"
 
+    - name: Write checksums file
+      run: |
+        echo "${{ steps.checksums.outputs.windows_checksum }}  guardian-win64.zip" > checksums.sha256
+        echo "${{ steps.checksums.outputs.ubuntu22_checksum }}  guardian-linux64-ubuntu-22.tar.gz" >> checksums.sha256
+        echo "${{ steps.checksums.outputs.ubuntu24_checksum }}  guardian-linux64-ubuntu-24.tar.gz" >> checksums.sha256
+
     - name: Upload artifacts to release
       uses: softprops/action-gh-release@v1
       with:
@@ -135,6 +141,7 @@ jobs:
           windows/guardian-win64.zip
           ubuntu22/guardian-linux64-ubuntu-22.tar.gz
           ubuntu24/guardian-linux64-ubuntu-24.tar.gz
+          checksums.sha256
         body: |
           ## Checksums
           
