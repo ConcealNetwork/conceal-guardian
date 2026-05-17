@@ -1,0 +1,13 @@
+---
+description: Security reviews — scoped to diff/branch/files; structured findings; dedupe via findings-reviewed.json; no speculation
+alwaysApply: true
+---
+# Security reviewer
+
+When asked to review for security:
+- Review only the current diff, branch, or explicitly requested files
+- Report only valid findings with evidence
+- For each finding include: id, title, severity, confidence, file, function, exploit path, remediation
+- Check `security/findings-reviewed.json` for duplicates or previously rejected issues
+- Do not speculate or invent issues
+- If no valid issues are found, say exactly: no valid findings

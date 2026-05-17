@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2022, Taegus Cromis, The Conceal Developers
+// Copyright (c) 2019-2026, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
 
@@ -12,20 +12,16 @@ import readline from "readline";
 import { execa } from "execa";
 import axios from "axios";
 import moment from "moment";
-import path from "path";
-import fs from "fs";
-import os from "os";
+import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
 import validator from "validator";
-import { 
-  ensureNodeUniqueId, 
-  ensureUserDataDir, 
-  getNodeActualPath 
-} from "./utils.js";
+import { ensureNodeUniqueId, ensureUserDataDir, getNodeActualPath } from "./utils.js";
 
 // read the package.json to have version info available
 const pjson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")));
 
-export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
+export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   const nodeUniqueId = ensureNodeUniqueId();
   var poolNotifyInterval = null;
   var startupTime = moment();
@@ -47,38 +43,42 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
   async function getGeoData() {
     const maxRetries = 10;
     const retryDelay = 2000; // 2 seconds
-    
+
     // Primary API
-    const primaryIPApi = 'https://api.ipify.org';
-    const primaryGeoApi = 'https://ipapi.co/{ip}/json/';
-    
+    const primaryIPApi = "https://api.ipify.org";
+    const primaryGeoApi = "https://ipapi.co/{ip}/json/";
+
     // Fallback API (used after 5 attempts) - More reputable alternatives
-    const fallbackIPApi = 'https://checkip.amazonaws.com';
-    const fallbackGeoApi = 'https://ipinfo.io/{ip}/json';
-    
+    const fallbackIPApi = "https://checkip.amazonaws.com";
+    const fallbackGeoApi = "https://ipinfo.io/{ip}/json";
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        logMessage(`Attempting to get geolocalization data (attempt ${attempt}/${maxRetries})`, "info", false);
-        
+        logMessage(
+          `Attempting to get geolocalization data (attempt ${attempt}/${maxRetries})`,
+          "info",
+          false,
+        );
+
         // Choose API based on attempt number
         const ipApi = attempt > 5 ? fallbackIPApi : primaryIPApi;
         const geoApi = attempt > 5 ? fallbackGeoApi : primaryGeoApi;
-        
+
         if (attempt > 5) {
           logMessage("Switching to fallback API after 5 attempts", "info", false);
         }
-        
+
         // Get external IP
-        let ipResponse = await axios.get(ipApi, { 
+        const ipResponse = await axios.get(ipApi, {
           timeout: retryDelay,
-          headers: { 'User-Agent': 'Conceal Node Guardian' }
+          headers: { "User-Agent": "Conceal Node Guardian" },
         });
-        
+
         // Validate IP response
-        if (!ipResponse.data || typeof ipResponse.data !== 'string') {
-          throw new Error('Invalid IP response format');
+        if (!ipResponse.data || typeof ipResponse.data !== "string") {
+          throw new Error("Invalid IP response format");
         }
-        
+
         // Handle different IP API response formats
         if (attempt > 5) {
           // checkip.amazonaws.com returns plain text: "x.y.z.t"
@@ -87,34 +87,35 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
           // api.ipify.org returns plain text: "x.y.z.t"
           externalIP = ipResponse.data.trim();
         }
-        
+
         // Validate IP format
-        const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        const ipRegex =
+          /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         if (!ipRegex.test(externalIP)) {
-          throw new Error('Invalid IP address format received');
+          throw new Error("Invalid IP address format received");
         }
-        
+
         logMessage("Detecting geolocalization data", "info", false);
-        
+
         // Validate and construct geo API URL
-        const geoApiUrl = geoApi.replace('{ip}', externalIP);
-        if (!geoApiUrl.startsWith('https://')) {
-          throw new Error('Invalid geo API URL');
+        const geoApiUrl = geoApi.replace("{ip}", externalIP);
+        if (!geoApiUrl.startsWith("https://")) {
+          throw new Error("Invalid geo API URL");
         }
-        
+
         // Get geo data
-        let geoResponse = await axios.get(geoApiUrl, { 
+        const geoResponse = await axios.get(geoApiUrl, {
           timeout: retryDelay,
-          headers: { 'User-Agent': 'Conceal Node Guardian' }
+          headers: { "User-Agent": "Conceal Node Guardian" },
         });
-        
+
         // Validate geo response
-        if (!geoResponse.data || typeof geoResponse.data !== 'object') {
-          throw new Error('Invalid geo response format');
+        if (!geoResponse.data || typeof geoResponse.data !== "object") {
+          throw new Error("Invalid geo response format");
         }
-        
-        let geoData = geoResponse.data;
-        
+
+        const geoData = geoResponse.data;
+
         // Handle different response formats
         if (attempt > 5) {
           // ipinfo.io format
@@ -126,9 +127,9 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
             city: geoData.city,
             postal: geoData.postal,
             ip: geoData.ip,
-            latitude: parseFloat(geoData.loc.split(',')[0]),
-            longitude: parseFloat(geoData.loc.split(',')[1]),
-            timezone: geoData.timezone
+            latitude: parseFloat(geoData.loc.split(",")[0]),
+            longitude: parseFloat(geoData.loc.split(",")[1]),
+            timezone: geoData.timezone,
           };
         } else {
           // ipapi.co format
@@ -142,23 +143,26 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
             ip: geoData.ip,
             latitude: geoData.latitude,
             longitude: geoData.longitude,
-            timezone: geoData.timezone
+            timezone: geoData.timezone,
           };
         }
-        
+
         logMessage("Geolocalization successful", "info", false);
         return; // Success, exit the retry loop
-        
-      } catch(err) {
+      } catch (err) {
         logMessage(`Geolocalization attempt ${attempt} failed: ${err.message}`, "error", false);
-        
+
         if (attempt === maxRetries) {
-          logMessage("All geolocalization attempts failed, continuing without location data", "error", false);
+          logMessage(
+            "All geolocalization attempts failed, continuing without location data",
+            "error",
+            false,
+          );
           locationData = null;
           externalIP = null;
         } else {
-          logMessage(`Retrying geolocalization in ${retryDelay/1000} seconds...`, "info", false);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          logMessage(`Retrying geolocalization in ${retryDelay / 1000} seconds...`, "info", false);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
         }
       }
     }
@@ -170,7 +174,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
   this.stop = function (doAutoRestart) {
     logMessage("Stopping the daemon process", "info", false);
 
-    autoRestart = (doAutoRestart != null) ? doAutoRestart : true;
+    autoRestart = doAutoRestart != null ? doAutoRestart : true;
     clearInterval(poolNotifyInterval);
 
     if (rpcComms) {
@@ -185,16 +189,16 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
     if (nodeProcess) {
       isStoping = true;
       const killingGracePeriod = 25; // Wait 25 seconds for clean exit
-      
+
       // Try to send 'exit' command for clean shutdown
       try {
         if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
           logMessage("Sending 'exit' command to daemon for clean shutdown", "info", false);
-          
+
           // Ensure the command is properly formatted and sent
-          const exitCommand = 'exit\n';
+          const exitCommand = "exit\n";
           logMessage(`Writing to stdin: "${exitCommand.trim()}"`, "info", false);
-          
+
           nodeProcess.stdin.write(exitCommand, (err) => {
             if (err) {
               logMessage(`Error writing to stdin: ${err.message}`, "error", false);
@@ -220,21 +224,28 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
         // If exit fails, attempt save after 2 seconds
         setTimeout(attemptSave, 2000);
       }
-      
+
       // After killingGracePeriod, send SIGTERM
       setTimeout(() => {
         if (nodeProcess && !nodeProcess.killed) {
-          logMessage(`Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`, "info", false);
-          nodeProcess.kill('SIGTERM');
+          logMessage(
+            `Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`,
+            "info",
+            false,
+          );
+          nodeProcess.kill("SIGTERM");
         }
       }, killingGracePeriod * 1000);
-      
+
       // Fallback to SIGKILL after timeout
-      const killTimeoutMs = (configOpts.restart.terminateTimeout || 120) * 1000 < 30000 ? 30000 : (configOpts.restart.terminateTimeout || 120) * 1000;
+      const killTimeoutMs =
+        (configOpts.restart.terminateTimeout || 120) * 1000 < 30000
+          ? 30000
+          : (configOpts.restart.terminateTimeout || 120) * 1000;
       killTimeout = setTimeout(() => {
         if (nodeProcess && !nodeProcess.killed) {
           logMessage("Sending SIGKILL to daemon process", "info", false);
-          nodeProcess.kill('SIGKILL');
+          nodeProcess.kill("SIGKILL");
         }
       }, killTimeoutMs);
     }
@@ -244,7 +255,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
   function attemptSave() {
     try {
       if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
-        const saveCommand = 'save\n';
+        const saveCommand = "save\n";
         logMessage(`Writing to stdin: "${saveCommand.trim()}"`, "info", false);
         nodeProcess.stdin.write(saveCommand, (err) => {
           if (err) {
@@ -265,9 +276,9 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
     logMessage(errMessage, "error", false);
   };
 
-  this.getProcess = function() {
+  this.getProcess = function () {
     return nodeProcess;
-  }
+  };
 
   function errorCallback(errorData) {
     (async () => {
@@ -285,7 +296,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
         logMessage("Waiting for geolocalization to complete...", "info", false);
         await getGeoData();
       }
-      
+
       return {
         id: nodeUniqueId,
         os: process.platform,
@@ -297,36 +308,36 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
         status: {
           errors: errorCount,
           startTime: startupTime.toISOString(),
-          initialized: initialized
+          initialized: initialized,
         },
         blockchain: rpcComms ? rpcComms.getData() : null,
         location: {
           ip: externalIP,
-          data: locationData
-        }
+          data: locationData,
+        },
       };
     } catch (err) {
       logMessage(`Error in getNodeInfoData: ${err.message}`, "error", false);
-      
+
       // Return basic data even if geolocalization fails
       return {
         id: nodeUniqueId,
         os: process.platform,
         name: configOpts.node.name || os.hostname(),
         version: guardVersion,
-        nodeHost: externalIP || 'unknown',
+        nodeHost: externalIP || "unknown",
         nodePort: configOpts.node.port,
         url: configOpts.url,
         status: {
           errors: errorCount,
           startTime: startupTime.toISOString(),
-          initialized: initialized
+          initialized: initialized,
         },
         blockchain: rpcComms ? rpcComms.getData() : null,
         location: {
-          ip: externalIP || 'unknown',
-          data: locationData
-        }
+          ip: externalIP || "unknown",
+          data: locationData,
+        },
       };
     }
   }
@@ -343,7 +354,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
     logEntry.push(msgText);
 
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join("\t") + "\n", function () { });
+    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join("\t") + "\n", function () {});
     console.log(logEntry.join("\t"));
 
     // send notification if specified in the config
@@ -371,107 +382,117 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
       // send the info about node to the pool
       logMessage("Starting the periodic pool notifications", "info", false);
 
-      poolNotifyInterval = setInterval(async function () {
-        try {
-          const nodeData = await getNodeInfoData();
-          
-          // Recursive sanitization function that preserves all data types using validator
-          function sanitizeData(data, maxDepth = 3, currentDepth = 0) {
-            if (currentDepth > maxDepth) return null;
-            
-            if (data === null || data === undefined) {
-              return null;
-            }
-            
-            if (typeof data === 'string') {
-              // Smart sanitization for paths containing "/daemon/"
-              if (data.includes('/daemon')) {
-                const parts = data.split('/daemon');
-                if (parts.length === 2) {
-                  // Sanitize parts before and after "/daemon"
-                  const before = validator.escape(parts[0]).substring(0, 500);
-                  const after = validator.escape(parts[1]).substring(0, 500);
-                  return before + '/daemon' + after;
-                } else if (parts.length > 2) {
-                  // Multiple "/daemon" occurrences - suspicious, sanitize everything
-                  return validator.escape(data.substring(0, 1000));
-                } else {
-                  // "/daemon" at the beginning or end
-                  const before = parts[0] ? validator.escape(parts[0]).substring(0, 500) : '';
-                  const after = parts[1] ? validator.escape(parts[1]).substring(0, 500) : '';
-                  return before + '/daemon' + after;
-                }
+      poolNotifyInterval = setInterval(
+        async function () {
+          try {
+            const nodeData = await getNodeInfoData();
+
+            // Recursive sanitization function that preserves all data types using validator
+            function sanitizeData(data, maxDepth = 3, currentDepth = 0) {
+              if (currentDepth > maxDepth) return null;
+
+              if (data === null || data === undefined) {
+                return null;
               }
-              // Use validator's safe string sanitization
-              return validator.escape(data.substring(0, 1000));
-            }
-            
-            if (typeof data === 'number') {
-              // Numbers don't need escaping, just ensure they're valid
-              return isFinite(data) ? data : 0;
-            }
-            
-            if (typeof data === 'boolean') {
-              return data;
-            }
-            
-            if (data instanceof Date) {
-              return data.toISOString();
-            }
-            
-            if (Array.isArray(data)) {
-              return data.slice(0, 100).map(item => sanitizeData(item, maxDepth, currentDepth + 1));
-            }
-            
-            if (typeof data === 'object') {
-              const sanitized = {};
-              for (const [key, value] of Object.entries(data)) {
-                if (typeof key === 'string' && key.length <= 100) {
-                  // Sanitize object keys
-                  const sanitizedKey = validator.escape(key);
-                  sanitized[sanitizedKey] = sanitizeData(value, maxDepth, currentDepth + 1);
+
+              if (typeof data === "string") {
+                // Smart sanitization for paths containing "/daemon/"
+                if (data.includes("/daemon")) {
+                  const parts = data.split("/daemon");
+                  if (parts.length === 2) {
+                    // Sanitize parts before and after "/daemon"
+                    const before = validator.escape(parts[0]).substring(0, 500);
+                    const after = validator.escape(parts[1]).substring(0, 500);
+                    return before + "/daemon" + after;
+                  } else if (parts.length > 2) {
+                    // Multiple "/daemon" occurrences - suspicious, sanitize everything
+                    return validator.escape(data.substring(0, 1000));
+                  } else {
+                    // "/daemon" at the beginning or end
+                    const before = parts[0] ? validator.escape(parts[0]).substring(0, 500) : "";
+                    const after = parts[1] ? validator.escape(parts[1]).substring(0, 500) : "";
+                    return before + "/daemon" + after;
+                  }
                 }
+                // Use validator's safe string sanitization
+                return validator.escape(data.substring(0, 1000));
               }
-              return sanitized;
+
+              if (typeof data === "number") {
+                // Numbers don't need escaping, just ensure they're valid
+                return isFinite(data) ? data : 0;
+              }
+
+              if (typeof data === "boolean") {
+                return data;
+              }
+
+              if (data instanceof Date) {
+                return data.toISOString();
+              }
+
+              if (Array.isArray(data)) {
+                return data
+                  .slice(0, 100)
+                  .map((item) => sanitizeData(item, maxDepth, currentDepth + 1));
+              }
+
+              if (typeof data === "object") {
+                const sanitized = {};
+                for (const [key, value] of Object.entries(data)) {
+                  if (typeof key === "string" && key.length <= 100) {
+                    // Sanitize object keys
+                    const sanitizedKey = validator.escape(key);
+                    sanitized[sanitizedKey] = sanitizeData(value, maxDepth, currentDepth + 1);
+                  }
+                }
+                return sanitized;
+              }
+
+              // Fallback for unknown types - convert to string first
+              return validator.escape(String(data).substring(0, 1000));
             }
-            
-            // Fallback for unknown types - convert to string first
-            return validator.escape(String(data).substring(0, 1000));
+
+            // Sanitize the entire node data recursively
+            const sanitizedData = sanitizeData(nodeData);
+
+            // Validate URL - must be HTTPS and end with .conceal.network/pool/update
+            if (
+              !validator.isURL(configOpts.pool.notify.url, {
+                protocols: ["https"],
+                require_protocol: true,
+                require_valid_protocol: true,
+                allow_underscores: false,
+                allow_trailing_dot: false,
+                allow_protocol_relative_urls: false,
+              }) ||
+              !configOpts.pool.notify.url.endsWith(".conceal.network/pool/update")
+            ) {
+              throw new Error("Invalid pool URL");
+            }
+
+            const poolNotifyUrl = configOpts.pool.notify.url;
+
+            axios
+              .post(poolNotifyUrl, sanitizedData, {
+                timeout: 10000,
+                headers: {
+                  "Content-Type": "application/json",
+                  "User-Agent": "Conceal Node Guardian",
+                },
+              })
+              .then((response) => {
+                //logMessage(`Pool notification successful: ${response.status}`, "info", false);
+              })
+              .catch((err) => {
+                logMessage(`Pool notification failed: ${err.message}`, "error", false);
+              });
+          } catch (err) {
+            logMessage(`Error preparing pool notification: ${err.message}`, "error", false);
           }
-          
-          // Sanitize the entire node data recursively
-          const sanitizedData = sanitizeData(nodeData);
-
-          // Validate URL - must be HTTPS and end with .conceal.network/pool/update
-          if (!validator.isURL(configOpts.pool.notify.url, { 
-            protocols: ['https'], 
-            require_protocol: true,
-            require_valid_protocol: true,
-            allow_underscores: false,
-            allow_trailing_dot: false,
-            allow_protocol_relative_urls: false
-          }) || !configOpts.pool.notify.url.endsWith('.conceal.network/pool/update')) {
-            throw new Error('Invalid pool URL');
-          } 
-          
-          const poolNotifyUrl = configOpts.pool.notify.url;
-          
-          axios.post(poolNotifyUrl, sanitizedData, {
-            timeout: 10000,
-            headers: {
-              'Content-Type': 'application/json',
-              'User-Agent': 'Conceal Node Guardian'
-            }
-          }).then(response => {
-            //logMessage(`Pool notification successful: ${response.status}`, "info", false);
-          }).catch(err => {
-            logMessage(`Pool notification failed: ${err.message}`, "error", false);
-          });
-
-        } catch (err) {
-          logMessage(`Error preparing pool notification: ${err.message}`, "error", false);
-        }
-      }, (configOpts.pool.notify.interval || 30) * 1000);
+        },
+        (configOpts.pool.notify.interval || 30) * 1000,
+      );
     }
   }
 
@@ -496,32 +517,39 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
 
         // Construct and validate URL using validator
         const localUrl = `http://127.0.0.1:${port}/getinfo`;
-        
-        if (!validator.isURL(localUrl, { protocols: ['http'], require_protocol: true })) {
+
+        if (!validator.isURL(localUrl, { protocols: ["http"], require_protocol: true })) {
           logMessage("Invalid local URL format", "error", false);
           return;
         }
-        
-        axios.get(localUrl, {
-          headers: { 'User-Agent': 'Conceal Node Guardian' },
-          timeout: 5000
-        }).then(response => {
-          // Validate response data
-          if (response.data && typeof response.data === 'object' && response.data.status === "OK") {
-            logMessage("Core is initialized, starting the periodic checking...", "info", false);
-            clearInterval(initInterval);
-            initialized = true;
 
-            if (!rpcComms) {
-              rpcComms = new RpcCommunicator(configOpts, errorCallback);
+        axios
+          .get(localUrl, {
+            headers: { "User-Agent": "Conceal Node Guardian" },
+            timeout: 5000,
+          })
+          .then((response) => {
+            // Validate response data
+            if (
+              response.data &&
+              typeof response.data === "object" &&
+              response.data.status === "OK"
+            ) {
+              logMessage("Core is initialized, starting the periodic checking...", "info", false);
+              clearInterval(initInterval);
+              initialized = true;
+
+              if (!rpcComms) {
+                rpcComms = new RpcCommunicator(configOpts, errorCallback);
+              }
+
+              // start comms
+              rpcComms.start();
             }
-
-            // start comms
-            rpcComms.start();
-          }
-        }).catch(err => {
-          // Handle error silently as this is expected during initialization
-        });
+          })
+          .catch((err) => {
+            // Handle error silently as this is expected during initialization
+          });
       }
     }
   }
@@ -531,19 +559,23 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
   //*************************************************************//
   function startDaemonProcess() {
     (async () => {
-      nodeProcess = execa(getNodeActualPath(cmdOptions, configOpts, rootPath), configOpts.node.args || [], {
-        stdio: ['pipe', 'pipe', 'pipe'], // Enable stdin communication
-        detached: false, // Keep attached to parent process
-        windowsHide: true,
-        // Prevent the child from receiving signals when terminal closes
-        cleanup: true
-      });
-    })().catch(err => {
-      logMessage(`Error starting the daemon process: ${err}`, 'info', false);
+      nodeProcess = execa(
+        getNodeActualPath(cmdOptions, configOpts, rootPath),
+        configOpts.node.args || [],
+        {
+          stdio: ["pipe", "pipe", "pipe"], // Enable stdin communication
+          detached: false, // Keep attached to parent process
+          windowsHide: true,
+          // Prevent the child from receiving signals when terminal closes
+          cleanup: true,
+        },
+      );
+    })().catch((err) => {
+      logMessage(`Error starting the daemon process: ${err}`, "info", false);
       nodeProcess = null;
     });
 
-    logMessage('Started the daemon process', 'info', false);
+    logMessage("Started the daemon process", "info", false);
     startupTime = moment();
     autoRestart = true;
     isStoping = false;
@@ -592,9 +624,12 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
             startDaemonProcess();
           }
 
-          setTimeout(() => {
-            errorCount = errorCount - 1;
-          }, (configOpts.restart.errorForgetTime || 600) * 1000);
+          setTimeout(
+            () => {
+              errorCount = errorCount - 1;
+            },
+            (configOpts.restart.errorForgetTime || 600) * 1000,
+          );
         }
       });
 
@@ -610,47 +645,57 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
   // check if autoupdate is turned on
   if (configOpts.node && configOpts.node.autoUpdate) {
     setInterval(function () {
-      if (rpcComms && initialized && !isUpdating) {        
+      if (rpcComms && initialized && !isUpdating) {
         let nodeData = rpcComms.getData();
 
         // check node
         if (nodeData) {
-          axios.get('https://api.github.com/repos/ConcealNetwork/conceal-core/releases/latest', {
-            headers: { 'User-Agent': 'Conceal Node Guardian' }
-          }).then(response => {
-            if (response.data.tag_name !== nodeData.version) {
-              // stop the daemon
-              isUpdating = true;
-              self.stop(false);
+          axios
+            .get("https://api.github.com/repos/ConcealNetwork/conceal-core/releases/latest", {
+              headers: { "User-Agent": "Conceal Node Guardian" },
+            })
+            .then((response) => {
+              if (response.data.tag_name !== nodeData.version) {
+                // stop the daemon
+                isUpdating = true;
+                self.stop(false);
 
-              let waitStopInteval = setInterval(function () {
-                if (nodeProcess == null) {
-                  clearInterval(waitStopInteval);
+                let waitStopInteval = setInterval(function () {
+                  if (nodeProcess == null) {
+                    clearInterval(waitStopInteval);
 
-                  downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), function (error) {
-                    if (error) {
-                      (async () => {
-                        await logMessage(`\nError auto updating daemon: ${error}\n`, "error", true);
-                      })();
-                    } else {
-                      (async () => {
-                        await logMessage("The deamon was automatically updated", "info", true);
-                      })();
-                    }
+                    downloadLatestDaemon(
+                      getNodeActualPath(cmdOptions, configOpts, rootPath),
+                      function (error) {
+                        if (error) {
+                          (async () => {
+                            await logMessage(
+                              `\nError auto updating daemon: ${error}\n`,
+                              "error",
+                              true,
+                            );
+                          })();
+                        } else {
+                          (async () => {
+                            await logMessage("The deamon was automatically updated", "info", true);
+                          })();
+                        }
 
-                    // start the daemon 
-                    startDaemonProcess();
-                    isUpdating = false;
-                  });
-                }
-              }, 1000);
-            }
-          }).catch(err => {
-            (async () => {
-              await logMessage(`\nError auto updating daemon: ${err}\n`, "error", true);
-            })();
-            isUpdating = false;
-          });
+                        // start the daemon
+                        startDaemonProcess();
+                        isUpdating = false;
+                      },
+                    );
+                  }
+                }, 1000);
+              }
+            })
+            .catch((err) => {
+              (async () => {
+                await logMessage(`\nError auto updating daemon: ${err}\n`, "error", true);
+              })();
+              isUpdating = false;
+            });
         }
       }
     }, 3600000);
@@ -660,7 +705,7 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
   // for servicing API calls for the current node
   if (configOpts.api && configOpts.api.port) {
     logMessage("Starting the API server", "info", false);
-    var nodeDirectory = path.dirname(getNodeActualPath(cmdOptions, configOpts, rootPath));
+    const nodeDirectory = path.dirname(getNodeActualPath(cmdOptions, configOpts, rootPath));
     createServer(configOpts, nodeDirectory, async function () {
       try {
         return await getNodeInfoData();
@@ -676,4 +721,4 @@ export function NodeGuard (cmdOptions, configOpts, rootPath, guardVersion) {
     await logMessage("Starting the guardian", "info", false);
   })();
   startDaemonProcess();
-};
+}
