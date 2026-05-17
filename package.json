@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/ConcealNetwork/conceal-guardian#readme",
   "dependencies": {
-    "axios": "1.15.0",
+    "axios": "1.15.2",
     "command-line-args": "^6.0.0",
     "command-line-usage": "^7.0.1",
     "conceal-api": "^0.8.6",
@@ -64,6 +64,8 @@
   },
   "overrides": {
     "body-parser": "2.2.2",
+    "follow-redirects": "1.16.0",
+    "ip-address": "10.1.1",
     "path-to-regexp": "8.4.0",
     "yauzl": "3.2.1"
   }
