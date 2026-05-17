@@ -48,7 +48,7 @@
     "pure-uuid": "^2.0.0",
     "read-last-lines": "^1.8.0",
     "string-template": "^1.0.0",
-    "tar": "^7.5.11",
+    "tar": "^7.5.13",
     "username": "^7.0.0",
     "validator": "^13.15.26",
     "xmlbuilder": "^15.1.1"
