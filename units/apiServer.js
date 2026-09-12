@@ -252,4 +252,9 @@ export function createServer(config, nodeDirectory, onDataCallback) {
     console.debug(`API 404 ${request.method} ${request.path}`);
     response.status(404).send("Not found");
   });
+
+  app.use((err, request, response, _next) => {
+    console.error(`API error ${request.method} ${request.path}:`, err);
+    response.status(500).json({ error: "Internal server error" });
+  });
 }
