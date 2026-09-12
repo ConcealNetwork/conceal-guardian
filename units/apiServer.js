@@ -239,7 +239,7 @@ export function createServer(config, nodeDirectory, onDataCallback) {
   });
 
   app.use((err, request, response, _next) => {
-    console.error(`API error ${request.method} ${request.path}:`, err);
+    console.error("API error %s %s:", request.method, request.path, err);
     response.status(500).json({ error: "Internal server error" });
   });
 }
