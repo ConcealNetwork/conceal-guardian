@@ -8,6 +8,8 @@
 .idea
 /bin
 /dist
+/sea-config.json
+/sea-prep.blob
 /.vscode
 /.scannerwork
 /guardian-win64.exe
