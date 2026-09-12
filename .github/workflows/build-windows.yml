@@ -14,7 +14,8 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
-    
+    timeout-minutes: 120
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
@@ -47,7 +48,13 @@ jobs:
         
         # Install NASM and 7-Zip
         choco install nasm 7zip -y
-        
+
+    - name: Cache nexe Node build
+      uses: actions/cache@v4
+      with:
+        path: ~/.nexe
+        key: nexe-${{ runner.os }}-${{ runner.arch }}-22.18.0
+
     - name: Run build script
       shell: cmd
       run: |
