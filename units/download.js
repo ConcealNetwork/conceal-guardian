@@ -128,6 +128,9 @@ function getLinuxOSInfo() {
   return null;
 }
 
+/** Per-entry uncompressed size cap (release binaries; blocks zip bombs / OOM). */
+const MAX_ZIP_ENTRY_BYTES = 512 * 1024 * 1024;
+
 /**
  * Safely extract a zip archive with explicit Zip Slip / path / symlink safety checks.
  * @param {string} zipPath - Path to the zip file
@@ -135,69 +138,77 @@ function getLinuxOSInfo() {
  * @throws {Error} If any entry is unsafe (symlink, absolute path, contains .., or escapes outDir)
  */
 async function extractZipSafe(zipPath, outDir) {
-  // Normalize outDir to absolute path for comparison
   const normalizedOutDir = path.resolve(outDir);
+  const realOutDir = await fs.promises.realpath(normalizedOutDir);
 
-  // Read zip file as Blob (Node.js 20+ fs.openAsBlob or fallback to readFile)
-  let zipBlob;
-  if (fs.openAsBlob) {
-    zipBlob = await fs.openAsBlob(zipPath);
-  } else {
-    // Fallback for older Node.js versions
-    const buffer = await fs.promises.readFile(zipPath);
-    zipBlob = new Blob([buffer]);
+  if (!fs.openAsBlob) {
+    throw new Error("Zip extraction requires Node.js fs.openAsBlob (Node 20+)");
   }
+  const zipBlob = await fs.openAsBlob(zipPath);
 
   const reader = new BlobReader(zipBlob);
   const zipReader = new ZipReader(reader, {
-    // Use "balanced" filenameValidation: rejects ".." and absolute paths
+    // Rejects ".." and absolute paths at parse time (zip.js 2.10.0)
     filenameValidation: "balanced",
   });
+
+  const writeFlags =
+    fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_NOFOLLOW;
 
   try {
     const entries = await zipReader.getEntries();
 
     for (const entry of entries) {
-      // 1. Reject symlinks explicitly
       if (entry.symlink) {
         throw new Error(`Unsafe zip entry: symlink detected (${entry.filename})`);
       }
 
-      // 2. Normalize filename: replace backslashes with forward slashes
+      // zip.js 2.10.0 does not treat '\' as a separator — normalize ourselves
       const normalizedFilename = entry.filename.replace(/\\/g, "/");
 
-      // 3. Check for absolute paths (already rejected by "balanced" mode, but double-check)
       if (path.isAbsolute(normalizedFilename)) {
         throw new Error(`Unsafe zip entry: absolute path (${entry.filename})`);
       }
 
-      // 4. Check for ".." after normalizing (already rejected by "balanced" mode, but double-check)
       const parts = normalizedFilename.split("/");
       if (parts.includes("..")) {
         throw new Error(`Unsafe zip entry: contains ".." (${entry.filename})`);
       }
 
-      // 5. Resolve destination path and ensure it's strictly under outDir
       const destPath = path.resolve(normalizedOutDir, normalizedFilename);
       if (destPath !== normalizedOutDir && !destPath.startsWith(normalizedOutDir + path.sep)) {
         throw new Error(`Unsafe zip entry: escapes target directory (${entry.filename})`);
       }
 
-      // 6. Extract entry
       if (entry.directory) {
-        // Create directory
         await fs.promises.mkdir(destPath, { recursive: true });
-      } else {
-        // Create parent directory if needed
-        const parentDir = path.dirname(destPath);
-        await fs.promises.mkdir(parentDir, { recursive: true });
+        const realDest = await fs.promises.realpath(destPath);
+        if (realDest !== realOutDir && !realDest.startsWith(realOutDir + path.sep)) {
+          throw new Error(`Unsafe zip entry: directory escapes target (${entry.filename})`);
+        }
+        continue;
+      }
 
-        // Extract file content
-        const writer = new Uint8ArrayWriter();
-        const data = await entry.getData(writer);
+      if (entry.uncompressedSize > MAX_ZIP_ENTRY_BYTES) {
+        throw new Error(
+          `Unsafe zip entry: uncompressed size ${entry.uncompressedSize} exceeds cap (${entry.filename})`,
+        );
+      }
 
-        // Write to file (do not follow symlinks)
-        await fs.promises.writeFile(destPath, data, { flag: "w" });
+      const parentDir = path.dirname(destPath);
+      await fs.promises.mkdir(parentDir, { recursive: true });
+      const realParent = await fs.promises.realpath(parentDir);
+      if (realParent !== realOutDir && !realParent.startsWith(realOutDir + path.sep)) {
+        throw new Error(`Unsafe zip entry: parent escapes target (${entry.filename})`);
+      }
+
+      const data = await entry.getData(new Uint8ArrayWriter());
+      // O_EXCL|O_NOFOLLOW: refuse overwrite and refuse writing through a planted symlink
+      const handle = await fs.promises.open(destPath, writeFlags, 0o600);
+      try {
+        await handle.writeFile(data);
+      } finally {
+        await handle.close();
       }
     }
   } finally {

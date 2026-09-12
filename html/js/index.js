@@ -1,5 +1,24 @@
 var pageState = null;
 
+var DOM_PURIFY_CONFIG = {
+  ADD_TAGS: ["pre", "code"],
+  ADD_ATTR: ["data-src", "class", "id"],
+  ALLOW_DATA_ATTR: true,
+  FORCE_BODY: false,
+};
+
+// Same-origin fragments (daemon/guardian/peers/dashboard) include <script>.
+// Old patched jQuery skipped DOMPurify when script/style/link were present
+// (rnoInnerhtml) so those scripts could run — match that here.
+function setContainerHtml(html) {
+  if (/<(?:script|style|link)/i.test(html)) {
+    $("#container").html(html);
+    return;
+  }
+
+  $("#container").html(window.DOMPurify.sanitize(html, DOM_PURIFY_CONFIG));
+}
+
 function setNavActive(navId) {
   $("#mainNav").find(".nav-item").removeClass("active");
   $(navId).parent().addClass("active");
@@ -12,7 +31,7 @@ function loadDashboard() {
     var templateScript = Handlebars.compile(template);
 
     $.getJSON("/getInfo", function (data) {
-      $("#container").html(templateScript(data));
+      setContainerHtml(templateScript(data));
 
       setTimeout(function () {
         if (pageState == "dashboard") {
@@ -27,7 +46,7 @@ function loadDaemonLog() {
   pageState = "daemonLog";
 
   $.get("/daemonLog.html", function (data) {
-    $("#container").html(data);
+    setContainerHtml(data);
   });
 }
 
@@ -35,7 +54,7 @@ function loadGuardianLog() {
   pageState = "guardianLog";
 
   $.get("/guardianLog.html", function (data) {
-    $("#container").html(data);
+    setContainerHtml(data);
   });
 }
 
@@ -43,7 +62,7 @@ function loadPeersMap() {
   pageState = "peersMap";
 
   $.get("/peers.html", function (data) {
-    $("#container").html(data);
+    setContainerHtml(data);
   });
 }
 

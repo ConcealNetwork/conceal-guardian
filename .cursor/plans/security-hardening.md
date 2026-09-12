@@ -155,4 +155,34 @@ This checklist records that the **review plan** was applied by reading the liste
 
 **Verify:** `bootstrap.bundle.min.js` SRI `sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q` (80821 bytes).
 
-**Note:** Non-min `bootstrap.js` / CSS remain formatter-rewritten vs upstream; `html/index.html` currently loads `lib/bootstrap/js/bootstrap.js` (not the `.min` / bundle). Optional follow-up: restore unmin dist or switch the page to the verified min bundle.
+**Note:** Non-min `bootstrap.js` / CSS remain formatter-rewritten vs upstream. `html/index.html` loads `lib/bootstrap/js/bootstrap.bundle.min.js`. Other vendored dashboard libs restored 2026-09-12 (see section below).
+
+---
+
+## Vendored non-Bootstrap restore (2026-09-12) — DONE (option 1)
+
+**Approved pins:** DOMPurify **3.2.6**, jQuery **3.7.1**, Handlebars **4.7.8**.
+
+### Actions completed
+
+| Asset | Path | sha384 |
+|-------|------|--------|
+| DOMPurify 3.2.6 | `html/lib/dompurify/purify.min.js` | `JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3` |
+| jQuery 3.7.1 | `html/lib/jquery/js/jquery.min.js` | `1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs` |
+| Handlebars 4.7.8 | `html/js/handlebars.min.js` | `/7IOPDPk7kcWe970wNJpeApuC/EzCQwonLz5G/s//R5Jji9QWBcbfASHI0G1nh2p` |
+| loading-indicator | `html/js/loading-indicator.min.js` (pre-biome restore) | `Ni4qWVCojOWDB2enJdGmqxHScoIK5ekU7nuwoCLD257QTJKdSZPxG+hOEXUZBzcn` |
+
+- Moved DOMPurify sanitization out of jQuery into `html/js/index.js` (`setContainerHtml` + same config as the old jQuery patch).
+- **Follow-up fix:** `setContainerHtml` skips DOMPurify when the HTML contains `script`/`style`/`link` (same as old jQuery `rnoInnerhtml` bypass). Blanket sanitize was stripping page scripts → empty Daemon Log / Guardian Log / Peers.
+- Updated `html/index.html` to load the `.min` assets; removed unused `ResizeSensor` script.
+- Deleted patched/reformatted `html/lib/jquery/js/jquery.js`, `html/js/handlebars-latest.js`, `html/js/ResizeSensor.js`.
+
+**XSS note:** Dashboard `{{...}}` values are Handlebars-escaped (no `{{{`); fragment pages are trusted same-origin static HTML + scripts.
+
+### Why not re-patch jQuery
+
+Dashboard HTML injection is an app trust-boundary concern. Keeping sanitize in `index.js` lets vendored libs stay byte-identical and SRI-verifiable.
+
+### Smoke-test still needed
+
+Dashboard / Daemon Log / Guardian Log / Peers in a browser against a running guardian.
