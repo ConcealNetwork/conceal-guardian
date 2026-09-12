@@ -138,3 +138,21 @@ After coding changes from findings, apply **triage** per [`.cursor/rules/40-secu
 | P5: Pool/geo in `engine.js`, `comms.js` RPC | Done |
 
 This checklist records that the **review plan** was applied by reading the listed areas; it does not replace filing validated findings in [`security/findings-reviewed.json`](../security/findings-reviewed.json) when issues are confirmed with evidence.
+
+---
+
+## Vendored Bootstrap 5.3.7 min restore (2026-09-11)
+
+**Issue:** `html/lib/bootstrap/**/*.min.{js,css}` had been reformatted (pretty-printed), so they were no longer byte-identical to upstream dist and harder to verify.
+
+**Action:** Replaced `.min` JS/CSS from official jsDelivr dist `bootstrap@5.3.7`:
+
+- `html/lib/bootstrap/js/bootstrap.bundle.min.js`
+- `html/lib/bootstrap/js/bootstrap.min.js`
+- `html/lib/bootstrap/css/bootstrap.min.css`
+- `html/lib/bootstrap/css/bootstrap-grid.min.css`
+- `html/lib/bootstrap/css/bootstrap-reboot.min.css`
+
+**Verify:** `bootstrap.bundle.min.js` SRI `sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q` (80821 bytes).
+
+**Note:** Non-min `bootstrap.js` / CSS remain formatter-rewritten vs upstream; `html/index.html` currently loads `lib/bootstrap/js/bootstrap.js` (not the `.min` / bundle). Optional follow-up: restore unmin dist or switch the page to the verified min bundle.
