@@ -6,8 +6,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import downloadRelease from "download-github-release";
-import extractZIP from "extract-zip";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { BlobReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js";
 import osInfo from "linux-os-info";
 import * as extractTAR from "tar";
 import { ensureNodeUniqueId, getGuardianExecutableName, getNodeExecutableName } from "./utils.js";
@@ -20,11 +21,81 @@ const supportedUbuntuVersionsGuardian = ["20.04", "20.10", "22.04", "22.05", "24
 const wrongOSMsg =
   "This operating system has no precompiled binaries you need to build the daemon yourself. Reffer to: https://github.com/ConcealNetwork/conceal-core";
 
+/**
+ * Download matching release assets using native fetch + GitHub Releases API.
+ * @param {string} owner - GitHub owner/org
+ * @param {string} repo - GitHub repo name
+ * @param {string} outputDir - Directory to save downloaded assets
+ * @param {Function} filterRelease - Predicate (release) => boolean
+ * @param {Function} filterAsset - Predicate (asset) => boolean
+ * @returns {Promise<void>}
+ */
+async function downloadRelease(owner, repo, outputDir, filterRelease, filterAsset) {
+  const releasesUrl = `https://api.github.com/repos/${owner}/${repo}/releases`;
+  const response = await fetch(releasesUrl, {
+    headers: {
+      "User-Agent": "Conceal Node Guardian",
+      Accept: "application/vnd.github+json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch releases for ${owner}/${repo}: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const releases = await response.json();
+  // Match old download-github-release getLatest: first filterRelease hit that has ≥1 filterAsset.
+  let matchingRelease = null;
+  let matchingAssets = [];
+  for (const release of releases) {
+    if (!filterRelease(release)) {
+      continue;
+    }
+    const assets = release.assets.filter(filterAsset);
+    if (assets.length > 0) {
+      matchingRelease = release;
+      matchingAssets = assets;
+      break;
+    }
+  }
+
+  if (!matchingRelease) {
+    throw new Error(
+      `could not find a release for ${owner}/${repo} (${os.platform()} ${os.arch()})`,
+    );
+  }
+
+  // Download all matching assets
+  const downloads = matchingAssets.map(async (asset) => {
+    const assetResponse = await fetch(asset.browser_download_url, {
+      headers: { "User-Agent": "Conceal Node Guardian" },
+    });
+
+    if (!assetResponse.ok) {
+      throw new Error(
+        `Failed to download ${asset.name}: ${assetResponse.status} ${assetResponse.statusText}`,
+      );
+    }
+
+    const outputPath = path.join(outputDir, asset.name);
+    const fileStream = fs.createWriteStream(outputPath);
+    const webStream = Readable.fromWeb(assetResponse.body);
+
+    await pipeline(webStream, fileStream);
+  });
+
+  await Promise.all(downloads);
+}
+
 async function verifyArchiveChecksum(archivePath, owner, repo, tag) {
   const checksumUrl = `https://github.com/${owner}/${repo}/releases/download/${tag}/checksums.sha256`;
   const response = await fetch(checksumUrl, { headers: { "User-Agent": "Conceal Node Guardian" } });
   if (!response.ok) {
-    throw new Error(`No checksums.sha256 found for ${owner}/${repo} release ${tag} — cannot verify archive integrity`);
+    throw new Error(
+      `No checksums.sha256 found for ${owner}/${repo} release ${tag} — cannot verify archive integrity`,
+    );
   }
   const checksumText = await response.text();
   const archiveName = path.basename(archivePath);
@@ -36,7 +107,9 @@ async function verifyArchiveChecksum(archivePath, owner, repo, tag) {
   const fileBuffer = fs.readFileSync(archivePath);
   const actualHash = crypto.createHash("sha256").update(fileBuffer).digest("hex");
   if (actualHash !== expectedHash) {
-    throw new Error(`Integrity check FAILED for ${archiveName}: expected ${expectedHash}, got ${actualHash}`);
+    throw new Error(
+      `Integrity check FAILED for ${archiveName}: expected ${expectedHash}, got ${actualHash}`,
+    );
   }
 }
 
@@ -55,13 +128,90 @@ function getLinuxOSInfo() {
   return null;
 }
 
+/**
+ * Safely extract a zip archive with explicit Zip Slip / path / symlink safety checks.
+ * @param {string} zipPath - Path to the zip file
+ * @param {string} outDir - Target extraction directory
+ * @throws {Error} If any entry is unsafe (symlink, absolute path, contains .., or escapes outDir)
+ */
+async function extractZipSafe(zipPath, outDir) {
+  // Normalize outDir to absolute path for comparison
+  const normalizedOutDir = path.resolve(outDir);
+
+  // Read zip file as Blob (Node.js 20+ fs.openAsBlob or fallback to readFile)
+  let zipBlob;
+  if (fs.openAsBlob) {
+    zipBlob = await fs.openAsBlob(zipPath);
+  } else {
+    // Fallback for older Node.js versions
+    const buffer = await fs.promises.readFile(zipPath);
+    zipBlob = new Blob([buffer]);
+  }
+
+  const reader = new BlobReader(zipBlob);
+  const zipReader = new ZipReader(reader, {
+    // Use "balanced" filenameValidation: rejects ".." and absolute paths
+    filenameValidation: "balanced",
+  });
+
+  try {
+    const entries = await zipReader.getEntries();
+
+    for (const entry of entries) {
+      // 1. Reject symlinks explicitly
+      if (entry.symlink) {
+        throw new Error(`Unsafe zip entry: symlink detected (${entry.filename})`);
+      }
+
+      // 2. Normalize filename: replace backslashes with forward slashes
+      const normalizedFilename = entry.filename.replace(/\\/g, "/");
+
+      // 3. Check for absolute paths (already rejected by "balanced" mode, but double-check)
+      if (path.isAbsolute(normalizedFilename)) {
+        throw new Error(`Unsafe zip entry: absolute path (${entry.filename})`);
+      }
+
+      // 4. Check for ".." after normalizing (already rejected by "balanced" mode, but double-check)
+      const parts = normalizedFilename.split("/");
+      if (parts.includes("..")) {
+        throw new Error(`Unsafe zip entry: contains ".." (${entry.filename})`);
+      }
+
+      // 5. Resolve destination path and ensure it's strictly under outDir
+      const destPath = path.resolve(normalizedOutDir, normalizedFilename);
+      if (destPath !== normalizedOutDir && !destPath.startsWith(normalizedOutDir + path.sep)) {
+        throw new Error(`Unsafe zip entry: escapes target directory (${entry.filename})`);
+      }
+
+      // 6. Extract entry
+      if (entry.directory) {
+        // Create directory
+        await fs.promises.mkdir(destPath, { recursive: true });
+      } else {
+        // Create parent directory if needed
+        const parentDir = path.dirname(destPath);
+        await fs.promises.mkdir(parentDir, { recursive: true });
+
+        // Extract file content
+        const writer = new Uint8ArrayWriter();
+        const data = await entry.getData(writer);
+
+        // Write to file (do not follow symlinks)
+        await fs.promises.writeFile(destPath, data, { flag: "w" });
+      }
+    }
+  } finally {
+    await zipReader.close();
+  }
+}
+
 function extractArchive(filePath, outDir, callback) {
   const fileName = path.basename(filePath);
 
   if (path.extname(filePath) === ".zip") {
     (async () => {
       try {
-        await extractZIP(filePath, { dir: outDir });
+        await extractZipSafe(filePath, outDir);
         callback(true);
       } catch {
         callback(false);
@@ -132,14 +282,7 @@ export function downloadLatestDaemon(nodePath, callback) {
     }
   };
 
-  downloadRelease(
-    "ConcealNetwork",
-    "conceal-core",
-    finalTempDir,
-    filterRelease,
-    filterAssetNode,
-    true,
-  )
+  downloadRelease("ConcealNetwork", "conceal-core", finalTempDir, filterRelease, filterAssetNode)
     .then(() => {
       fs.readdir(finalTempDir, (_err, items) => {
         if (items.length > 0) {
@@ -254,14 +397,18 @@ export function downloadLatestGuardian(callback, swapExecutableCallback) {
       finalTempDir,
       filterRelease,
       filterAssetGuardian,
-      true,
     )
       .then(() => {
         fs.readdir(finalTempDir, async (_err, items) => {
           if (items.length > 0) {
             const archivePath = path.join(finalTempDir, items[0]);
             try {
-              await verifyArchiveChecksum(archivePath, "ConcealNetwork", "conceal-guardian", releaseTag);
+              await verifyArchiveChecksum(
+                archivePath,
+                "ConcealNetwork",
+                "conceal-guardian",
+                releaseTag,
+              );
             } catch (err) {
               fs.rmSync(finalTempDir, { recursive: true, force: true });
               callback(err.message);
