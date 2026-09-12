@@ -92,7 +92,7 @@ jobs:
         Write-Host "SHA-256: $($hash.Hash)"
         
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: guardian-win64
         path: bin/win64/guardian-win64.zip
