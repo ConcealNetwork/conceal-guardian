@@ -2,24 +2,18 @@
 //
 // Please see the included LICENSE file for more information.
 
-import { downloadLatestDaemon } from "./download.js";
-import commandLineArgs from "command-line-args";
-import child_process from "child_process";
-import { RpcCommunicator } from "./comms.js";
-import { notifyOnError } from "./notifiers.js";
-import { createServer } from "./apiServer.js";
-import readline from "readline";
-import { execa } from "execa";
-import axios from "axios";
-import moment from "moment";
-import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
+import path from "node:path";
+import axios from "axios";
+import { execa } from "execa";
+import moment from "moment";
 import validator from "validator";
+import { createServer } from "./apiServer.js";
+import { RpcCommunicator } from "./comms.js";
+import { downloadLatestDaemon } from "./download.js";
+import { notifyOnError } from "./notifiers.js";
 import { ensureNodeUniqueId, ensureUserDataDir, getNodeActualPath } from "./utils.js";
-
-// read the package.json to have version info available
-const pjson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")));
 
 export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   const nodeUniqueId = ensureNodeUniqueId();
@@ -34,10 +28,27 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   var autoRestart = true;
   var initialized = false;
   var killTimeout = null;
+  var termTimeout = null;
+  var saveTimeout = null;
   var nodeProcess = null;
   var externalIP = null;
   var rpcComms = null;
   var self = this;
+
+  function clearStopTimers() {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+    if (termTimeout) {
+      clearTimeout(termTimeout);
+      termTimeout = null;
+    }
+    if (killTimeout) {
+      clearTimeout(killTimeout);
+      killTimeout = null;
+    }
+  }
 
   // get GEO data with retry mechanism and fallback APIs
   async function getGeoData() {
@@ -171,7 +182,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   // Start geolocalization process
   getGeoData();
 
-  this.stop = function (doAutoRestart) {
+  this.stop = (doAutoRestart) => {
     logMessage("Stopping the daemon process", "info", false);
 
     autoRestart = doAutoRestart != null ? doAutoRestart : true;
@@ -188,7 +199,21 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
 
     if (nodeProcess) {
       isStoping = true;
+      clearStopTimers();
+      const stoppingProcess = nodeProcess;
       const killingGracePeriod = 25; // Wait 25 seconds for clean exit
+
+      function scheduleSave(delayMs) {
+        if (saveTimeout) {
+          clearTimeout(saveTimeout);
+        }
+        saveTimeout = setTimeout(() => {
+          saveTimeout = null;
+          if (nodeProcess === stoppingProcess && !nodeProcess.killed) {
+            attemptSave(stoppingProcess);
+          }
+        }, delayMs);
+      }
 
       // Try to send 'exit' command for clean shutdown
       try {
@@ -200,34 +225,35 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
           logMessage(`Writing to stdin: "${exitCommand.trim()}"`, "info", false);
 
           nodeProcess.stdin.write(exitCommand, (err) => {
+            // Ignore late callbacks after this stop target has already exited/restarted
+            if (nodeProcess !== stoppingProcess) {
+              return;
+            }
             if (err) {
               logMessage(`Error writing to stdin: ${err.message}`, "error", false);
               // If exit fails, attempt save after 2 seconds
-              setTimeout(attemptSave, 2000);
+              scheduleSave(2000);
             } else {
               logMessage("Successfully sent 'exit' command to daemon", "info", false);
               // If exit sent successfully, but haven't received a response, attempt save after 15 seconds as a safety measure (only if process is still running)
-              setTimeout(() => {
-                if (nodeProcess && !nodeProcess.killed) {
-                  attemptSave();
-                }
-              }, 15000);
+              scheduleSave(15000);
             }
           });
         } else {
           logMessage("Stdin not available for exit command", "info", false);
           // If stdin is not available for exit, attempt save after 2 seconds
-          setTimeout(attemptSave, 2000);
+          scheduleSave(2000);
         }
       } catch (err) {
         logMessage(`Error sending exit command: ${err.message}`, "error", false);
         // If exit fails, attempt save after 2 seconds
-        setTimeout(attemptSave, 2000);
+        scheduleSave(2000);
       }
 
       // After killingGracePeriod, send SIGTERM
-      setTimeout(() => {
-        if (nodeProcess && !nodeProcess.killed) {
+      termTimeout = setTimeout(() => {
+        termTimeout = null;
+        if (nodeProcess === stoppingProcess && !nodeProcess.killed) {
           logMessage(
             `Daemon still running after ${killingGracePeriod} seconds, sending SIGTERM`,
             "info",
@@ -243,7 +269,8 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
           ? 30000
           : (configOpts.restart.terminateTimeout || 120) * 1000;
       killTimeout = setTimeout(() => {
-        if (nodeProcess && !nodeProcess.killed) {
+        killTimeout = null;
+        if (nodeProcess === stoppingProcess && !nodeProcess.killed) {
           logMessage("Sending SIGKILL to daemon process", "info", false);
           nodeProcess.kill("SIGKILL");
         }
@@ -252,12 +279,19 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   };
 
   // Helper function to attempt save command
-  function attemptSave() {
+  function attemptSave(targetProcess) {
+    const processToSave = targetProcess || nodeProcess;
     try {
-      if (nodeProcess.stdin && !nodeProcess.stdin.destroyed && nodeProcess.stdin.writable) {
+      if (
+        processToSave &&
+        nodeProcess === processToSave &&
+        processToSave.stdin &&
+        !processToSave.stdin.destroyed &&
+        processToSave.stdin.writable
+      ) {
         const saveCommand = "save\n";
         logMessage(`Writing to stdin: "${saveCommand.trim()}"`, "info", false);
-        nodeProcess.stdin.write(saveCommand, (err) => {
+        processToSave.stdin.write(saveCommand, (err) => {
           if (err) {
             logMessage(`Error writing save command: ${err.message}`, "error", false);
           } else {
@@ -272,13 +306,11 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
     }
   }
 
-  this.logError = function (errMessage) {
+  this.logError = (errMessage) => {
     logMessage(errMessage, "error", false);
   };
 
-  this.getProcess = function () {
-    return nodeProcess;
-  };
+  this.getProcess = () => nodeProcess;
 
   function errorCallback(errorData) {
     (async () => {
@@ -354,11 +386,11 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
     logEntry.push(msgText);
 
     // write every error to a log file for possible later analization
-    fs.appendFile(path.join(userDataDir, "debug.log"), logEntry.join("\t") + "\n", function () {});
+    fs.appendFile(path.join(userDataDir, "debug.log"), `${logEntry.join("\t")}\n`, () => {});
     console.log(logEntry.join("\t"));
 
     // send notification if specified in the config
-    if (sendNotification && configOpts.error && configOpts.error.notify) {
+    if (sendNotification && configOpts.error?.notify) {
       try {
         const nodeData = await getNodeInfoData();
         notifyOnError(configOpts, msgText, msgType, nodeData);
@@ -378,12 +410,12 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   }
 
   function setNotifyPoolInterval() {
-    if (configOpts.pool && configOpts.pool.notify && configOpts.pool.notify.url) {
+    if (configOpts.pool?.notify?.url) {
       // send the info about node to the pool
       logMessage("Starting the periodic pool notifications", "info", false);
 
       poolNotifyInterval = setInterval(
-        async function () {
+        async () => {
           try {
             const nodeData = await getNodeInfoData();
 
@@ -403,7 +435,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
                     // Sanitize parts before and after "/daemon"
                     const before = validator.escape(parts[0]).substring(0, 500);
                     const after = validator.escape(parts[1]).substring(0, 500);
-                    return before + "/daemon" + after;
+                    return `${before}/daemon${after}`;
                   } else if (parts.length > 2) {
                     // Multiple "/daemon" occurrences - suspicious, sanitize everything
                     return validator.escape(data.substring(0, 1000));
@@ -411,7 +443,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
                     // "/daemon" at the beginning or end
                     const before = parts[0] ? validator.escape(parts[0]).substring(0, 500) : "";
                     const after = parts[1] ? validator.escape(parts[1]).substring(0, 500) : "";
-                    return before + "/daemon" + after;
+                    return `${before}/daemon${after}`;
                   }
                 }
                 // Use validator's safe string sanitization
@@ -420,7 +452,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
 
               if (typeof data === "number") {
                 // Numbers don't need escaping, just ensure they're valid
-                return isFinite(data) ? data : 0;
+                return Number.isFinite(data) ? data : 0;
               }
 
               if (typeof data === "boolean") {
@@ -481,7 +513,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
                   "User-Agent": "Conceal Node Guardian",
                 },
               })
-              .then((response) => {
+              .then((_response) => {
                 //logMessage(`Pool notification successful: ${response.status}`, "info", false);
               })
               .catch((err) => {
@@ -501,7 +533,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   //*************************************************************//
   function waitForCoreToInitialize() {
     if (!initialized) {
-      let duration = moment.duration(moment().diff(startupTime));
+      const duration = moment.duration(moment().diff(startupTime));
 
       if (duration.asSeconds() > (configOpts.restart.maxInitTime || 900)) {
         (async () => {
@@ -510,7 +542,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
       } else {
         // Validate port number before making request
         const port = Number(configOpts.node.port);
-        if (isNaN(port) || port < 1 || port > 65535) {
+        if (Number.isNaN(port) || port < 1 || port > 65535) {
           logMessage("Invalid port number in configuration", "error", false);
           return;
         }
@@ -547,7 +579,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
               rpcComms.start();
             }
           })
-          .catch((err) => {
+          .catch((_err) => {
             // Handle error silently as this is expected during initialization
           });
       }
@@ -586,24 +618,24 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
         process.exit(0);
       }, 3000);
     } else {
-      nodeProcess.on("error", function (err) {
+      nodeProcess.on("error", (err) => {
         (async () => {
           await restartDaemonProcess(`Error on starting the node process: ${err}`, false);
         })();
       });
 
       // if daemon closes the try to log and restart it
-      nodeProcess.on("exit", function (code, signal) {
+      nodeProcess.on("exit", (code, signal) => {
         initialized = false;
         nodeProcess = null;
+
+        // Drop save/SIGTERM/SIGKILL timers so they cannot hit a replacement process
+        clearStopTimers();
 
         // check if we need to stop it
         if (isStoping === false) {
           self.stop(false);
         }
-
-        // always do a cleanup of resources
-        clearTimeout(killTimeout);
 
         // check if we need to restart
         if (autoRestart) {
@@ -636,17 +668,17 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
       // start notifying the pool
       setNotifyPoolInterval();
       // start the initilize checking
-      initInterval = setInterval(function () {
+      initInterval = setInterval(() => {
         waitForCoreToInitialize();
       }, 10000);
     }
   }
 
   // check if autoupdate is turned on
-  if (configOpts.node && configOpts.node.autoUpdate) {
-    setInterval(function () {
+  if (configOpts.node?.autoUpdate) {
+    setInterval(() => {
       if (rpcComms && initialized && !isUpdating) {
-        let nodeData = rpcComms.getData();
+        const nodeData = rpcComms.getData();
 
         // check node
         if (nodeData) {
@@ -660,13 +692,13 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
                 isUpdating = true;
                 self.stop(false);
 
-                let waitStopInteval = setInterval(function () {
+                const waitStopInteval = setInterval(() => {
                   if (nodeProcess == null) {
                     clearInterval(waitStopInteval);
 
                     downloadLatestDaemon(
                       getNodeActualPath(cmdOptions, configOpts, rootPath),
-                      function (error) {
+                      (error) => {
                         if (error) {
                           (async () => {
                             await logMessage(
@@ -703,10 +735,10 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
 
   // create a server object if required, its used
   // for servicing API calls for the current node
-  if (configOpts.api && configOpts.api.port) {
+  if (configOpts.api?.port) {
     logMessage("Starting the API server", "info", false);
     const nodeDirectory = path.dirname(getNodeActualPath(cmdOptions, configOpts, rootPath));
-    createServer(configOpts, nodeDirectory, async function () {
+    createServer(configOpts, nodeDirectory, async () => {
       try {
         return await getNodeInfoData();
       } catch (err) {

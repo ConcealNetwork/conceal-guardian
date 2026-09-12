@@ -2,9 +2,9 @@
 //
 // Please see the included LICENSE file for more information.
 
+import fs from "node:fs";
 import inquirer from "inquirer";
 import oPath from "object-path";
-import fs from "node:fs";
 
 export function Initialize(configFileName) {
   const configOpts = JSON.parse(fs.readFileSync(configFileName), "utf8");
@@ -47,7 +47,7 @@ export function Initialize(configFileName) {
       type: "confirm",
       name: "reachableOutside",
       message: "Will your node be accessible from the outside?",
-      default: oPath.get(configOpts, "node.bindAddr", "127.0.0.1") === "0.0.0.0" ? true : false,
+      default: oPath.get(configOpts, "node.bindAddr", "127.0.0.1") === "0.0.0.0",
     },
     {
       type: "confirm",
@@ -266,7 +266,7 @@ export function Initialize(configFileName) {
 
     fs.writeFile(configFileName, JSON.stringify(configOpts, null, 2), (err) => {
       if (err) {
-        console.log("\nError trying to save the changes: " + err);
+        console.log(`\nError trying to save the changes: ${err}`);
       } else {
         console.log("\nYour changes have been saved!");
       }

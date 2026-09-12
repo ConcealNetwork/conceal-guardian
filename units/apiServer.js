@@ -1,19 +1,30 @@
 // Copyright (c) 2019-2026, Taegus Cromis, The Conceal Developers
 //
 // Please see the included LICENSE file for more information.
-import { ensureUserDataDir } from "./utils.js";
-import readLastLines from "read-last-lines";
+
+import path from "node:path";
+import axios from "axios";
+import express from "express";
 import rateLimit from "express-rate-limit";
 import geoip from "geoip2-api";
-import express from "express";
-import axios from "axios";
+import readLastLines from "read-last-lines";
 import validator from "validator";
-import path from "node:path";
-import fs from "node:fs";
+import { ensureUserDataDir } from "./utils.js";
 
 function safeResolve(relPath) {
   const safeSuffix = path.normalize(relPath).replace(/^(\.\.(\/|\\|$))+/, "");
   return path.resolve(safeSuffix);
+}
+
+/** Express adapter: handlers declare only the bindings they use via destructuring. */
+function asRoute(handler) {
+  return async (request, response, next) => {
+    try {
+      await handler({ request, response });
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 // Sanitize IP addresses and validate URLs for outbound requests
@@ -39,7 +50,7 @@ function formatGeoData(data) {
 }
 
 export function createServer(config, nodeDirectory, onDataCallback) {
-  let limiter = rateLimit({
+  const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 60,
   });
@@ -49,47 +60,139 @@ export function createServer(config, nodeDirectory, onDataCallback) {
   app.use(limiter);
 
   app.listen(config.api.port, () => {
-    console.log("API server running on port " + config.api.port);
+    console.log(`API server running on port ${config.api.port}`);
   });
 
-  app.get("/getInfo", async (req, res) => {
-    try {
-      const statusResponse = await onDataCallback();
-      res.set("Access-Control-Allow-Origin", "*");
-      res.set("X-Powered-By", "ConcealNodeGuard");
-      res.json(statusResponse);
-    } catch (err) {
-      res.status(500).json({ error: "Failed to get node info" });
-    }
-  });
+  app.get(
+    "/getInfo",
+    asRoute(async ({ response }) => {
+      try {
+        const statusResponse = await onDataCallback();
+        response.set("Access-Control-Allow-Origin", "*");
+        response.set("X-Powered-By", "ConcealNodeGuard");
+        response.json(statusResponse);
+      } catch {
+        response.status(500).json({ error: "Failed to get node info" });
+      }
+    }),
+  );
 
-  app.get("/getDaemonLog", (req, res) => {
-    readLastLines.read(path.join(nodeDirectory, "conceald.log"), 500).then((lines) => {
-      res.send(lines);
-    });
-  });
+  app.get(
+    "/getDaemonLog",
+    asRoute(async ({ response }) => {
+      const lines = await readLastLines.read(path.join(nodeDirectory, "conceald.log"), 500);
+      response.send(lines);
+    }),
+  );
 
-  app.get("/getGuardianLog", (req, res) => {
-    readLastLines.read(path.join(ensureUserDataDir(), "debug.log"), 500).then((lines) => {
-      res.send(lines);
-    });
-  });
+  app.get(
+    "/getGuardianLog",
+    asRoute(async ({ response }) => {
+      const lines = await readLastLines.read(path.join(ensureUserDataDir(), "debug.log"), 500);
+      response.send(lines);
+    }),
+  );
 
-  app.get("/getPeersData", async (req, res) => {
-    try {
-      const statusResponse = await onDataCallback();
-      let peerGeoData = [];
+  app.get(
+    "/getPeersData",
+    asRoute(async ({ response }) => {
+      try {
+        const statusResponse = await onDataCallback();
+        let peerGeoData = [];
 
-      if (statusResponse.blockchain && statusResponse.blockchain.connections) {
-        if (statusResponse.blockchain.connections.length > 0) {
-          // Process each peer connection
-          const peerPromises = statusResponse.blockchain.connections.map(async (connection) => {
-            try {
-              // Extract and sanitize IP from connection
-              const peerIP = connection.toString().split(":")[0]; // Remove port if present
-              const sanitizedIP = sanitizeForGeolocation(peerIP);
+        if (statusResponse.blockchain?.connections) {
+          if (statusResponse.blockchain.connections.length > 0) {
+            // Process each peer connection
+            const peerPromises = statusResponse.blockchain.connections.map(async (connection) => {
+              try {
+                // Extract and sanitize IP from connection
+                const peerIP = connection.toString().split(":")[0]; // Remove port if present
+                const sanitizedIP = sanitizeForGeolocation(peerIP);
 
-              if (!sanitizedIP) {
+                if (!sanitizedIP) {
+                  return {
+                    city: "Unknown",
+                    region: "Unknown",
+                    country: "Unknown",
+                    ll: [null, null],
+                  };
+                }
+
+                // Define APIs to try in order with proper URL validation
+                const apis = [
+                  {
+                    name: "geoip2-api",
+                    fn: async () => await geoip.get(sanitizedIP),
+                  },
+                  {
+                    name: "ipinfo.io",
+                    fn: async () => {
+                      const url = `https://ipinfo.io/${sanitizedIP}/json`;
+                      if (!validator.isURL(url, { protocols: ["https"], require_protocol: true })) {
+                        throw new Error("Invalid URL");
+                      }
+                      return await axios.get(url, {
+                        timeout: 5000,
+                        headers: { "User-Agent": "Conceal Node Guardian" },
+                      });
+                    },
+                  },
+                  {
+                    name: "ipapi.co",
+                    fn: async () => {
+                      const url = `https://ipapi.co/${sanitizedIP}/json/`;
+                      if (!validator.isURL(url, { protocols: ["https"], require_protocol: true })) {
+                        throw new Error("Invalid URL");
+                      }
+                      return await axios.get(url, {
+                        timeout: 5000,
+                        headers: { "User-Agent": "Conceal Node Guardian" },
+                      });
+                    },
+                  },
+                ];
+
+                // Try each API in sequence
+                for (const api of apis) {
+                  try {
+                    const geoData = await api.fn();
+
+                    // Handle different response formats
+                    if (api.name === "geoip2-api") {
+                      // Validate geoip2-api response
+                      if (geoData?.latitude && geoData.longitude) {
+                        return formatGeoData(geoData);
+                      }
+                    } else if (api.name === "ipapi.co") {
+                      // Validate ipapi.co response
+                      if (geoData.data?.latitude && geoData.data.longitude) {
+                        return formatGeoData(geoData.data);
+                      }
+                    } else if (api.name === "ipinfo.io") {
+                      // Validate ipinfo.io response
+                      if (geoData.data?.loc) {
+                        const [lat, lng] = geoData.data.loc.split(",");
+                        if (lat && lng) {
+                          return {
+                            city: geoData.data.city || "Unknown",
+                            region: geoData.data.region || "Unknown",
+                            country: geoData.data.country || "Unknown",
+                            ll: [parseFloat(lat) || null, parseFloat(lng) || null],
+                          };
+                        }
+                      }
+                    }
+                  } catch {}
+                }
+
+                // All APIs failed, return unknown
+                return {
+                  city: "Unknown",
+                  region: "Unknown",
+                  country: "Unknown",
+                  ll: [null, null],
+                };
+              } catch {
                 return {
                   city: "Unknown",
                   region: "Unknown",
@@ -97,154 +200,46 @@ export function createServer(config, nodeDirectory, onDataCallback) {
                   ll: [null, null],
                 };
               }
+            });
 
-              // Define APIs to try in order with proper URL validation
-              const apis = [
-                {
-                  name: "geoip2-api",
-                  fn: async () => await geoip.get(sanitizedIP),
-                },
-                {
-                  name: "ipinfo.io",
-                  fn: async () => {
-                    const url = `https://ipinfo.io/${sanitizedIP}/json`;
-                    if (!validator.isURL(url, { protocols: ["https"], require_protocol: true })) {
-                      throw new Error("Invalid URL");
-                    }
-                    return await axios.get(url, {
-                      timeout: 5000,
-                      headers: { "User-Agent": "Conceal Node Guardian" },
-                    });
-                  },
-                },
-                {
-                  name: "ipapi.co",
-                  fn: async () => {
-                    const url = `https://ipapi.co/${sanitizedIP}/json/`;
-                    if (!validator.isURL(url, { protocols: ["https"], require_protocol: true })) {
-                      throw new Error("Invalid URL");
-                    }
-                    return await axios.get(url, {
-                      timeout: 5000,
-                      headers: { "User-Agent": "Conceal Node Guardian" },
-                    });
-                  },
-                },
-              ];
+            // Wait for all geolocation requests to complete
+            peerGeoData = await Promise.all(peerPromises);
 
-              // Try each API in sequence
-              for (const api of apis) {
-                try {
-                  const geoData = await api.fn();
-
-                  // Handle different response formats
-                  if (api.name === "geoip2-api") {
-                    // Validate geoip2-api response
-                    if (geoData && geoData.latitude && geoData.longitude) {
-                      return formatGeoData(geoData);
-                    } else {
-                      continue;
-                    }
-                  } else if (api.name === "ipapi.co") {
-                    // Validate ipapi.co response
-                    if (geoData.data && geoData.data.latitude && geoData.data.longitude) {
-                      return formatGeoData(geoData.data);
-                    } else {
-                      continue;
-                    }
-                  } else if (api.name === "ipinfo.io") {
-                    // Validate ipinfo.io response
-                    if (geoData.data && geoData.data.loc) {
-                      const [lat, lng] = geoData.data.loc.split(",");
-                      if (lat && lng) {
-                        return {
-                          city: geoData.data.city || "Unknown",
-                          region: geoData.data.region || "Unknown",
-                          country: geoData.data.country || "Unknown",
-                          ll: [parseFloat(lat) || null, parseFloat(lng) || null],
-                        };
-                      }
-                    }
-                    continue;
-                  }
-                } catch (err) {
-                  // Check if it's a rate limit error
-                  const isRateLimited =
-                    err.message.includes("429") ||
-                    err.message.includes("403") ||
-                    err.message.includes("304") ||
-                    err.response?.status === 429 ||
-                    err.response?.status === 403 ||
-                    err.response?.status === 304;
-
-                  if (isRateLimited) {
-                    continue; // Try next API
-                  } else {
-                    continue; // Try next API
-                  }
-                }
-              }
-
-              // All APIs failed, return unknown
-              return {
-                city: "Unknown",
-                region: "Unknown",
-                country: "Unknown",
-                ll: [null, null],
-              };
-            } catch (err) {
-              return {
-                city: "Unknown",
-                region: "Unknown",
-                country: "Unknown",
-                ll: [null, null],
-              };
-            }
-          });
-
-          // Wait for all geolocation requests to complete
-          peerGeoData = await Promise.all(peerPromises);
-
-          res.json(peerGeoData);
+            response.json(peerGeoData);
+          } else {
+            response.json(peerGeoData);
+          }
         } else {
-          res.json(peerGeoData);
+          response.json(peerGeoData);
         }
-      } else {
-        res.json(peerGeoData);
+      } catch (err) {
+        console.error("Error getting peers data:", err);
+        response.status(500).json({ error: "Failed to get peers data" });
       }
-    } catch (err) {
-      console.error("Error getting peers data:", err);
-      res.status(500).json({ error: "Failed to get peers data" });
+    }),
+  );
+
+  const htmlRoot = safeResolve("./html");
+
+  // Alias /index → /index.html, then serve the UI from ./html (path-safe via express.static).
+  app.use((request, response, next) => {
+    if (request.path === "/index") {
+      request.url = "/index.html";
     }
-  });
-
-  app.get(["/index.html", "/index"], (req, res) => {
-    res.sendFile(safeResolve("./html/index.html"));
-  });
-
-  app.get("/dashboard.html", (req, res) => {
-    res.sendFile(safeResolve("./html/dashboard.html"));
-  });
-
-  app.get("/daemonLog.html", (req, res) => {
-    res.sendFile(safeResolve("./html/daemonLog.html"));
-  });
-
-  app.get("/peers.html", (req, res) => {
-    res.sendFile(safeResolve("./html/peers.html"));
-  });
-
-  app.get("/*splat", (req, res) => {
-    if (path.extname(req.path) !== ".map") {
-      const pathName = safeResolve(`./html${req.path}`);
-
-      if (fs.existsSync(pathName)) {
-        res.sendFile(pathName);
-      } else {
-        res.status(404).send("Not found");
-      }
-    } else {
-      res.status(404).send("Not found");
+    if (path.extname(request.path) === ".map") {
+      response.status(404).send("Not found");
+      return;
     }
+    next();
+  });
+  app.use(express.static(htmlRoot));
+  app.use((request, response) => {
+    console.debug(`API 404 ${request.method} ${request.path}`);
+    response.status(404).send("Not found");
+  });
+
+  app.use((err, request, response, _next) => {
+    console.error("API error %s %s:", request.method, request.path, err);
+    response.status(500).json({ error: "Internal server error" });
   });
 }
