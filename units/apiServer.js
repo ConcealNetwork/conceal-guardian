@@ -162,13 +162,11 @@ export function createServer(config, nodeDirectory, onDataCallback) {
                       // Validate geoip2-api response
                       if (geoData?.latitude && geoData.longitude) {
                         return formatGeoData(geoData);
-                      } else {
                       }
                     } else if (api.name === "ipapi.co") {
                       // Validate ipapi.co response
                       if (geoData.data?.latitude && geoData.data.longitude) {
                         return formatGeoData(geoData.data);
-                      } else {
                       }
                     } else if (api.name === "ipinfo.io") {
                       // Validate ipinfo.io response
@@ -184,20 +182,7 @@ export function createServer(config, nodeDirectory, onDataCallback) {
                         }
                       }
                     }
-                  } catch (err) {
-                    // Check if it's a rate limit error
-                    const isRateLimited =
-                      err.message.includes("429") ||
-                      err.message.includes("403") ||
-                      err.message.includes("304") ||
-                      err.response?.status === 429 ||
-                      err.response?.status === 403 ||
-                      err.response?.status === 304;
-
-                    if (isRateLimited) {
-                    } else {
-                    }
-                  }
+                  } catch {}
                 }
 
                 // All APIs failed, return unknown
