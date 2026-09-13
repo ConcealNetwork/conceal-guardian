@@ -2,6 +2,12 @@
 
 Please take note that you will need **administrative rights** for working with service commands. On Linux and macOS ensure that you have superuser privileges. On Windows, be sure you are using "Run as administrator" option.
 
+## Requirements
+
+* **Node.js 20 or higher** must be installed on the host, even when using the precompiled binaries. The binaries are packaged with the Node.js SEA (Single Executable Applications) method, which — unlike the older fully self-contained `nexe` builds — still relies on the Node.js runtime installed on the system.
+
+Install or upgrade Node.js with [nvm](https://github.com/nvm-sh/nvm) (`nvm install 20`) or NodeSource on Debian/Ubuntu (`curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs`). Verify with `node --version`.
+
 ## Table of Contents
   * [Getting the Executables](#getting-the-executables)
      * [Linux Dependencies](#linux-dependencies)
