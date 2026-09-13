@@ -31,8 +31,10 @@ Conceal Node Guardian can be installed to run with Node.js or used as precompile
 
 Ensure that requirements are installed:
 
-* [Node.js](https://nodejs.org/) (version 20.0.0 or higher)
+* [Node.js](https://nodejs.org/) (version 20.0.0 or higher — 22 LTS recommended)
 * [npm](https://www.npmjs.com/)
+
+This requirement applies to running the Guardian from source only (`node index.js`). The `engines` field in `package.json` and the startup version check enforce it at install/startup time.
 
 Or use [nvm](https://github.com/creationix/nvm) (Node Version Manager) to manage your Node.js installations.
 
@@ -46,7 +48,9 @@ $ npm install
 
 ### Precompiled binaries
 
-> **Requirement:** Node.js 20 or higher must be installed on the host, even when using the precompiled build. The binaries are packaged with the Node.js SEA (Single Executable Applications) method, which — unlike the older `nexe` builds — still relies on the Node.js runtime installed on the system. Install or upgrade it with [nvm](https://github.com/nvm-sh/nvm) (`nvm install 20`) or NodeSource (`curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs`).
+> **Self-contained:** The precompiled `guardian-linux64` binary is built with the Node.js SEA (Single Executable Applications) method and embeds its own Node.js runtime — no Node.js installation is required on the host. The only host requirement is glibc (Ubuntu 22.04 / 24.04 as shipped).
+>
+> From field experience: if you run other processes on the same host that require Node.js, having Node.js >= 20 installed alongside is optimal (Node.js 20 minimum, 22 LTS recommended).
 
 Please refer to [installation page](INSTALL.md) for detailed instructions how to install the Guardian with precompiled binaries.
 
@@ -265,7 +269,7 @@ launchctl unload ~/Library/LaunchAgents/conceal.guardian.plist
 
 ### Precompiled binaries
 
-> **Requirement:** Node.js 20 or higher must be installed on the host, even when using the precompiled build (see the note in the [installation section](#precompiled-binaries)).
+> The `guardian-linux64` binary is self-contained (it embeds its own Node.js runtime) and requires no Node.js installation on the host — see the note in the [installation section](#precompiled-binaries).
 
 Please refer to [installation page](INSTALL.md) for detailed instructions how to run the Guardian with precompiled binaries.
 

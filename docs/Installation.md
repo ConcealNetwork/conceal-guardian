@@ -15,7 +15,7 @@ This guide covers installing Conceal Node Guardian on all supported platforms.
 
 ## Prerequisites
 
-- **Node.js**: Version 20.0.0 or higher — required on the host even when using the precompiled (SEA-packaged) binaries, which still rely on the installed Node.js runtime
+- **Node.js**: Version 20.0.0 or higher (22 LTS recommended) — required only when running from source (`node index.js`); the prebuilt `guardian-linux64` SEA binary is self-contained (embeds its own Node.js runtime) and needs no Node.js installation on the host (glibc only, Ubuntu 22.04/24.04)
 - **Operating System**: Windows 10+, Ubuntu 22.04+, Ubuntu 24.04+, or macOS 10.15+
 - **Memory**: Minimum 2GB RAM (4GB recommended)
 - **Storage**: 10GB free space
