@@ -2,6 +2,14 @@
 
 Please take note that you will need **administrative rights** for working with service commands. On Linux and macOS ensure that you have superuser privileges. On Windows, be sure you are using "Run as administrator" option.
 
+## Requirements
+
+* **Precompiled binaries:** The `guardian-linux64` binary is built with the Node.js SEA (Single Executable Applications) method and is fully self-contained — it embeds its own Node.js runtime, so no Node.js installation is required on the host. The only host requirement is glibc (Ubuntu 22.04 / 24.04 as shipped).
+
+* **Running from source:** Node.js >= 20 is required (enforced by the `engines` field in `package.json` and a startup version check). Node.js 22 (current LTS) is recommended.
+
+From field experience: if you run other processes on the same host that require Node.js, having Node.js >= 20 installed alongside is optimal (Node.js 20 minimum, 22 LTS recommended). Install or upgrade Node.js with [nvm](https://github.com/nvm-sh/nvm) (`nvm install 22`) or NodeSource on Debian/Ubuntu (`curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs`). Verify with `node --version`.
+
 ## Table of Contents
   * [Getting the Executables](#getting-the-executables)
      * [Linux Dependencies](#linux-dependencies)
