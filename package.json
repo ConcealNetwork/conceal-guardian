@@ -4,6 +4,9 @@
   "description": "Conceal Node Guard",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=20.17.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "package": "ncc build index.js -m -o dist",
@@ -42,7 +45,7 @@
     "inquirer": "^13.2.2",
     "linux-os-info": "^2.0.0",
     "moment": "^2.29.4",
-    "nodemailer": "^9.1.1",
+    "nodemailer": "^10.2.1",
     "object-path": "^0.11.8",
     "pure-uuid": "^2.0.0",
     "read-last-lines": "^1.8.0",
@@ -61,9 +64,9 @@
     "esbuild": "^0.28.2"
   },
   "overrides": {
-    "body-parser": "2.3.0",
-    "follow-redirects": "1.16.0",
+    "body-parser": "2.4.0",
+    "follow-redirects": "1.16.2",
     "path-to-regexp": "8.4.0",
-    "qs": "6.16.0"
+    "qs": "6.16.1"
   }
 }

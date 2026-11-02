@@ -2,6 +2,7 @@
 //
 // Please see the included LICENSE file for more information.
 
+import "./units/runtimeCheck.js";
 import fs from "node:fs";
 import path from "node:path";
 import commandLineArgs from "command-line-args";
