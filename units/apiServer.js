@@ -9,7 +9,7 @@ import rateLimit from "express-rate-limit";
 import geoip from "geoip2-api";
 import readLastLines from "read-last-lines";
 import validator from "validator";
-import { ensureUserDataDir } from "./utils.js";
+import { daemonLogBasename, ensureUserDataDir } from "./utils.js";
 
 function safeResolve(relPath) {
   const safeSuffix = path.normalize(relPath).replace(/^(\.\.(\/|\\|$))+/, "");
@@ -49,7 +49,7 @@ function formatGeoData(data) {
   };
 }
 
-export function createServer(config, nodeDirectory, onDataCallback) {
+export function createServer(config, getDaemonPath, onDataCallback) {
   const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 60,
@@ -80,7 +80,11 @@ export function createServer(config, nodeDirectory, onDataCallback) {
   app.get(
     "/getDaemonLog",
     asRoute(async ({ response }) => {
-      const lines = await readLastLines.read(path.join(nodeDirectory, "conceald.log"), 500);
+      const daemonPath = getDaemonPath();
+      const lines = await readLastLines.read(
+        path.join(path.dirname(daemonPath), daemonLogBasename(daemonPath)),
+        500,
+      );
       response.send(lines);
     }),
   );

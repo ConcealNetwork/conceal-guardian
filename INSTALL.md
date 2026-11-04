@@ -24,7 +24,7 @@ From field experience: if you run other processes on the same host that require 
 
 Download the appropriate binary for your OS [here](https://github.com/ConcealNetwork/conceal-guardian/releases) and extract them to the directory of your choice.
 
-If running on Linux or macOS, before running `conceald`, Boost v1.58 must be installed. In case your package manager installs different Boost version (as it is with Ubuntu 18.10 or higher), `conceald` executable will have to be built manually as described [here](https://github.com/ConcealNetwork/conceal-core#compiling-conceal-from-source). You can check installed Boost version by running `dpkg -s libboost-dev | grep 'Version'` on Linux or `brew info boost` on macOS if you installed it with Homebrew.
+If running on Linux or macOS, before running `conceal-daemon`, Boost v1.58 must be installed. In case your package manager installs different Boost version (as it is with Ubuntu 18.10 or higher), the daemon executable will have to be built manually as described [here](https://github.com/ConcealNetwork/conceal-core#compiling-conceal-from-source). You can check installed Boost version by running `dpkg -s libboost-dev | grep 'Version'` on Linux or `brew info boost` on macOS if you installed it with Homebrew.
 
 ### Linux Dependencies
 
@@ -61,9 +61,9 @@ You will be presented with few questions, answer them and you will be ready to g
 
 **Questions explanations:**
 
-> Please input the path to the "conceald" executable (if you do not know what to put in, leave it empty)
+> Please input the path to the "conceal-daemon" executable (legacy name "conceald" is still accepted; leave empty to choose automatically)
 
-Absolute path to `conceald` daemon executable. If left empty the Guardian will try to look in project's directory and use that one. If `conceald` is not found it will try to download the latest one.
+Absolute path to the `conceal-daemon` executable. If left empty the Guardian looks in the working directory for `conceal-daemon`, then legacy `conceald`, then for `conceal-daemon` in `/usr/bin` and on `PATH`. If none of those is found it downloads the latest daemon into the working directory. A path you set is used as given. A daemon found in `/usr/bin` is started there and is not overwritten by the download.
 
 NOTE: The automatic download and install works for Windows and Ubuntu 16.04 and 18.04 only. For any other OS you need to compile your own daemon.
 
@@ -147,7 +147,7 @@ You can see help at any time by using:
 
 The Guardian supports two mode of operations:
 
-1. You don't have a daemon (`conceald`) pre-installed, the Guardian takes care of everything.
+1. You don't have a daemon (`conceal-daemon`) pre-installed, the Guardian takes care of everything.
 2. You have the daemon pre-installed and the Guardian monitors that instance.
 
 If you have a type 1 installation, you can use the build in updater for the daemon. Simply do: 
@@ -156,7 +156,9 @@ If you have a type 1 installation, you can use the build in updater for the daem
 ./guardian-linux64 --node update
 ```
 
-The Guardian will download and update the latest stable daemon (`conceald`). Or if you have a fresh install and don't have the daemon yet, the Guardian will download it and install it on the first run automatically. **Note** however, that precompiled binaries are **only available** for Windows and for Ubuntu 16.04 and 18.04 LTS. On other Linux versions, you will have to compile the daemon binaries yourself as described [here](https://github.com/ConcealNetwork/conceal-core#compiling-conceal-from-source).
+The Guardian downloads the latest stable daemon and installs `conceal-daemon` when that file is in the archive. An older archive that only contains `conceald` is still installed. On the next start, `conceal-daemon` is chosen when both files are present, unless `node.path` or `--daemon` points at a specific file. **Note** however, that precompiled binaries are **only available** for Windows and for Ubuntu 16.04 and 18.04 LTS. On other Linux versions, you will have to compile the daemon binaries yourself as described [here](https://github.com/ConcealNetwork/conceal-core#compiling-conceal-from-source).
+
+If a download or extract stops early, the installed daemon is left in place. The copy is written to `conceal-daemon.partial` (or the configured filename plus `.partial`) and replaces the live file only after that copy finishes. When the live file is being replaced, the previous file is kept as `*.previous` until the new file is in place. If Guardian stops in that window and the daemon file is missing, move the matching `*.previous` file back to the daemon name before starting again. Delete a leftover `*.partial` file; it is not started. After a successful update, a leftover `conceald` next to `conceal-daemon` is not the process Guardian starts unless your configured path still points at `conceald`.
 
 ### Guardian
 

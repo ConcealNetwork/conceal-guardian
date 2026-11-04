@@ -11,7 +11,12 @@ import { downloadLatestDaemon, downloadLatestGuardian } from "./units/download.j
 import { NodeGuard } from "./units/engine.js";
 import { install, remove, start, status, stop } from "./units/service.js";
 import { Initialize } from "./units/setup.js";
-import { getNodeActualPath, swapExecutable } from "./units/utils.js";
+import {
+  describeNodeLaunch,
+  getNodeActualPath,
+  swapExecutable,
+  writeGuardianLog,
+} from "./units/utils.js";
 
 // read the package.json to have version info available
 const pjson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json")));
@@ -84,7 +89,7 @@ if (cmdOptions.help) {
           name: "daemon",
           typeLabel: "{underline file}",
           description:
-            "The path to node daemon executable. If empty it uses the same directory as the app.\n",
+            "Path to the node daemon. If set, Guardian uses this path as given. If empty, it looks next to the app for conceal-daemon, then conceald, then for conceal-daemon in /usr/bin and PATH.\n",
         },
         {
           name: "node",
@@ -170,6 +175,15 @@ if (cmdOptions.help) {
       configOpts.node.args.push(configOpts.node.feeAddr);
     }
 
+    const logDaemonDownload = (error) => {
+      if (error) {
+        writeGuardianLog("error", `Daemon download failed: ${error}`);
+        return;
+      }
+      const installed = getNodeActualPath(cmdOptions, configOpts, rootPath);
+      writeGuardianLog("info", `Daemon download succeeded: ${installed}`);
+    };
+
     if (cmdOptions.setup) {
       Initialize(configFileName);
     } else if (cmdOptions.service) {
@@ -198,7 +212,8 @@ if (cmdOptions.help) {
       if (cmdOptions.node === "update") {
         stop(configOpts, configFileName, () => {
           // Service stopped, now proceed with daemon update
-          downloadLatestDaemon(getNodeActualPath(cmdOptions, configOpts, rootPath), (error) => {
+          downloadLatestDaemon(describeNodeLaunch(cmdOptions, configOpts, rootPath), (error) => {
+            logDaemonDownload(error);
             if (error) {
               console.log(`\nError updating daemon: ${error}\n`);
             } else {
@@ -230,7 +245,8 @@ if (cmdOptions.help) {
       };
 
       if (!fs.existsSync(nodePath)) {
-        downloadLatestDaemon(nodePath, (error) => {
+        downloadLatestDaemon(describeNodeLaunch(cmdOptions, configOpts, rootPath), (error) => {
+          logDaemonDownload(error);
           if (error) {
             console.log(`\nError updating daemon: ${error}\n`);
           } else {

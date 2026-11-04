@@ -34,6 +34,8 @@ This guide helps you solve common issues with Conceal Node Guardian.
 1. **Check Daemon Path**
    ```bash
    # Test daemon manually
+   /path/to/conceal-daemon --version
+   # or legacy
    /path/to/conceald --version
    ```
 

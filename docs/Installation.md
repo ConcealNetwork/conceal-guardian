@@ -145,7 +145,7 @@ This guide covers installing Conceal Node Guardian on all supported platforms.
 
 The setup process will ask you several questions:
 
-- **Daemon Path**: Path to your `conceald` executable (leave empty for auto-download)
+- **Daemon Path**: Path to `conceal-daemon` (legacy name `conceald` is still accepted; leave empty for auto-download)
 - **Node Name**: Public name for your node
 - **Fee-based Node**: Whether to run as a fee-based remote node
 - **Fee Address**: CCX address for fee collection (if applicable)

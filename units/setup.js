@@ -14,7 +14,7 @@ export function Initialize(configFileName) {
       type: "input",
       name: "nodePath",
       message:
-        'Please input the path to the "conceald" executable (if you do not know what to put in, leave it empty)',
+        'Please input the path to the "conceal-daemon" executable (legacy name "conceald" is still accepted; leave empty to choose automatically)',
       default: oPath.get(configOpts, "node.path", ""),
     },
     {

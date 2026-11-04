@@ -13,7 +13,12 @@ import { createServer } from "./apiServer.js";
 import { RpcCommunicator } from "./comms.js";
 import { downloadLatestDaemon } from "./download.js";
 import { notifyOnError } from "./notifiers.js";
-import { ensureNodeUniqueId, ensureUserDataDir, getNodeActualPath } from "./utils.js";
+import {
+  describeNodeLaunch,
+  ensureNodeUniqueId,
+  ensureUserDataDir,
+  getNodeActualPath,
+} from "./utils.js";
 
 export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   const nodeUniqueId = ensureNodeUniqueId();
@@ -697,7 +702,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
                     clearInterval(waitStopInteval);
 
                     downloadLatestDaemon(
-                      getNodeActualPath(cmdOptions, configOpts, rootPath),
+                      describeNodeLaunch(cmdOptions, configOpts, rootPath),
                       (error) => {
                         if (error) {
                           (async () => {
@@ -737,15 +742,18 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   // for servicing API calls for the current node
   if (configOpts.api?.port) {
     logMessage("Starting the API server", "info", false);
-    const nodeDirectory = path.dirname(getNodeActualPath(cmdOptions, configOpts, rootPath));
-    createServer(configOpts, nodeDirectory, async () => {
-      try {
-        return await getNodeInfoData();
-      } catch (err) {
-        logMessage(`Error in API server callback: ${err.message}`, "error", false);
-        return null;
-      }
-    });
+    createServer(
+      configOpts,
+      () => getNodeActualPath(cmdOptions, configOpts, rootPath),
+      async () => {
+        try {
+          return await getNodeInfoData();
+        } catch (err) {
+          logMessage(`Error in API server callback: ${err.message}`, "error", false);
+          return null;
+        }
+      },
+    );
   }
 
   // start the process

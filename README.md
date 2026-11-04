@@ -2,7 +2,7 @@
 
 ## About
 
-Conceal Node Guardian is a process that monitors the `conceald` daemon. It is catching daemon errors, monitors the block count and, in case of an error, it restarts the daemon and notifies on Discord via web hook, sends an e-mail, or both.
+Conceal Node Guardian is a process that monitors the Conceal daemon (`conceal-daemon`; the legacy name `conceald` is still accepted). It is catching daemon errors, monitors the block count and, in case of an error, it restarts the daemon and notifies on Discord via web hook, sends an e-mail, or both.
 
 It also has an ability to connect to a pool with other nodes for the purpose of infrastructure monitoring or running a remote node with fee listing.
 
@@ -69,7 +69,7 @@ You can use [sample configuration](config.json.sample) and modify it for your ne
          "--rpc-bind-port",
          "16000"
       ],
-      "path":"C:\\Wallets\\Conceal-CLI\\conceald.exe",
+      "path":"C:\\Wallets\\Conceal-CLI\\conceal-daemon.exe",
       "port":16000,
       "name":"TestNode",
       "bindAddr":"0.0.0.0",
@@ -124,8 +124,8 @@ You can use [sample configuration](config.json.sample) and modify it for your ne
 
 * **node**
   * args: The arguments that get appended to the monitored process.
-  * path: The path of the process. If omited it uses the same path where the guardian is located
-  * port: The port on which conceald is running
+  * path: The path of the process. If set, Guardian starts that file as given and does not substitute a different executable when the path is missing. If omitted, Guardian looks next to itself for `conceal-daemon`, then legacy `conceald`. It then looks for `conceal-daemon` in `/usr/bin` and on `PATH`. A packaged binary is started in place. A later Guardian download still writes into the working directory and does not replace `/usr/bin`.
+  * port: The port on which the daemon is running
   * name: Name of the node. If omited it uses the hostname.
   * feeAddr: The CCX address on which the transaction fee will be sent in case of remote node.
   * bindAddr: The address on which you listen. 127.0.0.1 for localhost only. 0.0.0.0 for outside accesible node.
