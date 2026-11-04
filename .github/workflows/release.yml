@@ -90,8 +90,8 @@ jobs:
     - name: Wait for builds to complete
       run: |
         echo "Waiting for builds to complete..."
-        echo "Builds can take up to 3hours30, waiting 3 hours 45 to be safe..."
-        sleep 13500  # Wait 3.75 hours for builds to complete
+        echo "SEA builds typically finish under 15 minutes; waiting 20 minutes to be safe..."
+        sleep 1200  # Wait 20 minutes for builds to complete
 
 
     - name: Download Windows artifact
