@@ -35,3 +35,8 @@ security/findings-reviewed.private.json
 security/accepted-risks.private.md
 # Plur
 CLAUDE.md
+
+# repo-kit py-indexer
+.repo-kit/
+.cursor/rules/py-indexer.mdc
+.cursor/mcp.json
