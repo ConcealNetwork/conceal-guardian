@@ -11,7 +11,14 @@ import { pipeline } from "node:stream/promises";
 import { BlobReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js";
 import osInfo from "linux-os-info";
 import * as extractTAR from "tar";
-import { ensureNodeUniqueId, getGuardianExecutableName, getNodeExecutableName } from "./utils.js";
+import {
+  daemonExtractSearchDirs,
+  daemonInstallDestination,
+  ensureNodeUniqueId,
+  findRealDaemonBinary,
+  getGuardianExecutableName,
+  installDaemonFile,
+} from "./utils.js";
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
 const wrongLinuxOSMsg =
@@ -137,7 +144,7 @@ const MAX_ZIP_ENTRY_BYTES = 512 * 1024 * 1024;
  * @param {string} outDir - Target extraction directory
  * @throws {Error} If any entry is unsafe (symlink, absolute path, contains .., or escapes outDir)
  */
-async function extractZipSafe(zipPath, outDir) {
+export async function extractZipSafe(zipPath, outDir) {
   const normalizedOutDir = path.resolve(outDir);
   const realOutDir = await fs.promises.realpath(normalizedOutDir);
 
@@ -245,7 +252,7 @@ function extractArchive(filePath, outDir, callback) {
   }
 }
 
-export function downloadLatestDaemon(nodePath, callback) {
+export function downloadLatestDaemon(launch, callback) {
   const finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
   const linuxOSInfo = getLinuxOSInfo();
 
@@ -303,17 +310,23 @@ export function downloadLatestDaemon(nodePath, callback) {
 
               fs.readdir(finalTempDir, (_err2, items) => {
                 if (items.length > 0) {
-                  if (process.platform === "win32") {
-                    const sourceFile = path.join(finalTempDir, getNodeExecutableName());
-                    const targetFile = path.join(path.dirname(nodePath), getNodeExecutableName());
-                    fs.cpSync(sourceFile, targetFile);
-                  } else {
-                    const sourceFile = path.join(finalTempDir, items[0], getNodeExecutableName());
-                    const targetFile = path.join(path.dirname(nodePath), getNodeExecutableName());
-                    fs.cpSync(sourceFile, targetFile);
+                  const sourceFile = findRealDaemonBinary(daemonExtractSearchDirs(finalTempDir));
+                  if (!sourceFile) {
+                    fs.rmSync(finalTempDir, { recursive: true, force: true });
+                    callback(
+                      "No conceal-daemon or conceald executable found in the archive (symlink aliases are not used)",
+                    );
+                    return;
+                  }
+                  const targetFile = daemonInstallDestination(launch, sourceFile);
+                  try {
+                    installDaemonFile(sourceFile, targetFile);
+                  } catch (err) {
+                    fs.rmSync(finalTempDir, { recursive: true, force: true });
+                    callback(err.message);
+                    return;
                   }
                   fs.rmSync(finalTempDir, { recursive: true, force: true });
-                  fs.chmodSync(nodePath, fs.constants.S_IRWXU);
                   callback(null);
                 } else {
                   callback("No downloaded archives found");

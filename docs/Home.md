@@ -6,7 +6,7 @@ Welcome to the Conceal Node Guardian Wiki! This comprehensive guide will help yo
 
 Conceal Node Guardian is a robust monitoring and management system for Conceal Network nodes. It provides:
 
-- **Automatic Daemon Management**: Monitors and restarts the `conceald` daemon when needed
+- **Automatic Daemon Management**: Monitors and restarts the `conceal-daemon` daemon when needed
 - **Error Detection & Recovery**: Catches daemon errors and automatically restarts the process
 - **Pool Integration**: Connects to the Conceal network pool for infrastructure monitoring
 - **Notification System**: Sends alerts via Discord webhooks and email
@@ -64,7 +64,7 @@ Conceal Node Guardian is a robust monitoring and management system for Conceal N
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Guardian      │    │   Conceal       │    │   Pool Service  │
 │   Process       │◄──►│   Daemon        │    │   (Optional)    │
-│                 │    │   (conceald)    │    │                 │
+│                 │    │ (conceal-daemon)│    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼

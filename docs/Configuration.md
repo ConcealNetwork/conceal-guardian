@@ -51,7 +51,7 @@ The `node` section controls the Conceal daemon settings.
       "--rpc-bind-port",
       "16000"
     ],
-    "path": "/path/to/conceald",
+    "path": "/path/to/conceal-daemon",
     "port": 16000,
     "name": "MyNode",
     "bindAddr": "0.0.0.0",
@@ -61,12 +61,14 @@ The `node` section controls the Conceal daemon settings.
 }
 ```
 
+Legacy `path` above.[^legacy]
+
 #### Node Configuration Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `args` | Array | `[]` | Command-line arguments passed to the daemon |
-| `path` | String | `""` | Path to the `conceald` executable (empty for auto-download) |
+| `path` | String | `""` | Path to `conceal-daemon`. Empty looks next to Guardian for `conceal-daemon`, then legacy `conceald`, then for `conceal-daemon` in `/usr/bin` and on `PATH`. A set path is used as given. |
 | `port` | Number | `16000` | RPC port for the daemon |
 | `name` | String | `hostname` | Public name of your node |
 | `bindAddr` | String | `"127.0.0.1"` | Binding address (`127.0.0.1` for local, `0.0.0.0` for external) |
@@ -320,3 +322,5 @@ After configuring your guardian:
 
 - **[Usage](Usage.md)** - How to use and manage the guardian
 - **[Troubleshooting](Troubleshooting.md)** - Solve configuration issues
+
+[^legacy]: Legacy path: `"path": "path/to/conceald"`
