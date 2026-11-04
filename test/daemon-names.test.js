@@ -8,6 +8,8 @@ import {
   daemonExtractSearchDirs,
   daemonInstallDestination,
   daemonLogBasename,
+  daemonLogCandidates,
+  resolveDaemonLogPath,
   defaultDaemonSearchDirs,
   describeNodeLaunch,
   findRealDaemonBinary,
@@ -263,6 +265,23 @@ test("daemon log name follows the launched executable", () => {
   assert.equal(daemonLogBasename("/opt/conceald"), "conceald.log");
   assert.equal(daemonLogBasename("conceal-daemon.exe"), "conceal-daemon.log");
   assert.equal(daemonLogBasename("conceald.exe"), "conceald.log");
+});
+
+test("daemon log prefers the data directory and falls back beside the binary", () => {
+  const dataDir = tempDir();
+  const binDir = tempDir();
+  const daemon = path.join(binDir, "conceal-daemon");
+  writeFile(binDir, "conceal-daemon.log", "legacy");
+  const options = { dataDir };
+
+  assert.deepEqual(daemonLogCandidates(daemon, options), [
+    path.join(dataDir, "conceal-daemon.log"),
+    path.join(binDir, "conceal-daemon.log"),
+  ]);
+  assert.equal(resolveDaemonLogPath(daemon, options), path.join(binDir, "conceal-daemon.log"));
+
+  writeFile(dataDir, "conceal-daemon.log", "data");
+  assert.equal(resolveDaemonLogPath(daemon, options), path.join(dataDir, "conceal-daemon.log"));
 });
 
 test("zip extract rejects a symlink entry and copies a real dual-name archive", async () => {

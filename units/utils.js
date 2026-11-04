@@ -271,6 +271,42 @@ export function daemonLogBasename(daemonPath) {
 }
 
 /**
+ * Core's default data directory (Common/Util.cpp getDefaultDataDirectory).
+ * Unix ~/.conceal, macOS ~/Library/Application Support/conceal,
+ * Windows %APPDATA%\conceal.
+ */
+export function concealDataDirectory(platform = process.platform, env = process.env) {
+  if (platform === "win32") {
+    const base = env.APPDATA || path.join(env.USERPROFILE || "", "AppData", "Roaming");
+    return path.join(base, "conceal");
+  }
+  if (platform === "darwin") {
+    return path.join(env.HOME || "", "Library", "Application Support", "conceal");
+  }
+  return path.join(env.HOME || "", ".conceal");
+}
+
+/** Data-directory log first, then the legacy file beside the binary. */
+export function daemonLogCandidates(daemonPath, options = {}) {
+  const name = daemonLogBasename(daemonPath);
+  const dataDir = options.dataDir ?? concealDataDirectory(options.platform);
+  const preferred = path.join(dataDir, name);
+  const legacy = path.join(path.dirname(daemonPath), name);
+  return preferred === legacy ? [preferred] : [preferred, legacy];
+}
+
+export function resolveDaemonLogPath(daemonPath, options = {}) {
+  const existsSync = options.existsSync ?? fs.existsSync;
+  const candidates = daemonLogCandidates(daemonPath, options);
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+/**
  * Replace dest with a regular file. The live name is unchanged until rename.
  * On failure after the live file was moved aside, it is moved back.
  * A crash can leave `name.previous` (last good file) or `name.partial` (unused).

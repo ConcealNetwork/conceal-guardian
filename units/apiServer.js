@@ -9,7 +9,7 @@ import rateLimit from "express-rate-limit";
 import geoip from "geoip2-api";
 import readLastLines from "read-last-lines";
 import validator from "validator";
-import { daemonLogBasename, ensureUserDataDir } from "./utils.js";
+import { ensureUserDataDir, resolveDaemonLogPath } from "./utils.js";
 
 function safeResolve(relPath) {
   const safeSuffix = path.normalize(relPath).replace(/^(\.\.(\/|\\|$))+/, "");
@@ -81,10 +81,12 @@ export function createServer(config, getDaemonPath, onDataCallback) {
     "/getDaemonLog",
     asRoute(async ({ response }) => {
       const daemonPath = getDaemonPath();
-      const lines = await readLastLines.read(
-        path.join(path.dirname(daemonPath), daemonLogBasename(daemonPath)),
-        500,
-      );
+      const logFile = resolveDaemonLogPath(daemonPath);
+      if (!logFile) {
+        response.status(404).send("Daemon log not found");
+        return;
+      }
+      const lines = await readLastLines.read(logFile, 500);
       response.send(lines);
     }),
   );
