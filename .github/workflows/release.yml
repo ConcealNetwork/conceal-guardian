@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
@@ -77,6 +77,15 @@ jobs:
         client-payload: '{"release_version": "${{ steps.version.outputs.version }}", "branch": "${{ github.ref_name }}"}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Trigger Ubuntu 26 Build
+      id: ubuntu26_build
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        event-type: build-ubuntu26
+        client-payload: '{"release_version": "${{ steps.version.outputs.version }}", "branch": "${{ github.ref_name }}"}'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Wait for builds to complete
       run: |
@@ -109,6 +118,14 @@ jobs:
         name: guardian-linux64-ubuntu24
         allow_forks: false
 
+    - name: Download Ubuntu 26 artifact
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        workflow: build-ubuntu26.yml
+        path: ubuntu26
+        name: guardian-linux64-ubuntu26
+        allow_forks: false
+
     - name: Generate checksums
       id: checksums
       run: |
@@ -116,21 +133,25 @@ jobs:
         WINDOWS_CHECKSUM=$(sha256sum windows/guardian-win64.zip | cut -d' ' -f1)
         UBUNTU22_CHECKSUM=$(sha256sum ubuntu22/guardian-linux64-ubuntu-22.tar.gz | cut -d' ' -f1)
         UBUNTU24_CHECKSUM=$(sha256sum ubuntu24/guardian-linux64-ubuntu-24.tar.gz | cut -d' ' -f1)
+        UBUNTU26_CHECKSUM=$(sha256sum ubuntu26/guardian-linux64-ubuntu-26.tar.gz | cut -d' ' -f1)
         
         echo "windows_checksum=$WINDOWS_CHECKSUM" >> $GITHUB_OUTPUT
         echo "ubuntu22_checksum=$UBUNTU22_CHECKSUM" >> $GITHUB_OUTPUT
         echo "ubuntu24_checksum=$UBUNTU24_CHECKSUM" >> $GITHUB_OUTPUT
+        echo "ubuntu26_checksum=$UBUNTU26_CHECKSUM" >> $GITHUB_OUTPUT
         
         echo "=== Generated checksums ==="
         echo "Windows: $WINDOWS_CHECKSUM"
         echo "Ubuntu 22: $UBUNTU22_CHECKSUM"
         echo "Ubuntu 24: $UBUNTU24_CHECKSUM"
+        echo "Ubuntu 26: $UBUNTU26_CHECKSUM"
 
     - name: Write checksums file
       run: |
         echo "${{ steps.checksums.outputs.windows_checksum }}  guardian-win64.zip" > checksums.sha256
         echo "${{ steps.checksums.outputs.ubuntu22_checksum }}  guardian-linux64-ubuntu-22.tar.gz" >> checksums.sha256
         echo "${{ steps.checksums.outputs.ubuntu24_checksum }}  guardian-linux64-ubuntu-24.tar.gz" >> checksums.sha256
+        echo "${{ steps.checksums.outputs.ubuntu26_checksum }}  guardian-linux64-ubuntu-26.tar.gz" >> checksums.sha256
 
     - name: Upload artifacts to release
       uses: softprops/action-gh-release@v1
@@ -141,6 +162,7 @@ jobs:
           windows/guardian-win64.zip
           ubuntu22/guardian-linux64-ubuntu-22.tar.gz
           ubuntu24/guardian-linux64-ubuntu-24.tar.gz
+          ubuntu26/guardian-linux64-ubuntu-26.tar.gz
           checksums.sha256
         body: |
           ## Checksums
@@ -156,6 +178,10 @@ jobs:
           **Ubuntu 24:** guardian-linux64-ubuntu-24.tar.gz sha256
           ```
           ${{ steps.checksums.outputs.ubuntu24_checksum }}
+          ```
+          **Ubuntu 26:** guardian-linux64-ubuntu-26.tar.gz sha256
+          ```
+          ${{ steps.checksums.outputs.ubuntu26_checksum }}
           ```
         append_body: true
       env:
