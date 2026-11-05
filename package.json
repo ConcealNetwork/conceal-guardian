@@ -60,7 +60,7 @@
     "esversion": 8
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.12",
+    "@biomejs/biome": "2.6.4",
     "esbuild": "^0.28.2"
   },
   "overrides": {
