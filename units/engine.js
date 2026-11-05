@@ -18,6 +18,7 @@ import {
   ensureNodeUniqueId,
   ensureUserDataDir,
   getNodeActualPath,
+  isPackageManagedDaemon,
 } from "./utils.js";
 
 export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
@@ -693,6 +694,19 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
             })
             .then((response) => {
               if (response.data.tag_name !== nodeData.version) {
+                const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
+                if (isPackageManagedDaemon(nodePath)) {
+                  (async () => {
+                    await logMessage(
+                      `\nError auto updating daemon: Daemon at ${nodePath} is package-managed. ` +
+                        `Upgrade it with your package manager (apt or pacman).\n`,
+                      "error",
+                      true,
+                    );
+                  })();
+                  return;
+                }
+
                 // stop the daemon
                 isUpdating = true;
                 self.stop(false);

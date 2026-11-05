@@ -18,6 +18,7 @@ import {
   findRealDaemonBinary,
   getGuardianExecutableName,
   installDaemonFile,
+  isPackageManagedDaemon,
 } from "./utils.js";
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
@@ -253,6 +254,13 @@ function extractArchive(filePath, outDir, callback) {
 }
 
 export function downloadLatestDaemon(launch, callback) {
+  if (isPackageManagedDaemon(launch?.path)) {
+    callback(
+      `Daemon at ${launch.path} is package-managed. Upgrade it with your package manager (apt or pacman).`,
+    );
+    return false;
+  }
+
   const finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
   const linuxOSInfo = getLinuxOSInfo();
 

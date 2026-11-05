@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { extractZipSafe } from "../units/download.js";
+import { downloadLatestDaemon } from "../units/download.js";
 import {
   daemonExtractSearchDirs,
   daemonInstallDestination,
@@ -14,6 +15,7 @@ import {
   describeNodeLaunch,
   findRealDaemonBinary,
   installDaemonFile,
+  isPackageManagedDaemon,
   resolveDefaultDaemonPath,
 } from "../units/utils.js";
 
@@ -118,7 +120,7 @@ test("linux search order is the working directory, /usr/bin, then PATH", () => {
   ]);
 });
 
-test("package lookup uses conceal-daemon only and does not install over it", () => {
+test("package lookup uses conceal-daemon only and does not invent a working-dir installDir", () => {
   const workDir = tempDir();
   const usrBin = tempDir();
   const pathDir = tempDir();
@@ -130,10 +132,10 @@ test("package lookup uses conceal-daemon only and does not install over it", () 
   const packaged = describeNodeLaunch({}, { node: {} }, workDir, { searchDirs });
   assert.equal(packaged.path, path.join(pathDir, "conceal-daemon"));
   assert.equal(packaged.explicit, false);
-  assert.equal(packaged.installDir, workDir);
+  assert.equal(packaged.installDir, undefined);
   assert.equal(
     daemonInstallDestination(packaged, path.join(pathDir, "conceal-daemon")),
-    path.join(workDir, "conceal-daemon"),
+    path.join(pathDir, "conceal-daemon"),
   );
 
   fs.rmSync(path.join(pathDir, "conceal-daemon"));
@@ -141,6 +143,22 @@ test("package lookup uses conceal-daemon only and does not install over it", () 
   assert.equal(missing.path, path.join(workDir, "conceal-daemon"));
   assert.equal(missing.installDir, undefined);
   assert.equal(fs.existsSync(missing.path), false);
+});
+
+test("isPackageManagedDaemon matches /usr/bin and /usr/local/bin", () => {
+  assert.equal(isPackageManagedDaemon("/usr/bin/conceal-daemon"), true);
+  assert.equal(isPackageManagedDaemon("/usr/local/bin/conceal-daemon"), true);
+  assert.equal(isPackageManagedDaemon("/home/node/conceal-daemon"), false);
+});
+
+test("downloadLatestDaemon refuses a system-managed path without downloading", async () => {
+  const systemPath = "/usr/bin/conceal-daemon";
+  const error = await new Promise((resolve) => {
+    const result = downloadLatestDaemon({ path: systemPath, explicit: true }, resolve);
+    assert.equal(result, false);
+  });
+  assert.match(error, /package-managed/);
+  assert.match(error, /package manager \(apt or pacman\)/);
 });
 
 test("a local conceald is kept and conceald outside that directory is ignored", () => {
