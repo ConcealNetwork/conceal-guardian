@@ -124,7 +124,7 @@ You can use [sample configuration](config.json.sample) and modify it for your ne
 
 * **node**
   * args: The arguments that get appended to the monitored process.
-  * path: The path of the process. If set, Guardian starts that file as given and does not substitute a different executable when the path is missing. If omitted, Guardian looks next to itself for `conceal-daemon`, then legacy `conceald`. It then looks for `conceal-daemon` in `/usr/bin` and on `PATH`. A packaged binary is started in place. A later Guardian download still writes into the working directory and does not replace `/usr/bin`.
+  * path: The path of the process. If set, Guardian starts that file as given and does not substitute a different executable when the path is missing. If omitted, Guardian looks next to itself for `conceal-daemon`, then legacy `conceald`. It then looks for `conceal-daemon` in `/usr/bin` and on `PATH`. A packaged binary is started in place. `--node update` / `autoUpdate` only apply to guardian-owned binaries; a package-managed path is refused (upgrade with `apt` / your distro package) and is never shadowed by a local copy.
   * port: The port on which the daemon is running
   * name: Name of the node. If omited it uses the hostname.
   * feeAddr: The CCX address on which the transaction fee will be sent in case of remote node.

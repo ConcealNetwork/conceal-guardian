@@ -135,7 +135,7 @@ node index.js --version
 # Setup
 node index.js --setup
 
-# Update daemon
+# Update daemon (guardian-owned binary only; package-managed /usr/bin installs are refused)
 node index.js --node update
 ```
 
@@ -150,9 +150,11 @@ node index.js --node update
 # Setup
 ./guardian-linux64 --setup
 
-# Update daemon
+# Update daemon (guardian-owned binary only; package-managed /usr/bin installs are refused)
 ./guardian-linux64 --node update
 ```
+
+For a distro / `.deb` daemon under `/usr/bin` (or another package-managed path), upgrade with `apt` or your package manager. `--node update` does not download or write a local shadow copy over that install.
 
 ## Monitoring
 

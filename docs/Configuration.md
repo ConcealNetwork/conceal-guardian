@@ -68,12 +68,12 @@ Legacy `path` above.[^legacy]
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `args` | Array | `[]` | Command-line arguments passed to the daemon |
-| `path` | String | `""` | Path to `conceal-daemon`. Empty looks next to Guardian for `conceal-daemon`, then legacy `conceald`, then for `conceal-daemon` in `/usr/bin` and on `PATH`. A set path is used as given. |
+| `path` | String | `""` | Path to `conceal-daemon`. Empty looks next to Guardian for `conceal-daemon`, then legacy `conceald`, then for `conceal-daemon` in `/usr/bin` and on `PATH`. A set path is used as given. Package-managed paths are not overwritten or shadowed by guardian updates. |
 | `port` | Number | `16000` | RPC port for the daemon |
 | `name` | String | `hostname` | Public name of your node |
 | `bindAddr` | String | `"127.0.0.1"` | Binding address (`127.0.0.1` for local, `0.0.0.0` for external) |
 | `feeAddr` | String | `""` | CCX address for fee collection (for remote nodes) |
-| `autoUpdate` | Boolean | `false` | Enable automatic daemon updates |
+| `autoUpdate` | Boolean | `false` | Enable automatic daemon updates for guardian-owned binaries only; refused for package-managed installs |
 
 ### Error Handling Section
 

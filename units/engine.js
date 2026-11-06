@@ -18,6 +18,7 @@ import {
   ensureNodeUniqueId,
   ensureUserDataDir,
   getNodeActualPath,
+  isPackageManagedDaemon,
 } from "./utils.js";
 
 export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
@@ -27,6 +28,7 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
   var errorCount = 0;
   var isStoping = false;
   var isUpdating = false;
+  var packageManagedNoticeTag = null;
   var initInterval = null;
   var poolInterval = null;
   var locationData = null;
@@ -693,6 +695,25 @@ export function NodeGuard(cmdOptions, configOpts, rootPath, guardVersion) {
             })
             .then((response) => {
               if (response.data.tag_name !== nodeData.version) {
+                const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
+                if (isPackageManagedDaemon(nodePath)) {
+                  // A distro package cannot self-update, so this mismatch never clears.
+                  // Log once per release tag and do not notify.
+                  const releaseTag = response.data.tag_name;
+                  if (packageManagedNoticeTag !== releaseTag) {
+                    packageManagedNoticeTag = releaseTag;
+                    (async () => {
+                      await logMessage(
+                        `\nError auto updating daemon: Daemon at ${nodePath} is package-managed. ` +
+                          `Upgrade it with your package manager (apt or pacman).\n`,
+                        "error",
+                        false,
+                      );
+                    })();
+                  }
+                  return;
+                }
+
                 // stop the daemon
                 isUpdating = true;
                 self.stop(false);

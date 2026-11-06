@@ -14,6 +14,7 @@ import { Initialize } from "./units/setup.js";
 import {
   describeNodeLaunch,
   getNodeActualPath,
+  isPackageManagedDaemon,
   swapExecutable,
   writeGuardianLog,
 } from "./units/utils.js";
@@ -210,17 +211,25 @@ if (cmdOptions.help) {
       }
     } else if (cmdOptions.node) {
       if (cmdOptions.node === "update") {
-        stop(configOpts, configFileName, () => {
-          // Service stopped, now proceed with daemon update
-          downloadLatestDaemon(describeNodeLaunch(cmdOptions, configOpts, rootPath), (error) => {
-            logDaemonDownload(error);
-            if (error) {
-              console.log(`\nError updating daemon: ${error}\n`);
-            } else {
-              console.log("\nThe daemon has been succesfully updated\n");
-            }
-          });
-        }); // Close stop callback
+        const nodePath = getNodeActualPath(cmdOptions, configOpts, rootPath);
+        if (isPackageManagedDaemon(nodePath)) {
+          console.log(
+            `\nError updating daemon: Daemon at ${nodePath} is package-managed. ` +
+              `Upgrade it with your package manager (apt or pacman).\n`,
+          );
+        } else {
+          stop(configOpts, configFileName, () => {
+            // Service stopped, now proceed with daemon update
+            downloadLatestDaemon(describeNodeLaunch(cmdOptions, configOpts, rootPath), (error) => {
+              logDaemonDownload(error);
+              if (error) {
+                console.log(`\nError updating daemon: ${error}\n`);
+              } else {
+                console.log("\nThe daemon has been succesfully updated\n");
+              }
+            });
+          }); // Close stop callback
+        }
       } else {
         console.log('\nWrong parameter for node command. Valid values: "update"\n');
       }

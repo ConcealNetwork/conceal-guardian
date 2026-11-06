@@ -63,7 +63,7 @@ You will be presented with few questions, answer them and you will be ready to g
 
 > Please input the path to the "conceal-daemon" executable (legacy name "conceald" is still accepted; leave empty to choose automatically)
 
-Absolute path to the `conceal-daemon` executable. If left empty the Guardian looks in the working directory for `conceal-daemon`, then legacy `conceald`, then for `conceal-daemon` in `/usr/bin` and on `PATH`. If none of those is found it downloads the latest daemon into the working directory. A path you set is used as given. A daemon found in `/usr/bin` is started there and is not overwritten by the download.
+Absolute path to the `conceal-daemon` executable. If left empty the Guardian looks in the working directory for `conceal-daemon`, then legacy `conceald`, then for `conceal-daemon` in `/usr/bin` and on `PATH`. If none of those is found it downloads the latest daemon into the working directory. A path you set is used as given. A daemon found in `/usr/bin` (or another package-managed path) is started there; Guardian will not overwrite it or shadow it with a local copy — upgrade that install with `apt` / your distro package.
 
 NOTE: The automatic download and install works for Windows and Ubuntu 16.04 and 18.04 only. For any other OS you need to compile your own daemon.
 
@@ -85,7 +85,7 @@ This controls if your node will be accessible from the internet or not. If you r
 
 > Will your node have auto update enabled?
 
-This option controls if your Guardian will try to autoupdate the daemon (node). If true then the Guardian will check every hour if there is a new version available and update it, if it is.
+This option controls if your Guardian will try to autoupdate the daemon (node). If true then the Guardian will check every hour if there is a new version available and update it, if it is. Auto-update only applies to guardian-owned binaries in the working directory. Leave this off for type 2 / package-managed daemons (`/usr/bin`, distro `.deb`); those must be upgraded with `apt` or your package manager.
 
 > Do you want to be listed in the nodes pool?
 
@@ -147,14 +147,16 @@ You can see help at any time by using:
 
 The Guardian supports two mode of operations:
 
-1. You don't have a daemon (`conceal-daemon`) pre-installed, the Guardian takes care of everything.
-2. You have the daemon pre-installed and the Guardian monitors that instance.
+1. You don't have a daemon (`conceal-daemon`) pre-installed, the Guardian takes care of everything (guardian-owned binary in the working directory).
+2. You have the daemon pre-installed (for example a distro `.deb` in `/usr/bin`) and the Guardian monitors that instance.
 
-If you have a type 1 installation, you can use the build in updater for the daemon. Simply do: 
+If you have a type 1 installation, you can use the built-in updater for the daemon. Simply do:
 
 ```bash
 ./guardian-linux64 --node update
 ```
+
+`--node update` and `autoUpdate` only update guardian-owned binaries. For a type 2 / package-managed install, upgrade with `apt` (or your distro package manager); Guardian refuses to download or write over that path and will not place a local shadow copy next to itself.
 
 The Guardian downloads the latest stable daemon and installs `conceal-daemon` when that file is in the archive. An older archive that only contains `conceald` is still installed. On the next start, `conceal-daemon` is chosen when both files are present, unless `node.path` or `--daemon` points at a specific file. **Note** however, that precompiled binaries are **only available** for Windows and for Ubuntu 16.04 and 18.04 LTS. On other Linux versions, you will have to compile the daemon binaries yourself as described [here](https://github.com/ConcealNetwork/conceal-core#compiling-conceal-from-source).
 

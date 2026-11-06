@@ -18,6 +18,7 @@ import {
   findRealDaemonBinary,
   getGuardianExecutableName,
   installDaemonFile,
+  isPackageManagedDaemon,
 } from "./utils.js";
 
 // a message if you are on the wrong OS and there is no precompiled binaries for that OS.
@@ -253,6 +254,13 @@ function extractArchive(filePath, outDir, callback) {
 }
 
 export function downloadLatestDaemon(launch, callback) {
+  if (isPackageManagedDaemon(launch?.path)) {
+    callback(
+      `Daemon at ${launch.path} is package-managed. Upgrade it with your package manager (apt or pacman).`,
+    );
+    return false;
+  }
+
   const finalTempDir = path.join(os.tmpdir(), ensureNodeUniqueId());
   const linuxOSInfo = getLinuxOSInfo();
 
@@ -358,17 +366,17 @@ export function downloadLatestGuardian(callback, swapExecutableCallback) {
   // latestVersion() returns a Promise, so we need to handle it asynchronously
   latestVersion()
     .then((latest) => {
-      if (current === latest) {
+      const order = compareVersions(current, latest);
+      if (order === 0) {
         callback(`Already running the latest version (${current})`);
         return;
-      } else if (current > latest) {
+      }
+      if (order > 0) {
         callback(`Current version is greater than latest version (${current} > ${latest})`);
         return;
-      } else {
-        console.log(`Updating from version ${current} to ${latest}`);
-        // Continue with the existing download logic below
-        executeDownload(`v${latest}`);
       }
+      console.log(`Updating from version ${current} to ${latest}`);
+      executeDownload(`v${latest}`);
     })
     .catch((err) => {
       callback(`Failed to get latest version: ${err.message}`);
@@ -549,6 +557,35 @@ export function downloadLatestGuardian(callback, swapExecutableCallback) {
         callback(err.message);
       });
   } // End of executeDownload function
+}
+
+/**
+ * Compare dotted numeric versions (for example 0.7.9 and 0.7.10).
+ * @param {string} a
+ * @param {string} b
+ * @returns {number} negative if a < b, 0 if equal, positive if a > b
+ */
+export function compareVersions(a, b) {
+  const parts = (version) =>
+    String(version)
+      .trim()
+      .replace(/^v/i, "")
+      .split(".")
+      .map((part) => {
+        const value = Number.parseInt(part, 10);
+        return Number.isFinite(value) ? value : 0;
+      });
+
+  const left = parts(a);
+  const right = parts(b);
+  const length = Math.max(left.length, right.length);
+  for (let i = 0; i < length; i++) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0);
+    if (diff !== 0) {
+      return diff;
+    }
+  }
+  return 0;
 }
 
 // Get current version

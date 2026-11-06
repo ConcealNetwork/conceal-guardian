@@ -210,6 +210,20 @@ export function defaultDaemonSearchDirs(rootPath, options = {}) {
   return dirs;
 }
 
+/** True for daemons under /usr/bin or /usr/local/bin. */
+export function isPackageManagedDaemon(daemonPath) {
+  if (!daemonPath) {
+    return false;
+  }
+  const resolved = path.resolve(daemonPath);
+  for (const prefix of ["/usr/bin", "/usr/local/bin"]) {
+    if (resolved === prefix || resolved.startsWith(`${prefix}${path.sep}`)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Launch path precedence:
  * 1. config node.path, even when that path is missing or not executable
@@ -218,7 +232,8 @@ export function defaultDaemonSearchDirs(rootPath, options = {}) {
  * 4. conceal-daemon only, in /usr/bin and then PATH
  * 5. the working directory plus conceal-daemon, when no file exists
  * Packages will ship conceal-daemon, not conceald. A packaged path is launched
- * as-is. Updates still install into the working directory.
+ * as-is. Guardian self-update refuses package-/system-managed paths; it does
+ * not install a working-directory shadow over /usr/bin.
  */
 export function describeNodeLaunch(cmdOptions, configOpts, rootPath, options = {}) {
   const configured = configOpts.node.path;
@@ -241,7 +256,7 @@ export function describeNodeLaunch(cmdOptions, configOpts, rootPath, options = {
     names: [names.preferred],
   });
   if (packaged) {
-    return { path: packaged, explicit: false, installDir: rootPath };
+    return { path: packaged, explicit: false };
   }
   return { path: path.join(rootPath, names.preferred), explicit: false };
 }

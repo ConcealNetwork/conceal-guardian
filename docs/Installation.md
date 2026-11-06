@@ -150,7 +150,7 @@ The setup process will ask you several questions:
 - **Fee-based Node**: Whether to run as a fee-based remote node
 - **Fee Address**: CCX address for fee collection (if applicable)
 - **External Access**: Whether the node should be accessible from the internet
-- **Auto Update**: Enable automatic daemon updates
+- **Auto Update**: Enable automatic daemon updates (guardian-owned binaries only; use `apt` for package-managed daemons)
 - **Pool Registration**: Register with the Conceal network pool
 - **Notifications**: Configure Discord and email notifications
 
