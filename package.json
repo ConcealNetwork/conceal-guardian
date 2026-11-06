@@ -42,7 +42,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "geoip2-api": "^1.1.2",
-    "inquirer": "^13.2.2",
+    "inquirer": "^14.2.5",
     "linux-os-info": "^2.0.0",
     "moment": "^2.29.4",
     "nodemailer": "^10.2.1",
