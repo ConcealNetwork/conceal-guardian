@@ -38,7 +38,7 @@
     "command-line-args": "^6.0.0",
     "command-line-usage": "^7.0.1",
     "conceal-api": "^0.8.6",
-    "execa": "^9.6.0",
+    "execa": "^10.2.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "geoip2-api": "^1.1.2",
