@@ -36,7 +36,7 @@ const wrongOSMsg =
  * @param {string} outputDir - Directory to save downloaded assets
  * @param {Function} filterRelease - Predicate (release) => boolean
  * @param {Function} filterAsset - Predicate (asset) => boolean
- * @returns {Promise<void>}
+ * @returns {Promise<object>} The matching release selected by the filters
  */
 async function downloadRelease(owner, repo, outputDir, filterRelease, filterAsset) {
   const releasesUrl = `https://api.github.com/repos/${owner}/${repo}/releases`;
@@ -95,6 +95,8 @@ async function downloadRelease(owner, repo, outputDir, filterRelease, filterAsse
   });
 
   await Promise.all(downloads);
+
+  return matchingRelease;
 }
 
 async function verifyArchiveChecksum(archivePath, owner, repo, tag) {
@@ -309,10 +311,19 @@ export function downloadLatestDaemon(launch, callback) {
   };
 
   downloadRelease("ConcealNetwork", "conceal-core", finalTempDir, filterRelease, filterAssetNode)
-    .then(() => {
-      fs.readdir(finalTempDir, (_err, items) => {
+    .then((release) => {
+      const releaseTag = release.tag_name;
+      fs.readdir(finalTempDir, async (_err, items) => {
         if (items.length > 0) {
-          extractArchive(path.join(finalTempDir, items[0]), finalTempDir, (success) => {
+          const archivePath = path.join(finalTempDir, items[0]);
+          try {
+            await verifyArchiveChecksum(archivePath, "ConcealNetwork", "conceal-core", releaseTag);
+          } catch (err) {
+            fs.rmSync(finalTempDir, { recursive: true, force: true });
+            callback(err.message);
+            return;
+          }
+          extractArchive(archivePath, finalTempDir, (success) => {
             if (success) {
               fs.rmSync(path.join(finalTempDir, items[0]), { recursive: true, force: true });
 
